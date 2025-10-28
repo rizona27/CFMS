@@ -6,27 +6,41 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct CFMSApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
+    @StateObject private var dataManager = DataManager()
+    @StateObject private var fundService = FundService()
+    
+    init() {
+        // 设置未捕获异常处理
+        setupExceptionHandling()
+        
+        // 配置应用信息
+        configureAppInfo()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(dataManager)
+                .environmentObject(fundService)
         }
-        .modelContainer(sharedModelContainer)
+    }
+    
+    private func setupExceptionHandling() {
+        NSSetUncaughtExceptionHandler { exception in
+            print("CRASH: \(exception)")
+            print("Stack Trace: \(exception.callStackSymbols)")
+        }
+    }
+    
+    private func configureAppInfo() {
+        // 设置用户默认值
+        UserDefaults.standard.register(defaults: [
+            "isPrivacyModeEnabled": true,
+            "themeMode": "system",
+            "selectedFundAPI": "eastmoney"
+        ])
     }
 }

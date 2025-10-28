@@ -7,64 +7,65 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A3ACC8212EAFAFB8009F7783 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */; };
+		A3ACC8232EAFAFEE009F7783 /* FundModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8222EAFAFEE009F7783 /* FundModels.swift */; };
+		A3ACC8252EAFB014009F7783 /* TableColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8242EAFB014009F7783 /* TableColumn.swift */; };
+		A3ACC82C2EAFB706009F7783 /* EditHoldingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8262EAFB704009F7783 /* EditHoldingView.swift */; };
+		A3ACC82D2EAFB706009F7783 /* PrivacyHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8272EAFB704009F7783 /* PrivacyHelpers.swift */; };
+		A3ACC82E2EAFB706009F7783 /* ManageHoldingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8282EAFB705009F7783 /* ManageHoldingsView.swift */; };
+		A3ACC82F2EAFB706009F7783 /* APILogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8292EAFB705009F7783 /* APILogView.swift */; };
+		A3ACC8302EAFB706009F7783 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC82A2EAFB705009F7783 /* AboutView.swift */; };
+		A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */; };
+		A3ACC8352EB0B6A5009F7783 /* Info in Resources */ = {isa = PBXBuildFile; fileRef = A3ACC8342EB0B6A5009F7783 /* Info */; };
 		A3DDB5CD2EAFAA11004F1C8B /* CFMSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */; };
 		A3DDB5CF2EAFAA11004F1C8B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */; };
-		A3DDB5D12EAFAA11004F1C8B /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5D02EAFAA11004F1C8B /* Item.swift */; };
 		A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */; };
 		A3DDB5D72EAFAA17004F1C8B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A3DDB5D62EAFAA17004F1C8B /* Preview Assets.xcassets */; };
-		A3DDB5E12EAFAA18004F1C8B /* CFMSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5E02EAFAA18004F1C8B /* CFMSTests.swift */; };
-		A3DDB5EB2EAFAA18004F1C8B /* CFMSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5EA2EAFAA18004F1C8B /* CFMSUITests.swift */; };
-		A3DDB5ED2EAFAA18004F1C8B /* CFMSUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5EC2EAFAA18004F1C8B /* CFMSUITestsLaunchTests.swift */; };
+		A3DDB5FA2EAFAA62004F1C8B /* LoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5F92EAFAA62004F1C8B /* LoadingOverlay.swift */; };
+		A3DDB5FC2EAFAA98004F1C8B /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */; };
+		A3DDB6002EAFAAD2004F1C8B /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */; };
+		A3DDB6022EAFAAE8004F1C8B /* DataValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB6012EAFAAE8004F1C8B /* DataValidation.swift */; };
+		A3DDB6042EAFAAFC004F1C8B /* FundService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB6032EAFAAFC004F1C8B /* FundService.swift */; };
+		A3DDB6062EAFAB27004F1C8B /* ClientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB6052EAFAB27004F1C8B /* ClientView.swift */; };
+		A3DDB6082EAFAC99004F1C8B /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB6072EAFAC99004F1C8B /* SummaryView.swift */; };
+		A3DDB60A2EAFACD3004F1C8B /* TopPerformersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB6092EAFACD3004F1C8B /* TopPerformersView.swift */; };
+		A3DDB60C2EAFAE28004F1C8B /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */; };
+		A3DDB60E2EAFAE49004F1C8B /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */; };
+		A3DDB6102EAFAE6D004F1C8B /* ConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB60F2EAFAE6D004F1C8B /* ConfigView.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		A3DDB5DD2EAFAA18004F1C8B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A3DDB5C12EAFAA11004F1C8B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A3DDB5C82EAFAA11004F1C8B;
-			remoteInfo = CFMS;
-		};
-		A3DDB5E72EAFAA18004F1C8B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A3DDB5C12EAFAA11004F1C8B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A3DDB5C82EAFAA11004F1C8B;
-			remoteInfo = CFMS;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
+		A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
+		A3ACC8222EAFAFEE009F7783 /* FundModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FundModels.swift; sourceTree = "<group>"; };
+		A3ACC8242EAFB014009F7783 /* TableColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumn.swift; sourceTree = "<group>"; };
+		A3ACC8262EAFB704009F7783 /* EditHoldingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EditHoldingView.swift; sourceTree = "<group>"; };
+		A3ACC8272EAFB704009F7783 /* PrivacyHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrivacyHelpers.swift; sourceTree = "<group>"; };
+		A3ACC8282EAFB705009F7783 /* ManageHoldingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ManageHoldingsView.swift; sourceTree = "<group>"; };
+		A3ACC8292EAFB705009F7783 /* APILogView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = APILogView.swift; sourceTree = "<group>"; };
+		A3ACC82A2EAFB705009F7783 /* AboutView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddHoldingView.swift; sourceTree = "<group>"; };
+		A3ACC8342EB0B6A5009F7783 /* Info */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info; sourceTree = "<group>"; };
 		A3DDB5C92EAFAA11004F1C8B /* CFMS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CFMS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSApp.swift; sourceTree = "<group>"; };
 		A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A3DDB5D02EAFAA11004F1C8B /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CFMS.entitlements; sourceTree = "<group>"; };
 		A3DDB5D62EAFAA17004F1C8B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		A3DDB5DC2EAFAA18004F1C8B /* CFMSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CFMSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A3DDB5E02EAFAA18004F1C8B /* CFMSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSTests.swift; sourceTree = "<group>"; };
-		A3DDB5E62EAFAA18004F1C8B /* CFMSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CFMSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A3DDB5EA2EAFAA18004F1C8B /* CFMSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSUITests.swift; sourceTree = "<group>"; };
-		A3DDB5EC2EAFAA18004F1C8B /* CFMSUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		A3DDB5F92EAFAA62004F1C8B /* LoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingOverlay.swift; sourceTree = "<group>"; };
+		A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
+		A3DDB6012EAFAAE8004F1C8B /* DataValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataValidation.swift; sourceTree = "<group>"; };
+		A3DDB6032EAFAAFC004F1C8B /* FundService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FundService.swift; sourceTree = "<group>"; };
+		A3DDB6052EAFAB27004F1C8B /* ClientView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientView.swift; sourceTree = "<group>"; };
+		A3DDB6072EAFAC99004F1C8B /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
+		A3DDB6092EAFACD3004F1C8B /* TopPerformersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopPerformersView.swift; sourceTree = "<group>"; };
+		A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		A3DDB60F2EAFAE6D004F1C8B /* ConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A3DDB5C62EAFAA11004F1C8B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5D92EAFAA18004F1C8B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5E32EAFAA18004F1C8B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -78,8 +79,6 @@
 			isa = PBXGroup;
 			children = (
 				A3DDB5CB2EAFAA11004F1C8B /* CFMS */,
-				A3DDB5DF2EAFAA18004F1C8B /* CFMSTests */,
-				A3DDB5E92EAFAA18004F1C8B /* CFMSUITests */,
 				A3DDB5CA2EAFAA11004F1C8B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +87,6 @@
 			isa = PBXGroup;
 			children = (
 				A3DDB5C92EAFAA11004F1C8B /* CFMS.app */,
-				A3DDB5DC2EAFAA18004F1C8B /* CFMSTests.xctest */,
-				A3DDB5E62EAFAA18004F1C8B /* CFMSUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,11 +94,31 @@
 		A3DDB5CB2EAFAA11004F1C8B /* CFMS */ = {
 			isa = PBXGroup;
 			children = (
+				A3ACC8342EB0B6A5009F7783 /* Info */,
+				A3ACC82A2EAFB705009F7783 /* AboutView.swift */,
+				A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */,
+				A3ACC8292EAFB705009F7783 /* APILogView.swift */,
+				A3ACC8262EAFB704009F7783 /* EditHoldingView.swift */,
+				A3ACC8282EAFB705009F7783 /* ManageHoldingsView.swift */,
+				A3ACC8272EAFB704009F7783 /* PrivacyHelpers.swift */,
 				A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */,
 				A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */,
-				A3DDB5D02EAFAA11004F1C8B /* Item.swift */,
 				A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */,
 				A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */,
+				A3DDB5F92EAFAA62004F1C8B /* LoadingOverlay.swift */,
+				A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */,
+				A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */,
+				A3DDB6012EAFAAE8004F1C8B /* DataValidation.swift */,
+				A3DDB6032EAFAAFC004F1C8B /* FundService.swift */,
+				A3DDB6052EAFAB27004F1C8B /* ClientView.swift */,
+				A3DDB6072EAFAC99004F1C8B /* SummaryView.swift */,
+				A3DDB6092EAFACD3004F1C8B /* TopPerformersView.swift */,
+				A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */,
+				A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */,
+				A3DDB60F2EAFAE6D004F1C8B /* ConfigView.swift */,
+				A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */,
+				A3ACC8222EAFAFEE009F7783 /* FundModels.swift */,
+				A3ACC8242EAFB014009F7783 /* TableColumn.swift */,
 				A3DDB5D52EAFAA17004F1C8B /* Preview Content */,
 			);
 			path = CFMS;
@@ -113,23 +130,6 @@
 				A3DDB5D62EAFAA17004F1C8B /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		A3DDB5DF2EAFAA18004F1C8B /* CFMSTests */ = {
-			isa = PBXGroup;
-			children = (
-				A3DDB5E02EAFAA18004F1C8B /* CFMSTests.swift */,
-			);
-			path = CFMSTests;
-			sourceTree = "<group>";
-		};
-		A3DDB5E92EAFAA18004F1C8B /* CFMSUITests */ = {
-			isa = PBXGroup;
-			children = (
-				A3DDB5EA2EAFAA18004F1C8B /* CFMSUITests.swift */,
-				A3DDB5EC2EAFAA18004F1C8B /* CFMSUITestsLaunchTests.swift */,
-			);
-			path = CFMSUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -152,42 +152,6 @@
 			productReference = A3DDB5C92EAFAA11004F1C8B /* CFMS.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A3DDB5DB2EAFAA18004F1C8B /* CFMSTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A3DDB5F32EAFAA18004F1C8B /* Build configuration list for PBXNativeTarget "CFMSTests" */;
-			buildPhases = (
-				A3DDB5D82EAFAA18004F1C8B /* Sources */,
-				A3DDB5D92EAFAA18004F1C8B /* Frameworks */,
-				A3DDB5DA2EAFAA18004F1C8B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A3DDB5DE2EAFAA18004F1C8B /* PBXTargetDependency */,
-			);
-			name = CFMSTests;
-			productName = CFMSTests;
-			productReference = A3DDB5DC2EAFAA18004F1C8B /* CFMSTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		A3DDB5E52EAFAA18004F1C8B /* CFMSUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A3DDB5F62EAFAA18004F1C8B /* Build configuration list for PBXNativeTarget "CFMSUITests" */;
-			buildPhases = (
-				A3DDB5E22EAFAA18004F1C8B /* Sources */,
-				A3DDB5E32EAFAA18004F1C8B /* Frameworks */,
-				A3DDB5E42EAFAA18004F1C8B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A3DDB5E82EAFAA18004F1C8B /* PBXTargetDependency */,
-			);
-			name = CFMSUITests;
-			productName = CFMSUITests;
-			productReference = A3DDB5E62EAFAA18004F1C8B /* CFMSUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -200,14 +164,6 @@
 				TargetAttributes = {
 					A3DDB5C82EAFAA11004F1C8B = {
 						CreatedOnToolsVersion = 15.4;
-					};
-					A3DDB5DB2EAFAA18004F1C8B = {
-						CreatedOnToolsVersion = 15.4;
-						TestTargetID = A3DDB5C82EAFAA11004F1C8B;
-					};
-					A3DDB5E52EAFAA18004F1C8B = {
-						CreatedOnToolsVersion = 15.4;
-						TestTargetID = A3DDB5C82EAFAA11004F1C8B;
 					};
 				};
 			};
@@ -225,8 +181,6 @@
 			projectRoot = "";
 			targets = (
 				A3DDB5C82EAFAA11004F1C8B /* CFMS */,
-				A3DDB5DB2EAFAA18004F1C8B /* CFMSTests */,
-				A3DDB5E52EAFAA18004F1C8B /* CFMSUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -238,20 +192,7 @@
 			files = (
 				A3DDB5D72EAFAA17004F1C8B /* Preview Assets.xcassets in Resources */,
 				A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5DA2EAFAA18004F1C8B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5E42EAFAA18004F1C8B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				A3ACC8352EB0B6A5009F7783 /* Info in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,43 +203,32 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3ACC82D2EAFB706009F7783 /* PrivacyHelpers.swift in Sources */,
 				A3DDB5CF2EAFAA11004F1C8B /* ContentView.swift in Sources */,
-				A3DDB5D12EAFAA11004F1C8B /* Item.swift in Sources */,
+				A3DDB60A2EAFACD3004F1C8B /* TopPerformersView.swift in Sources */,
+				A3DDB6062EAFAB27004F1C8B /* ClientView.swift in Sources */,
+				A3ACC82E2EAFB706009F7783 /* ManageHoldingsView.swift in Sources */,
+				A3DDB5FC2EAFAA98004F1C8B /* EmptyStateView.swift in Sources */,
+				A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */,
+				A3DDB6102EAFAE6D004F1C8B /* ConfigView.swift in Sources */,
+				A3ACC8232EAFAFEE009F7783 /* FundModels.swift in Sources */,
+				A3DDB6022EAFAAE8004F1C8B /* DataValidation.swift in Sources */,
+				A3ACC8212EAFAFB8009F7783 /* HoldingRow.swift in Sources */,
+				A3ACC8252EAFB014009F7783 /* TableColumn.swift in Sources */,
+				A3ACC8302EAFB706009F7783 /* AboutView.swift in Sources */,
 				A3DDB5CD2EAFAA11004F1C8B /* CFMSApp.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5D82EAFAA18004F1C8B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A3DDB5E12EAFAA18004F1C8B /* CFMSTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A3DDB5E22EAFAA18004F1C8B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A3DDB5EB2EAFAA18004F1C8B /* CFMSUITests.swift in Sources */,
-				A3DDB5ED2EAFAA18004F1C8B /* CFMSUITestsLaunchTests.swift in Sources */,
+				A3DDB60E2EAFAE49004F1C8B /* ToastView.swift in Sources */,
+				A3DDB6002EAFAAD2004F1C8B /* ColorExtension.swift in Sources */,
+				A3ACC82F2EAFB706009F7783 /* APILogView.swift in Sources */,
+				A3DDB6042EAFAAFC004F1C8B /* FundService.swift in Sources */,
+				A3DDB5FA2EAFAA62004F1C8B /* LoadingOverlay.swift in Sources */,
+				A3DDB60C2EAFAE28004F1C8B /* DataManager.swift in Sources */,
+				A3DDB6082EAFAC99004F1C8B /* SummaryView.swift in Sources */,
+				A3ACC82C2EAFB706009F7783 /* EditHoldingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		A3DDB5DE2EAFAA18004F1C8B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A3DDB5C82EAFAA11004F1C8B /* CFMS */;
-			targetProxy = A3DDB5DD2EAFAA18004F1C8B /* PBXContainerItemProxy */;
-		};
-		A3DDB5E82EAFAA18004F1C8B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A3DDB5C82EAFAA11004F1C8B /* CFMS */;
-			targetProxy = A3DDB5E72EAFAA18004F1C8B /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A3DDB5EE2EAFAA18004F1C8B /* Debug */ = {
@@ -424,8 +354,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CFMS/Preview Content\"";
+				DEVELOPMENT_TEAM = 8QXX7UMS83;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "一基暴富";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -440,7 +372,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -460,8 +392,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CFMS/Preview Content\"";
+				DEVELOPMENT_TEAM = 8QXX7UMS83;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "一基暴富";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -476,7 +410,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -484,92 +418,6 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		A3DDB5F42EAFAA18004F1C8B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMSTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CFMS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CFMS";
-			};
-			name = Debug;
-		};
-		A3DDB5F52EAFAA18004F1C8B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMSTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CFMS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CFMS";
-			};
-			name = Release;
-		};
-		A3DDB5F72EAFAA18004F1C8B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMSUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CFMS;
-			};
-			name = Debug;
-		};
-		A3DDB5F82EAFAA18004F1C8B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMSUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = CFMS;
 			};
 			name = Release;
 		};
@@ -590,24 +438,6 @@
 			buildConfigurations = (
 				A3DDB5F12EAFAA18004F1C8B /* Debug */,
 				A3DDB5F22EAFAA18004F1C8B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A3DDB5F32EAFAA18004F1C8B /* Build configuration list for PBXNativeTarget "CFMSTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A3DDB5F42EAFAA18004F1C8B /* Debug */,
-				A3DDB5F52EAFAA18004F1C8B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A3DDB5F62EAFAA18004F1C8B /* Build configuration list for PBXNativeTarget "CFMSUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A3DDB5F72EAFAA18004F1C8B /* Debug */,
-				A3DDB5F82EAFAA18004F1C8B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,66 +1,349 @@
-//
-//  ContentView.swift
-//  CFMS
-//
-//  Created by 倪志浩 on 2025/10/27.
-//
-
 import SwiftUI
-import SwiftData
+import UniformTypeIdentifiers
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @EnvironmentObject var dataManager: DataManager
+    @StateObject private var fundService = FundService()
+
+    @State private var showSplash = true
+    @State private var selectedTab = 0
+    
+    @State private var splashOpacity: Double = 1.0
+    @State private var mainTextOpacity: Double = 0.0
+    @State private var subtitleOpacity: Double = 0.0
+    @State private var copyrightOpacity: Double = 0.0
+    
+    @State private var mainTextOffset: CGFloat = 10.0
+    @State private var subtitleOffset: CGFloat = 8.0
+    
+    @State private var highlightPosition: CGFloat = -1.0
+    @State private var highlightOpacity: Double = 0.0
+    
+    @State private var glowScale: CGFloat = 0.7
+    @State private var glowOpacity: Double = 0.0
+    @State private var glowRotation: Double = 0.0
+    @State private var glowOffset: CGSize = CGSize(width: -100, height: -100)
+    
+    @State private var splashBlur: CGFloat = 0.0
+    @State private var splashScale: CGFloat = 1.0
+
+    @State private var isRefreshLocked = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        ZStack {
+            NavigationView {
+                TabView(selection: $selectedTab) {
+                    SummaryView()
+                        .tabItem {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                            Text("一览")
+                        }
+                        .tag(0)
+                        .environmentObject(dataManager)
+                        .environmentObject(fundService)
+                    
+                    ClientView()
+                        .tabItem {
+                            Image(systemName: "dollarsign.circle")
+                            Text("客户")
+                        }
+                        .tag(1)
+                        .environmentObject(dataManager)
+                        .environmentObject(fundService)
+                    
+                    TopPerformersView()
+                        .tabItem {
+                            Image(systemName: "list.bullet.rectangle.portrait")
+                            Text("排名")
+                        }
+                        .tag(2)
+                        .environmentObject(dataManager)
+                        .environmentObject(fundService)
+
+                    ConfigView()
+                        .tabItem {
+                            Image(systemName: "gearshape")
+                            Text("设置")
+                        }
+                        .tag(3)
+                        .environmentObject(dataManager)
+                        .environmentObject(fundService)
                 }
-                .onDelete(perform: deleteItems)
+                .disabled(isRefreshLocked)
             }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+            .id("main_navigation")
+            .opacity(showSplash ? 0 : 1)
+            .animation(.easeIn(duration: 0.6), value: showSplash)
+
+            if showSplash {
+                ZStack {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(hex: "F8F5F0"),
+                                    Color(hex: "F0ECE5"),
+                                    Color(hex: "F8F5F0")
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .edgesIgnoringSafeArea(.all)
+                    
+                    ForEach(0..<2, id: \.self) { index in
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(hex: "E8D5C4").opacity(0.3),
+                                        Color(hex: "F0ECE5").opacity(0.15),
+                                        Color.clear
+                                    ]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 150 + CGFloat(index) * 60
+                                )
+                            )
+                            .frame(
+                                width: 250 + CGFloat(index) * 100,
+                                height: 250 + CGFloat(index) * 100
+                            )
+                            .scaleEffect(glowScale * (1.0 - CGFloat(index) * 0.1))
+                            .opacity(glowOpacity * (1.0 - Double(index) * 0.2))
+                            .rotationEffect(.degrees(glowRotation * Double(index + 1) * 0.3))
+                            .offset(glowOffset)
+                            .blur(radius: 15 + CGFloat(index) * 5)
                     }
+                    
+                    VStack(alignment: .center, spacing: 12) {
+                        Spacer()
+                        
+                        VStack(alignment: .center, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Text("Less")
+                                    .font(.system(size: 46, weight: .light, design: .serif))
+                                    .foregroundColor(Color(hex: "5D4037"))
+                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                                
+                                Text("is")
+                                    .font(.system(size: 32, weight: .light, design: .serif))
+                                    .foregroundColor(Color(hex: "5D4037"))
+                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            }
+                            
+                            Text("More.")
+                                .font(.system(size: 60, weight: .semibold, design: .serif))
+                                .foregroundColor(Color(hex: "3E2723"))
+                                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 2)
+                        }
+                        .opacity(mainTextOpacity)
+                        .offset(y: mainTextOffset)
+                        
+                        Text("Finding Abundance Through Subtraction")
+                            .font(.system(size: 16, weight: .light))
+                            .foregroundColor(Color(hex: "6D4C41").opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 20)
+                            .opacity(subtitleOpacity)
+                            .offset(y: subtitleOffset)
+
+                        Spacer()
+
+                        VStack(spacing: 4) {
+                            Text("专业 · 专注 · 价值")
+                                .font(.system(size: 13, weight: .light))
+                                .foregroundColor(Color(hex: "795548").opacity(0.6))
+                            
+                            Text("Copyright © 2025 Rizona.")
+                                .font(.system(size: 11, weight: .light))
+                                .foregroundColor(Color(hex: "795548").opacity(0.5))
+                        }
+                        .opacity(copyrightOpacity)
+                        .padding(.bottom, 50)
+                        .overlay(
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.clear,
+                                            Color.white.opacity(0.4),
+                                            Color.white.opacity(0.6),
+                                            Color.white.opacity(0.4),
+                                            Color.clear
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 80)
+                                .offset(x: highlightPosition * 200)
+                                .opacity(highlightOpacity)
+                                .blendMode(.plusLighter)
+                                .mask(
+                                    VStack(spacing: 4) {
+                                        Text("专注 · 价值")
+                                            .font(.system(size: 13, weight: .light))
+                                        
+                                        Text("© 2025 Rizona Developed")
+                                            .font(.system(size: 11, weight: .light))
+                                    }
+                                )
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 40)
+                }
+                .opacity(splashOpacity)
+                .scaleEffect(splashScale)
+                .blur(radius: splashBlur)
+                .edgesIgnoringSafeArea(.all)
+                .onAppear {
+                    startNaturalAnimation()
                 }
             }
-        } detail: {
-            Text("Select an item")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshLockEnabled"))) { _ in
+            isRefreshLocked = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshLockDisabled"))) { _ in
+            isRefreshLocked = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            refreshAppState()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            // 内存优化 - 清理不必要的缓存
+            print("收到内存警告，清理缓存...")
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    private func startNaturalAnimation() {
+        splashOpacity = 1.0
+        mainTextOpacity = 0.0
+        subtitleOpacity = 0.0
+        copyrightOpacity = 0.0
+        mainTextOffset = 10.0
+        subtitleOffset = 8.0
+        glowScale = 0.7
+        glowOpacity = 0.0
+        glowRotation = 0.0
+        glowOffset = CGSize(width: -100, height: -100)
+        splashBlur = 0.0
+        splashScale = 1.0
+        
+        withAnimation(.easeOut(duration: 2.5)) {
+            glowScale = 1.4
+            glowOpacity = 0.4
+            glowOffset = CGSize(width: 30, height: 30)
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        
+        withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+            glowRotation = 360
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.easeOut(duration: 1.2)) {
+                mainTextOpacity = 1.0
+                mainTextOffset = 0.0
             }
         }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 1.0)) {
+                subtitleOpacity = 1.0
+                subtitleOffset = 0.0
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.easeOut(duration: 0.8)) {
+                copyrightOpacity = 1.0
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeIn(duration: 0.1)) {
+                    highlightOpacity = 1.0
+                }
+                
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    highlightPosition = 1.0
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        highlightOpacity = 0.0
+                    }
+                }
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            withAnimation(.easeIn(duration: 0.8)) {
+                glowOpacity = 0.0
+            }
+            
+            withAnimation(.easeOut(duration: 1.2)) {
+                splashOpacity = 0.0
+                splashBlur = 12.0
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                withAnimation(.easeIn(duration: 0.3)) {
+                    showSplash = false
+                }
+            }
+        }
+    }
+    
+    private func refreshAppState() {
+        print("App became active, refreshing state...")
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        let dataManager = DataManager()
+        let fundService = FundService()
+
+        if dataManager.holdings.isEmpty {
+            let holding1 = FundHolding(
+                clientName: "张三",
+                clientID: "A001",
+                fundCode: "000001",
+                purchaseAmount: 5000.0,
+                purchaseShares: 2000.0,
+                purchaseDate: Date().addingTimeInterval(-86400 * 180),
+                remarks: "首次购买",
+                fundName: "华夏成长混合 (预览)",
+                currentNav: 2.50,
+                navDate: Date()
+            )
+            let holding2 = FundHolding(
+                clientName: "李四",
+                clientID: "B002",
+                fundCode: "000002",
+                purchaseAmount: 2500.0,
+                purchaseShares: 781.25,
+                purchaseDate: Date().addingTimeInterval(-86400 * 90),
+                remarks: "追加投资",
+                fundName: "南方稳健增长 (预览)",
+                currentNav: 3.20,
+                navDate: Date()
+            )
+
+            DispatchQueue.main.async {
+                do {
+                    try dataManager.addHolding(holding1)
+                    try dataManager.addHolding(holding2)
+                } catch {
+                    print("添加预览数据失败: \(error)")
+                }
+            }
+        }
+
+        return ContentView()
+            .environmentObject(dataManager)
+            .environmentObject(fundService)
+    }
 }
