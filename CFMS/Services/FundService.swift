@@ -77,7 +77,6 @@ class FundService: ObservableObject {
         }
     }
 
-    // 修复：添加 MainActor 隔离
     @MainActor
     private func loadCacheFromUserDefaults() async {
         if let savedData = UserDefaults.standard.data(forKey: userDefaultsKey) {
@@ -701,18 +700,14 @@ class FundService: ObservableObject {
         }
     }
     
-    // MARK: - 网络优化方法
-    
     private func createURLRequest(with url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15", forHTTPHeaderField: "User-Agent")
-        request.timeoutInterval = 10 // 10秒超时
+        request.timeoutInterval = 10
         return request
     }
     
     private func isNetworkAvailable() -> Bool {
-        // 这里可以添加更复杂的网络可达性检查
-        // 目前返回true，实际项目中可以集成Network框架
         return true
     }
 }

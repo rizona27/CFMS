@@ -47,7 +47,6 @@ struct FundHolding: Identifiable, Codable, Hashable {
         self.navReturn1y = navReturn1y
     }
     
-    // 添加 invalid 静态方法
     static func invalid(fundCode: String) -> FundHolding {
         return FundHolding(
             clientName: "",
@@ -64,7 +63,6 @@ struct FundHolding: Identifiable, Codable, Hashable {
         )
     }
     
-    // 添加 isValidHolding 计算属性
     var isValidHolding: Bool {
         return !clientName.isEmpty &&
                !fundCode.isEmpty &&

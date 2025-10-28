@@ -291,8 +291,7 @@ struct ThemeModeView: View {
             }
         }
     }
-    
-    // 修复：使用新的窗口获取方式
+
     private func applyTheme(_ theme: ThemeMode) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else {
@@ -376,8 +375,7 @@ struct ConfigView: View {
         UserDefaults.standard.register(defaults: ["isPrivacyModeEnabled": true])
         UserDefaults.standard.register(defaults: ["themeMode": "system"])
         UserDefaults.standard.register(defaults: ["selectedFundAPI": "eastmoney"])
-        
-        // 应用当前主题设置
+
         let currentTheme = UserDefaults.standard.string(forKey: "themeMode") ?? "system"
         if let theme = ThemeMode(rawValue: currentTheme) {
             applyTheme(theme)
@@ -386,8 +384,7 @@ struct ConfigView: View {
     
     func onDisappear() {
     }
-    
-    // 修复：使用新的窗口获取方式
+
     private func applyTheme(_ theme: ThemeMode) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else {

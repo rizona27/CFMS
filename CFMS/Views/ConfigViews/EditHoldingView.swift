@@ -43,7 +43,6 @@ struct EditHoldingView: View {
 
     var body: some View {
         NavigationView {
-            // 修复：明确指定 ScrollView 的轴
             ScrollView(.vertical) {
                 VStack(spacing: 16) {
                     Group {

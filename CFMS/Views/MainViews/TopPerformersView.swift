@@ -240,227 +240,299 @@ struct TopPerformersView: View {
         return index == zeroIndex
     }
     
-    // 主内容视图
+    // 分解后的 body 属性
     var body: some View {
         NavigationView {
-            ZStack(alignment: .center) {
-                Color(.systemGroupedBackground)
-                    .edgesIgnoringSafeArea(.all)
-                
-                VStack(spacing: 0) {
-                    // 顶部工具栏 - 与其他页面完全一致
-                    HStack {
-                        // 左侧按钮组 - 精确匹配其他页面的间距和大小
-                        HStack(spacing: 12) {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    isFilterExpanded.toggle()
-                                }
-                            }) {
-                                Image(systemName: isFilterExpanded ? "rectangle.and.text.magnifyingglass" : "magnifyingglass")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(isFilterExpanded ? .blue : .accentColor)
-                                    .frame(width: 32, height: 32)
-                                    .background(
-                                        Circle()
-                                            .fill(isFilterExpanded ? Color.blue.opacity(0.15) : Color.accentColor.opacity(0.15))
-                                    )
-                                    .overlay(
-                                        Circle()
-                                            .stroke(isFilterExpanded ? Color.blue.opacity(0.3) : Color.accentColor.opacity(0.3), lineWidth: 1)
-                                    )
-                            }
-                            
-                            SortButtonsView(
-                                selectedSortKey: $selectedSortKey,
-                                sortOrder: $sortOrder,
-                                sortButtonIconName: sortButtonIconName()
-                            )
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGroupedBackground))
-                    
-                    // 筛选区域
-                    if isFilterExpanded {
-                        FilterSectionView(
-                            fundCodeFilterInput: $fundCodeFilterInput,
-                            minAmountInput: $minAmountInput,
-                            maxAmountInput: $maxAmountInput,
-                            minDaysInput: $minDaysInput,
-                            maxDaysInput: $maxDaysInput,
-                            varprofitInput: $varprofitInput,
-                            maxProfitInput: $maxProfitInput,
-                            resetFilters: resetFilters,
-                            applyFilters: applyFilters
-                        )
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 8)
-                        .background(Color(.systemGroupedBackground))
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                    
-                    // 内容区域 - 调整高度与其他页面完全一致
-                    VStack(spacing: 0) {
-                        // 表头
-                        GeometryReader { geometry in
-                            let totalWidth = geometry.size.width - 4
-                            let numberWidth: CGFloat = totalWidth * 0.08
-                            let codeNameWidth: CGFloat = totalWidth * 0.22
-                            let amountWidth: CGFloat = totalWidth * 0.12
-                            let profitWidth: CGFloat = totalWidth * 0.12
-                            let daysWidth: CGFloat = totalWidth * 0.10
-                            let rateWidth: CGFloat = totalWidth * 0.16
-                            let clientWidth: CGFloat = totalWidth * 0.20
-                            
-                            HeaderRowView(
-                                numberWidth: numberWidth,
-                                codeNameWidth: codeNameWidth,
-                                amountWidth: amountWidth,
-                                profitWidth: profitWidth,
-                                daysWidth: daysWidth,
-                                rateWidth: rateWidth,
-                                clientWidth: clientWidth
-                            )
-                        }
-                        .frame(height: 32)
-                        
-                        // 内容框体 - 高度与其他页面完全一致
-                        if precomputedHoldings.isEmpty {
-                            EmptyStateView(
-                                icon: "chart.bar.doc.horizontal",
-                                title: "当前没有数据",
-                                description: "请导入数据开始使用",
-                                action: nil
-                            )
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                        } else {
-                            GeometryReader { geometry in
-                                let totalWidth = geometry.size.width - 4
-                                let numberWidth: CGFloat = totalWidth * 0.08
-                                let codeNameWidth: CGFloat = totalWidth * 0.22
-                                let amountWidth: CGFloat = totalWidth * 0.12
-                                let profitWidth: CGFloat = totalWidth * 0.12
-                                let daysWidth: CGFloat = totalWidth * 0.10
-                                let rateWidth: CGFloat = totalWidth * 0.16
-                                let clientWidth: CGFloat = totalWidth * 0.20
-                                
-                                HoldingsListView(
-                                    filteredAndSortedHoldings: filteredAndSortedHoldings,
-                                    numberWidth: numberWidth,
-                                    codeNameWidth: codeNameWidth,
-                                    amountWidth: amountWidth,
-                                    profitWidth: profitWidth,
-                                    daysWidth: daysWidth,
-                                    rateWidth: rateWidth,
-                                    clientWidth: clientWidth,
-                                    isPrivacyModeEnabled: isPrivacyModeEnabled,
-                                    shouldShowDivider: shouldShowDivider
-                                )
-                            }
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 2)
-                    .padding(.top, 8)
-                }
-                
-                if isLoading {
-                    LoadingOverlay(message: "加载中...", progress: nil)
-                }
-                
-                if showingToast {
-                    ToastView(message: toastMessage, isShowing: $showingToast)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        .zIndex(1)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Group {
-                        if isFilterExpanded {
-                            HStack(spacing: 10) {
-                                Button {
-                                    resetFilters()
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise.circle")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.orange)
-                                        .frame(width: 32, height: 32)
-                                        .background(
-                                            Circle()
-                                                .fill(Color.orange.opacity(0.15))
-                                        )
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                                        )
-                                }
-                                
-                                Button {
-                                    applyFilters()
-                                } label: {
-                                    Image(systemName: "checkmark.circle")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.green)
-                                        .frame(width: 32, height: 32)
-                                        .background(
-                                            Circle()
-                                                .fill(Color.green.opacity(0.15))
-                                        )
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                                        )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            mainContent
         }
-        .onAppear {
-            if precomputedHoldings.isEmpty {
-                refreshData()
-            }
-        }
-        .onDisappear {
-            withAnimation {
-                isFilterExpanded = false
-            }
-        }
-        .onChange(of: selectedSortKey) { oldValue, newValue in
+        .onAppear(perform: handleOnAppear)
+        .onDisappear(perform: handleOnDisappear)
+        .onChange(of: selectedSortKey) { _, _ in
             cachedSortedHoldings.removeAll()
         }
-        .onChange(of: sortOrder) { oldValue, newValue in
+        .onChange(of: sortOrder) { _, _ in
             cachedSortedHoldings.removeAll()
         }
-        .onChange(of: dataManager.holdings) { oldValue, newValue in
+        .onChange(of: dataManager.holdings) { _, _ in
             refreshData()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
             cachedSortedHoldings.removeAll()
         }
     }
+    
+    // 分解后的子视图
+    private var mainContent: some View {
+        ZStack(alignment: .center) {
+            backgroundView
+            mainVStack
+            loadingView
+            toastView
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private var backgroundView: some View {
+        Color(.systemGroupedBackground)
+            .edgesIgnoringSafeArea(.all)
+    }
+    
+    private var mainVStack: some View {
+        VStack(spacing: 0) {
+            topButtonBar
+            filterSection
+            contentSection
+        }
+    }
+    
+    private var topButtonBar: some View {
+        HStack {
+            HStack(spacing: 8) {
+                filterButton
+                sortButtons
+            }
+            
+            Spacer()
+            
+            if isFilterExpanded {
+                filterActionButtons
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    private var filterButton: some View {
+        Button(action: toggleFilter) {
+            Image(systemName: isFilterExpanded ? "rectangle.and.text.magnifyingglass" : "magnifyingglass")
+                .font(.system(size: 18))
+                .foregroundColor(isFilterExpanded ? .blue : .accentColor)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(isFilterExpanded ? Color.blue.opacity(0.15) : Color.accentColor.opacity(0.15))
+                )
+                .overlay(
+                    Circle()
+                        .stroke(isFilterExpanded ? Color.blue.opacity(0.3) : Color.accentColor.opacity(0.3), lineWidth: 1)
+                )
+        }
+    }
+    
+    private var sortButtons: some View {
+        SortButtonsView(
+            selectedSortKey: $selectedSortKey,
+            sortOrder: $sortOrder,
+            sortButtonIconName: sortButtonIconName()
+        )
+    }
+    
+    private var filterActionButtons: some View {
+        HStack(spacing: 10) {
+            Button(action: resetFilters) {
+                Image(systemName: "arrow.counterclockwise.circle")
+                    .font(.system(size: 18))
+                    .foregroundColor(.orange)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(Color.orange.opacity(0.15))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                    )
+            }
+            
+            Button(action: applyFilters) {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 18))
+                    .foregroundColor(.green)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(Color.green.opacity(0.15))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                    )
+            }
+        }
+    }
+    
+    private var filterSection: some View {
+        Group {
+            if isFilterExpanded {
+                FilterSectionView(
+                    fundCodeFilterInput: $fundCodeFilterInput,
+                    minAmountInput: $minAmountInput,
+                    maxAmountInput: $maxAmountInput,
+                    minDaysInput: $minDaysInput,
+                    maxDaysInput: $maxDaysInput,
+                    varprofitInput: $varprofitInput,
+                    maxProfitInput: $maxProfitInput,
+                    resetFilters: resetFilters,
+                    applyFilters: applyFilters
+                )
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+                .background(Color(.systemGroupedBackground))
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
+    private var contentSection: some View {
+        VStack(spacing: 0) {
+            if precomputedHoldings.isEmpty {
+                emptyStateView
+            } else {
+                holdingsTableView
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 2)
+        .padding(.top, 0)
+    }
+    
+    private var emptyStateView: some View {
+        EmptyStateView(
+            icon: "chart.bar.doc.horizontal",
+            title: "当前没有数据",
+            description: "请导入数据开始使用",
+            action: nil
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private var holdingsTableView: some View {
+        VStack(spacing: 0) {
+            headerRow
+            holdingsList
+        }
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private var headerRow: some View {
+        GeometryReader { geometry in
+            let widths = calculateWidths(from: geometry)
+            HeaderRowView(
+                numberWidth: widths.number,
+                codeNameWidth: widths.codeName,
+                amountWidth: widths.amount,
+                profitWidth: widths.profit,
+                daysWidth: widths.days,
+                rateWidth: widths.rate,
+                clientWidth: widths.client
+            )
+        }
+        .frame(height: 32)
+        .background(Color(.systemGray5))
+    }
+    
+    private var holdingsList: some View {
+        GeometryReader { geometry in
+            let widths = calculateWidths(from: geometry)
+            HoldingsListView(
+                filteredAndSortedHoldings: filteredAndSortedHoldings,
+                numberWidth: widths.number,
+                codeNameWidth: widths.codeName,
+                amountWidth: widths.amount,
+                profitWidth: widths.profit,
+                daysWidth: widths.days,
+                rateWidth: widths.rate,
+                clientWidth: widths.client,
+                isPrivacyModeEnabled: isPrivacyModeEnabled,
+                shouldShowDivider: shouldShowDivider
+            )
+        }
+    }
+    
+    private var loadingView: some View {
+        Group {
+            if isLoading {
+                LoadingView()
+            }
+        }
+    }
+    
+    private var toastView: some View {
+        Group {
+            if showingToast {
+                ToastView(message: toastMessage, isShowing: $showingToast)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .zIndex(1)
+            }
+        }
+    }
+    
+    // 辅助计算方法
+    private func calculateWidths(from geometry: GeometryProxy) -> (number: CGFloat, codeName: CGFloat, amount: CGFloat, profit: CGFloat, days: CGFloat, rate: CGFloat, client: CGFloat) {
+        let totalWidth = geometry.size.width - 4
+        return (
+            number: totalWidth * 0.07,
+            codeName: totalWidth * 0.20,
+            amount: totalWidth * 0.14,
+            profit: totalWidth * 0.14,
+            days: totalWidth * 0.10,
+            rate: totalWidth * 0.16,
+            client: totalWidth * 0.19
+        )
+    }
+    
+    // 事件处理方法
+    private func toggleFilter() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            isFilterExpanded.toggle()
+        }
+    }
+    
+    private func handleOnAppear() {
+        if precomputedHoldings.isEmpty {
+            refreshData()
+        }
+    }
+    
+    private func handleOnDisappear() {
+        withAnimation {
+            isFilterExpanded = false
+        }
+    }
 }
 
-// MARK: - 子视图定义
+// 加载中视图
+struct LoadingView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("加载中...")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray6))
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+        )
+    }
+}
 
+// 其他辅助视图保持不变...
 struct FilterSectionView: View {
     @Binding var fundCodeFilterInput: String
     @Binding var minAmountInput: String
@@ -529,15 +601,18 @@ struct HeaderRowView: View {
                     .frame(width: codeNameWidth, alignment: .center)
                 Divider().background(Color.secondary)
                 Text("金额(万)")
+                    .font(.system(size: 11, weight: .medium))
                     .frame(width: amountWidth, alignment: .center)
                 Divider().background(Color.secondary)
                 Text("收益(万)")
+                    .font(.system(size: 11, weight: .medium))
                     .frame(width: profitWidth, alignment: .center)
                 Divider().background(Color.secondary)
                 Text("天数")
                     .frame(width: daysWidth, alignment: .center)
                 Divider().background(Color.secondary)
                 Text("收益率(%)")
+                    .font(.system(size: 11, weight: .medium))
                     .frame(width: rateWidth, alignment: .center)
                 Divider().background(Color.secondary)
                 Text("客户")
@@ -547,8 +622,6 @@ struct HeaderRowView: View {
             .foregroundColor(.secondary)
             .padding(.vertical, 6)
         }
-        .background(Color(.systemGray5))
-        .frame(height: 32)
     }
 }
 
@@ -603,16 +676,16 @@ struct SortButtonsView: View {
             }) {
                 HStack(spacing: 4) {
                     Image(systemName: sortButtonIconName)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 18, weight: .medium))
                         .foregroundColor(selectedSortKey == .none ? .primary : selectedSortKey.color)
                     if selectedSortKey != .none {
                         Text(selectedSortKey.rawValue)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(selectedSortKey.color)
                     }
                 }
                 .padding(.horizontal, 8)
-                .frame(height: 30)
+                .frame(height: 32)
                 .background(
                     Capsule()
                         .fill(selectedSortKey == .none ? Color.gray.opacity(0.1) : selectedSortKey.color.opacity(0.15))
@@ -630,9 +703,9 @@ struct SortButtonsView: View {
                     }
                 }) {
                     Image(systemName: sortOrder == .ascending ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
+                        .frame(width: 24, height: 24)
                         .background(selectedSortKey.color)
                         .clipShape(Circle())
                         .shadow(color: selectedSortKey.color.opacity(0.3), radius: 2, x: 0, y: 1)
@@ -770,8 +843,7 @@ struct HoldingRowView: View {
     }
 }
 
-// MARK: - 辅助函数
-
+// 辅助函数
 private func daysBetween(start: Date, end: Date) -> Int {
     let calendar = Calendar.current
     let startDate = calendar.startOfDay(for: start)

@@ -12,7 +12,6 @@ struct FavoriteItem: Identifiable, Codable {
     var url: String
 }
 
-// 添加错误类型
 enum DataManagerError: Error {
     case invalidHoldingData
     case holdingNotFound

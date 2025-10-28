@@ -21,7 +21,7 @@ enum ValidationError: LocalizedError {
     case invalidAmount
     case invalidShares
     case invalidClientInfo
-    case invalidHoldingData // 添加这个缺失的 case
+    case invalidHoldingData
     
     var errorDescription: String? {
         switch self {
@@ -29,7 +29,7 @@ enum ValidationError: LocalizedError {
         case .invalidAmount: return "购买金额无效"
         case .invalidShares: return "购买份额无效"
         case .invalidClientInfo: return "客户信息无效"
-        case .invalidHoldingData: return "持仓数据无效" // 添加对应的描述
+        case .invalidHoldingData: return "持仓数据无效" 
         }
     }
 }

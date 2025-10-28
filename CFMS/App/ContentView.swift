@@ -213,7 +213,6 @@ struct ContentView: View {
             refreshAppState()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            // 内存优化 - 清理不必要的缓存
             print("收到内存警告，清理缓存...")
         }
     }

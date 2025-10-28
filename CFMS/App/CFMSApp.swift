@@ -1,10 +1,3 @@
-//
-//  CFMSApp.swift
-//  CFMS
-//
-//  Created by 倪志浩 on 2025/10/27.
-//
-
 import SwiftUI
 
 @main
@@ -13,10 +6,7 @@ struct CFMSApp: App {
     @StateObject private var fundService = FundService()
     
     init() {
-        // 设置未捕获异常处理
         setupExceptionHandling()
-        
-        // 配置应用信息
         configureAppInfo()
     }
     
@@ -36,7 +26,6 @@ struct CFMSApp: App {
     }
     
     private func configureAppInfo() {
-        // 设置用户默认值
         UserDefaults.standard.register(defaults: [
             "isPrivacyModeEnabled": true,
             "themeMode": "system",

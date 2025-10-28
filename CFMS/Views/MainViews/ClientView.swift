@@ -83,6 +83,9 @@ struct ClientView: View {
     
     @State private var swipedHoldingStates: [UUID: SwipeState] = [:]
     @State private var cachedSortedHoldings: [String: [(holding: FundHolding, profit: ProfitResult, daysHeld: Int)]] = [:]
+
+    @State private var updatingTextState = 0
+    @State private var updatingTextTimer: Timer?
     
     private let maxConcurrentRequests = 3
 
@@ -418,7 +421,6 @@ struct ClientView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: swipeStateBinding.wrappedValue.isSwiped)
     }
 
-    // 修复：将复杂的 searchResultsListView 方法拆分成多个小方法
     private var emptySearchView: some View {
         EmptyStateView(
             icon: "magnifyingglass",
@@ -703,18 +705,37 @@ struct ClientView: View {
             }
         }
     }
-    
-    // MARK: - 搜索优化
+
     private func performSearch(with text: String) {
         searchTask?.cancel()
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms 延迟
+            try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
             
             await MainActor.run {
                 searchText = text
             }
         }
+    }
+
+    @State private var isSearchExpanded: Bool = false
+
+    private var updatingText: String {
+        let baseText = "更新中"
+        let dots = String(repeating: ".", count: updatingTextState % 4)
+        return baseText + dots
+    }
+
+    private func startUpdatingTextAnimation() {
+        updatingTextState = 0
+        updatingTextTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            updatingTextState = (updatingTextState + 1) % 4
+        }
+    }
+
+    private func stopUpdatingTextAnimation() {
+        updatingTextTimer?.invalidate()
+        updatingTextTimer = nil
     }
 
     var body: some View {
@@ -740,85 +761,102 @@ struct ClientView: View {
                         }
 
                         Button(action: {
-                            Task {
-                                await refreshAllFundInfo()
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isSearchExpanded.toggle()
                             }
                         }) {
-                            if isRefreshing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle())
-                                    .scaleEffect(0.8)
-                                    .frame(width: 32, height: 32)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.accentColor.opacity(0.15))
-                                    )
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
-                                    )
-                            } else {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.accentColor)
-                                    .frame(width: 32, height: 32)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.accentColor.opacity(0.15))
-                                    )
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
-                                    )
-                            }
+                            Image(systemName: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
+                                .font(.system(size: 18))
+                                .foregroundColor(.accentColor)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(Color.accentColor.opacity(0.15))
+                                )
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                )
                         }
-                        .disabled(isRefreshing)
                     
                         Spacer()
                     
-                        if isRefreshing {
-                            HStack(spacing: 6) {
-                                if !currentRefreshingClientName.isEmpty {
-                                    let displayClientName = isPrivacyModeEnabled ? processClientName(currentRefreshingClientName) : currentRefreshingClientName
-                                    Text("\(displayClientName)")
-                                        .font(.caption)
-                                        .foregroundColor(.primary)
+                        HStack(spacing: 8) {
+                            if isRefreshing {
+                                HStack(spacing: 6) {
+                                    if !currentRefreshingClientName.isEmpty {
+                                        let displayClientName = isPrivacyModeEnabled ? processClientName(currentRefreshingClientName) : currentRefreshingClientName
+                                        Text("\(displayClientName)")
+                                            .font(.caption)
+                                            .foregroundColor(.primary)
+                                    }
+                                    if !currentRefreshingClientID.isEmpty {
+                                        Text("[\(currentRefreshingClientID)]")
+                                            .font(.caption)
+                                            .foregroundColor(.primary)
+                                    }
+                                    
+                                    Text("\(refreshProgress.current)/\(refreshProgress.total)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
                                 }
-                                if !currentRefreshingClientID.isEmpty {
-                                    Text("[\(currentRefreshingClientID)]")
-                                        .font(.caption)
-                                        .foregroundColor(.primary)
-                                }
-                                
-                                Text("\(refreshProgress.current)/\(refreshProgress.total)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.trailing, 8)
-                        } else {
-                            if dataManager.holdings.isEmpty {
-                                Text("请导入信息")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.orange)
-                                    .padding(.trailing, 8)
-                            } else if hasLatestNavDate {
-                                Text(latestNavDateString)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.4, green: 0.8, blue: 0.4))
-                                    .padding(.trailing, 8)
                             } else {
-                                Text("点击图标刷新")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.orange)
-                                    .padding(.trailing, 8)
+                                if dataManager.holdings.isEmpty {
+                                    Text("请导入信息")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.orange)
+                                } else if hasLatestNavDate {
+                                    Text(latestNavDateString)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 0.4))
+                                } else {
+                                    Text("待更新")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.orange)
+                                }
                             }
+                            
+                            Button(action: {
+                                Task {
+                                    await refreshAllFundInfo()
+                                }
+                            }) {
+                                if isRefreshing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle())
+                                        .scaleEffect(0.8)
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.accentColor.opacity(0.15))
+                                        )
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                        )
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.accentColor)
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.accentColor.opacity(0.15))
+                                        )
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                        )
+                                }
+                            }
+                            .disabled(isRefreshing)
                         }
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
                     .background(Color(.systemGroupedBackground))
                     
-                    if !dataManager.holdings.isEmpty {
+                    if isSearchExpanded && !dataManager.holdings.isEmpty {
                         HStack {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.secondary)
@@ -850,6 +888,7 @@ struct ClientView: View {
                         )
                         .padding(.horizontal)
                         .padding(.bottom, 8)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     
                     if !searchText.isEmpty {
@@ -955,11 +994,29 @@ struct ClientView: View {
                         .allowsHitTesting(true)
                         .zIndex(999)
 
-                    LoadingOverlay(
-                        message: "更新中...",
-                        progress: refreshProgress
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Text(updatingText)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemGray6))
+                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            Spacer()
+                        }
+                        Spacer()
+                    }
                     .zIndex(1000)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
@@ -990,9 +1047,14 @@ struct ClientView: View {
             refreshID = UUID()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            // 内存优化
             cachedSortedHoldings.removeAll()
             swipedHoldingStates.removeAll()
+        }
+        .onDisappear {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isSearchExpanded = false
+            }
+            stopUpdatingTextAnimation()
         }
     }
     
@@ -1002,6 +1064,7 @@ struct ClientView: View {
             refreshProgress = (0, dataManager.holdings.count)
             currentRefreshingClientName = ""
             currentRefreshingClientID = ""
+            startUpdatingTextAnimation() 
             NotificationCenter.default.post(name: Notification.Name("RefreshStarted"), object: nil)
             NotificationCenter.default.post(name: Notification.Name("RefreshLockEnabled"), object: nil)
         }
@@ -1069,6 +1132,7 @@ struct ClientView: View {
         self.isRefreshing = false
         self.currentRefreshingClientName = ""
         self.currentRefreshingClientID = ""
+        stopUpdatingTextAnimation()
         
         NotificationCenter.default.post(name: Notification.Name("RefreshLockDisabled"), object: nil)
         
