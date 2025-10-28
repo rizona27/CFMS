@@ -18,6 +18,11 @@
 		A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */; };
 		A3ACC8352EB0B6A5009F7783 /* Info in Resources */ = {isa = PBXBuildFile; fileRef = A3ACC8342EB0B6A5009F7783 /* Info */; };
 		A3ACC8402EB0F558009F7783 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */; };
+		A3ACC8422EB1045D009F7783 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8412EB1045D009F7783 /* Theme.swift */; };
+		A3ACC8442EB10491009F7783 /* GradientButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8432EB10491009F7783 /* GradientButton.swift */; };
+		A3ACC8462EB104AF009F7783 /* CardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8452EB104AF009F7783 /* CardModifier.swift */; };
+		A3ACC8482EB10BD3009F7783 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8472EB10BD3009F7783 /* StringExtensions.swift */; };
+		A3ACC84A2EB10BEF009F7783 /* ToastQueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8492EB10BEF009F7783 /* ToastQueueManager.swift */; };
 		A3DDB5CD2EAFAA11004F1C8B /* CFMSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */; };
 		A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */; };
 		A3DDB5FC2EAFAA98004F1C8B /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */; };
@@ -43,6 +48,11 @@
 		A3ACC82A2EAFB705009F7783 /* AboutView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddHoldingView.swift; sourceTree = "<group>"; };
 		A3ACC8342EB0B6A5009F7783 /* Info */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info; sourceTree = "<group>"; };
+		A3ACC8412EB1045D009F7783 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A3ACC8432EB10491009F7783 /* GradientButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientButton.swift; sourceTree = "<group>"; };
+		A3ACC8452EB104AF009F7783 /* CardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardModifier.swift; sourceTree = "<group>"; };
+		A3ACC8472EB10BD3009F7783 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		A3ACC8492EB10BEF009F7783 /* ToastQueueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastQueueManager.swift; sourceTree = "<group>"; };
 		A3DDB5C92EAFAA11004F1C8B /* CFMS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CFMS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSApp.swift; sourceTree = "<group>"; };
 		A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -98,6 +108,7 @@
 			children = (
 				A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */,
 				A3DDB6032EAFAAFC004F1C8B /* FundService.swift */,
+				A3ACC8492EB10BEF009F7783 /* ToastQueueManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -140,6 +151,8 @@
 				A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */,
 				A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */,
 				A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */,
+				A3ACC8432EB10491009F7783 /* GradientButton.swift */,
+				A3ACC8452EB104AF009F7783 /* CardModifier.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -149,6 +162,8 @@
 			children = (
 				A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */,
 				A3ACC8272EAFB704009F7783 /* PrivacyHelpers.swift */,
+				A3ACC8412EB1045D009F7783 /* Theme.swift */,
+				A3ACC8472EB10BD3009F7783 /* StringExtensions.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -266,19 +281,24 @@
 				A3DDB6062EAFAB27004F1C8B /* ClientView.swift in Sources */,
 				A3ACC82E2EAFB706009F7783 /* ManageHoldingsView.swift in Sources */,
 				A3DDB5FC2EAFAA98004F1C8B /* EmptyStateView.swift in Sources */,
+				A3ACC8442EB10491009F7783 /* GradientButton.swift in Sources */,
 				A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */,
 				A3DDB6102EAFAE6D004F1C8B /* ConfigView.swift in Sources */,
 				A3ACC8232EAFAFEE009F7783 /* FundModels.swift in Sources */,
 				A3DDB6022EAFAAE8004F1C8B /* DataValidation.swift in Sources */,
 				A3ACC8212EAFAFB8009F7783 /* HoldingRow.swift in Sources */,
 				A3ACC8252EAFB014009F7783 /* TableColumn.swift in Sources */,
+				A3ACC84A2EB10BEF009F7783 /* ToastQueueManager.swift in Sources */,
 				A3ACC8302EAFB706009F7783 /* AboutView.swift in Sources */,
+				A3ACC8462EB104AF009F7783 /* CardModifier.swift in Sources */,
 				A3DDB5CD2EAFAA11004F1C8B /* CFMSApp.swift in Sources */,
 				A3DDB60E2EAFAE49004F1C8B /* ToastView.swift in Sources */,
+				A3ACC8422EB1045D009F7783 /* Theme.swift in Sources */,
 				A3DDB6002EAFAAD2004F1C8B /* ColorExtension.swift in Sources */,
 				A3ACC82F2EAFB706009F7783 /* APILogView.swift in Sources */,
 				A3DDB6042EAFAAFC004F1C8B /* FundService.swift in Sources */,
 				A3DDB60C2EAFAE28004F1C8B /* DataManager.swift in Sources */,
+				A3ACC8482EB10BD3009F7783 /* StringExtensions.swift in Sources */,
 				A3DDB6082EAFAC99004F1C8B /* SummaryView.swift in Sources */,
 				A3ACC82C2EAFB706009F7783 /* EditHoldingView.swift in Sources */,
 			);

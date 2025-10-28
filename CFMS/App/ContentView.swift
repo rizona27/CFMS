@@ -7,23 +7,20 @@ struct ContentView: View {
 
     @State private var showSplash = true
     @State private var selectedTab = 0
+    @State private var previousTab = 0
     
     @State private var splashOpacity: Double = 1.0
     @State private var mainTextOpacity: Double = 0.0
     @State private var subtitleOpacity: Double = 0.0
     @State private var copyrightOpacity: Double = 0.0
-    
     @State private var mainTextOffset: CGFloat = 10.0
     @State private var subtitleOffset: CGFloat = 8.0
-    
     @State private var highlightPosition: CGFloat = -1.0
     @State private var highlightOpacity: Double = 0.0
-    
     @State private var glowScale: CGFloat = 0.7
     @State private var glowOpacity: Double = 0.0
     @State private var glowRotation: Double = 0.0
     @State private var glowOffset: CGSize = CGSize(width: -100, height: -100)
-    
     @State private var splashBlur: CGFloat = 0.0
     @State private var splashScale: CGFloat = 1.0
 
@@ -31,49 +28,45 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            NavigationView {
-                TabView(selection: $selectedTab) {
-                    SummaryView()
-                        .tabItem {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                            Text("一览")
-                        }
-                        .tag(0)
-                        .environmentObject(dataManager)
-                        .environmentObject(fundService)
-                    
-                    ClientView()
-                        .tabItem {
-                            Image(systemName: "dollarsign.circle")
-                            Text("客户")
-                        }
-                        .tag(1)
-                        .environmentObject(dataManager)
-                        .environmentObject(fundService)
-                    
-                    TopPerformersView()
-                        .tabItem {
-                            Image(systemName: "list.bullet.rectangle.portrait")
-                            Text("排名")
-                        }
-                        .tag(2)
-                        .environmentObject(dataManager)
-                        .environmentObject(fundService)
+            TabView(selection: $selectedTab) {
+                SummaryView()
+                    .tabItem {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                        Text("一览")
+                    }
+                    .tag(0)
+                    .environmentObject(dataManager)
+                    .environmentObject(fundService)
+                
+                ClientView()
+                    .tabItem {
+                        Image(systemName: "dollarsign.circle")
+                        Text("客户")
+                    }
+                    .tag(1)
+                    .environmentObject(dataManager)
+                    .environmentObject(fundService)
+                
+                TopPerformersView()
+                    .tabItem {
+                        Image(systemName: "list.bullet.rectangle.portrait")
+                        Text("排名")
+                    }
+                    .tag(2)
+                    .environmentObject(dataManager)
+                    .environmentObject(fundService)
 
-                    ConfigView()
-                        .tabItem {
-                            Image(systemName: "gearshape")
-                            Text("设置")
-                        }
-                        .tag(3)
-                        .environmentObject(dataManager)
-                        .environmentObject(fundService)
-                }
-                .disabled(isRefreshLocked)
+                ConfigView()
+                    .tabItem {
+                        Image(systemName: "gearshape")
+                        Text("设置")
+                    }
+                    .tag(3)
+                    .environmentObject(dataManager)
+                    .environmentObject(fundService)
             }
-            .id("main_navigation")
-            .opacity(showSplash ? 0 : 1)
-            .animation(.easeIn(duration: 0.6), value: showSplash)
+            .disabled(isRefreshLocked)
+            .animation(.easeInOut(duration: 0.3), value: selectedTab)
 
             if showSplash {
                 ZStack {

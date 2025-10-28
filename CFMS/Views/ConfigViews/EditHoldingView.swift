@@ -19,6 +19,16 @@ struct EditHoldingView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
 
+    @State private var showDatePicker = false
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter
+    }()
+
     init(holding: FundHolding, onSave: @escaping (FundHolding) -> Void) {
         self.originalHolding = holding
         self.onSave = onSave
@@ -45,91 +55,15 @@ struct EditHoldingView: View {
         NavigationView {
             ScrollView(.vertical) {
                 VStack(spacing: 16) {
-                    Group {
-                        inputCard(title: "客户姓名", required: true) {
-                            TextField("请输入客户姓名", text: $clientName)
-                                .autocapitalization(.words)
-                        }
-                        
-                        inputCard(title: "基金代码", required: true) {
-                            TextField("请输入6位基金代码", text: $fundCode)
-                                .keyboardType(.numberPad)
-                                .onChange(of: fundCode) { oldValue, newValue in
-                                    let filtered = newValue.filter { $0.isNumber }
-                                    if filtered.count > 6 {
-                                        fundCode = String(filtered.prefix(6))
-                                    } else {
-                                        fundCode = filtered
-                                    }
-                                }
-                        }
-                        
-                        inputCard(title: "购买金额", required: true) {
-                            TextField("请输入购买金额", text: $purchaseAmount)
-                                .keyboardType(.decimalPad)
-                                .onChange(of: purchaseAmount) { oldValue, newValue in
-                                    purchaseAmount = newValue.filterNumericsAndDecimalPoint()
-                                }
-                        }
-                        
-                        inputCard(title: "购买份额", required: true) {
-                            TextField("请输入购买份额", text: $purchaseShares)
-                                .keyboardType(.decimalPad)
-                                .onChange(of: purchaseShares) { oldValue, newValue in
-                                    purchaseShares = newValue.filterNumericsAndDecimalPoint()
-                                }
-                        }
-                        
-                        inputCard(title: "购买日期", required: true) {
-                            DatePicker("", selection: $purchaseDate, displayedComponents: .date)
-                                .labelsHidden()
-                        }
+                    requiredFieldsSection
+                    
+                    if showDatePicker {
+                        datePickerSection
                     }
-                    .padding(.horizontal)
 
-                    VStack(alignment: .leading) {
-                        Text("选填信息")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-
-                        inputCard(title: "客户号", required: false) {
-                            TextField("选填，最多12位数字", text: $clientID)
-                                .keyboardType(.numberPad)
-                                .onChange(of: clientID) { oldValue, newValue in
-                                    let filtered = newValue.filter { $0.isNumber }
-                                    if filtered.count > 12 {
-                                        clientID = String(filtered.prefix(12))
-                                    } else {
-                                        clientID = filtered
-                                    }
-                                }
-                        }
-                        
-                        inputCard(title: "备注", required: false) {
-                            TextField("选填，最多30个字符", text: $remarks)
-                                .onChange(of: remarks) { oldValue, newValue in
-                                    if newValue.count > 30 {
-                                        remarks = String(newValue.prefix(30))
-                                    }
-                                }
-                        }
-                    }
-                    .padding(.horizontal)
-
-                    HStack(spacing: 20) {
-                        Button("取消") {
-                            dismiss()
-                        }
-                        .buttonStyle(CardButtonStyle(backgroundColor: Color.gray.opacity(0.1), foregroundColor: .primary))
-                        
-                        Button("保存修改") {
-                            saveChanges()
-                        }
-                        .buttonStyle(CardButtonStyle(backgroundColor: isFormValid ? .blue : .gray.opacity(0.1), foregroundColor: isFormValid ? .white : .secondary))
-                        .disabled(!isFormValid)
-                    }
-                    .padding()
+                    optionalFieldsSection
+                    
+                    actionButtons
                 }
                 .padding(.top)
             }
@@ -153,7 +87,181 @@ struct EditHoldingView: View {
         } message: {
             Text(alertMessage)
         }
+        .animation(.easeInOut(duration: 0.3), value: showDatePicker)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.95)),
+            removal: .opacity
+        ))
+        .animation(.easeInOut(duration: 0.4), value: UUID())
     }
+
+    // MARK: - View Components
+    
+    private var requiredFieldsSection: some View {
+        Group {
+            clientNameInput
+            fundCodeInput
+            purchaseAmountInput
+            purchaseSharesInput
+            purchaseDateInput
+        }
+        .padding(.horizontal)
+    }
+    
+    private var clientNameInput: some View {
+        inputCard(title: "客户姓名", required: true) {
+            TextField("请输入客户姓名", text: $clientName)
+                .autocapitalization(.words)
+        }
+    }
+    
+    private var fundCodeInput: some View {
+        inputCard(title: "基金代码", required: true) {
+            TextField("请输入6位基金代码", text: $fundCode)
+                .keyboardType(.numberPad)
+                .onChange(of: fundCode) { oldValue, newValue in
+                    let filtered = newValue.filter { $0.isNumber }
+                    if filtered.count > 6 {
+                        fundCode = String(filtered.prefix(6))
+                    } else {
+                        fundCode = filtered
+                    }
+                }
+        }
+    }
+    
+    private var purchaseAmountInput: some View {
+        inputCard(title: "购买金额", required: true) {
+            TextField("请输入购买金额", text: $purchaseAmount)
+                .keyboardType(.decimalPad)
+                .onChange(of: purchaseAmount) { oldValue, newValue in
+                    purchaseAmount = newValue.filterNumericsAndDecimalPoint()
+                }
+        }
+    }
+    
+    private var purchaseSharesInput: some View {
+        inputCard(title: "购买份额", required: true) {
+            TextField("请输入购买份额", text: $purchaseShares)
+                .keyboardType(.decimalPad)
+                .onChange(of: purchaseShares) { oldValue, newValue in
+                    purchaseShares = newValue.filterNumericsAndDecimalPoint()
+                }
+        }
+    }
+    
+    private var purchaseDateInput: some View {
+        inputCard(title: "购买日期", required: true) {
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDatePicker.toggle()
+                }
+            }) {
+                HStack {
+                    Text(dateFormatter.string(from: purchaseDate))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "calendar")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    private var datePickerSection: some View {
+        VStack {
+            DatePicker("", selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
+                .datePickerStyle(WheelDatePickerStyle())
+                .labelsHidden()
+                .environment(\.locale, Locale(identifier: "zh_CN"))
+                .onChange(of: purchaseDate) { oldValue, newValue in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showDatePicker = false
+                        }
+                    }
+                }
+            
+            Button("完成") {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDatePicker = false
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        }
+        .padding(.horizontal)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+    
+    private var optionalFieldsSection: some View {
+        VStack(alignment: .leading) {
+            Text("选填信息")
+                .font(.headline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+
+            clientIDInput
+            remarksInput
+        }
+        .padding(.horizontal)
+    }
+    
+    private var clientIDInput: some View {
+        inputCard(title: "客户号", required: false) {
+            TextField("选填，最多12位数字", text: $clientID)
+                .keyboardType(.numberPad)
+                .onChange(of: clientID) { oldValue, newValue in
+                    let filtered = newValue.filter { $0.isNumber }
+                    if filtered.count > 12 {
+                        clientID = String(filtered.prefix(12))
+                    } else {
+                        clientID = filtered
+                    }
+                }
+        }
+    }
+    
+    private var remarksInput: some View {
+        inputCard(title: "备注", required: false) {
+            TextField("选填，最多30个字符", text: $remarks)
+                .onChange(of: remarks) { oldValue, newValue in
+                    if newValue.count > 30 {
+                        remarks = String(newValue.prefix(30))
+                    }
+                }
+        }
+    }
+    
+    private var actionButtons: some View {
+        HStack(spacing: 20) {
+            Button("取消") {
+                dismiss()
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.gray.opacity(0.1))
+            .foregroundColor(.primary)
+            .cornerRadius(10)
+            
+            Button("保存修改") {
+                saveChanges()
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(isFormValid ? Color.blue : Color.gray.opacity(0.1))
+            .foregroundColor(isFormValid ? .white : .secondary)
+            .cornerRadius(10)
+            .disabled(!isFormValid)
+        }
+        .padding()
+    }
+
+    // MARK: - Helper Methods
 
     private func saveChanges() {
         if clientName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||

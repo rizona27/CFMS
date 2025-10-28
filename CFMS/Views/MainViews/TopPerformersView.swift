@@ -240,11 +240,16 @@ struct TopPerformersView: View {
         return index == zeroIndex
     }
     
-    // 分解后的 body 属性
     var body: some View {
         NavigationView {
             mainContent
         }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.95)),
+            removal: .opacity
+        ))
+        .animation(.easeInOut(duration: 0.4), value: UUID())
         .onAppear(perform: handleOnAppear)
         .onDisappear(perform: handleOnDisappear)
         .onChange(of: selectedSortKey) { _, _ in
@@ -261,7 +266,6 @@ struct TopPerformersView: View {
         }
     }
     
-    // 分解后的子视图
     private var mainContent: some View {
         ZStack(alignment: .center) {
             backgroundView
@@ -304,20 +308,11 @@ struct TopPerformersView: View {
     }
     
     private var filterButton: some View {
-        Button(action: toggleFilter) {
-            Image(systemName: isFilterExpanded ? "rectangle.and.text.magnifyingglass" : "magnifyingglass")
-                .font(.system(size: 18))
-                .foregroundColor(isFilterExpanded ? .blue : .accentColor)
-                .frame(width: 32, height: 32)
-                .background(
-                    Circle()
-                        .fill(isFilterExpanded ? Color.blue.opacity(0.15) : Color.accentColor.opacity(0.15))
-                )
-                .overlay(
-                    Circle()
-                        .stroke(isFilterExpanded ? Color.blue.opacity(0.3) : Color.accentColor.opacity(0.3), lineWidth: 1)
-                )
-        }
+        GradientButton(
+            icon: isFilterExpanded ? "rectangle.and.text.magnifyingglass" : "magnifyingglass",
+            action: toggleFilter,
+            colors: isFilterExpanded ? [Color(hex: "667eea"), Color(hex: "764ba2")] : [Color(hex: "f093fb"), Color(hex: "f5576c")]
+        )
     }
     
     private var sortButtons: some View {
@@ -330,35 +325,17 @@ struct TopPerformersView: View {
     
     private var filterActionButtons: some View {
         HStack(spacing: 10) {
-            Button(action: resetFilters) {
-                Image(systemName: "arrow.counterclockwise.circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(.orange)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        Circle()
-                            .fill(Color.orange.opacity(0.15))
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                    )
-            }
+            GradientButton(
+                icon: "arrow.counterclockwise.circle",
+                action: resetFilters,
+                colors: [Color(hex: "fa709a"), Color(hex: "fee140")]
+            )
             
-            Button(action: applyFilters) {
-                Image(systemName: "checkmark.circle")
-                    .font(.system(size: 18))
-                    .foregroundColor(.green)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        Circle()
-                            .fill(Color.green.opacity(0.15))
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                    )
-            }
+            GradientButton(
+                icon: "checkmark.circle",
+                action: applyFilters,
+                colors: [Color(hex: "43e97b"), Color(hex: "38f9d7")]
+            )
         }
     }
     
@@ -479,7 +456,6 @@ struct TopPerformersView: View {
         }
     }
     
-    // 辅助计算方法
     private func calculateWidths(from geometry: GeometryProxy) -> (number: CGFloat, codeName: CGFloat, amount: CGFloat, profit: CGFloat, days: CGFloat, rate: CGFloat, client: CGFloat) {
         let totalWidth = geometry.size.width - 4
         return (
@@ -493,7 +469,6 @@ struct TopPerformersView: View {
         )
     }
     
-    // 事件处理方法
     private func toggleFilter() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isFilterExpanded.toggle()
@@ -513,7 +488,6 @@ struct TopPerformersView: View {
     }
 }
 
-// 加载中视图
 struct LoadingView: View {
     var body: some View {
         VStack(spacing: 12) {
@@ -532,7 +506,6 @@ struct LoadingView: View {
     }
 }
 
-// 其他辅助视图保持不变...
 struct FilterSectionView: View {
     @Binding var fundCodeFilterInput: String
     @Binding var minAmountInput: String
@@ -843,7 +816,6 @@ struct HoldingRowView: View {
     }
 }
 
-// 辅助函数
 private func daysBetween(start: Date, end: Date) -> Int {
     let calendar = Calendar.current
     let startDate = calendar.startOfDay(for: start)

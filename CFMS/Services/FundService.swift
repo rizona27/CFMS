@@ -3,9 +3,9 @@ import Combine
 
 enum FundAPI: String, CaseIterable, Identifiable {
     case eastmoney = "天天基金"
+    case fund10jqka = "同花顺"
     case tencent = "腾讯财经"
     case fund123 = "蚂蚁基金"
-    case fund10jqka = "同花顺"
 
     var id: String { self.rawValue }
 }
@@ -36,6 +36,7 @@ class FundService: ObservableObject {
     @Published var logMessages: [LogEntry] = []
     
     private var fundCache: [String: CachedFundHolding] = [:]
+    private var activeRequests: [String: Task<FundHolding, Never>] = [:]
     private let cacheQueue = DispatchQueue(label: "com.mmp.fundcache")
     private let userDefaultsKey = "fundServiceCache"
     private let cacheExpirationInterval: TimeInterval = 24 * 60 * 60
@@ -93,6 +94,12 @@ class FundService: ObservableObject {
     }
 
     func fetchFundInfo(code: String, useOnlyEastmoney: Bool = false) async -> FundHolding {
+        // 检查是否有正在进行的请求
+        if let existingTask = activeRequests[code] {
+            await addLog("基金代码 \(code): 使用现有请求", type: .cache)
+            return await existingTask.value
+        }
+        
         await addLog("开始查询基金代码: \(code)，使用API: \(selectedFundAPI.rawValue)" + (useOnlyEastmoney ? " (仅使用天天基金)" : ""), type: .network)
 
         if let cachedData = getFromCache(code: code) {
@@ -109,95 +116,110 @@ class FundService: ObservableObject {
         
         await addLog("基金代码 \(code): 主缓存不可用，开始尝试从API获取。", type: .network)
         
-        var fetchedHolding: FundHolding?
-
-        switch selectedFundAPI {
-        case .eastmoney:
-            fetchedHolding = await fetchFromEastmoney(code: code)
-        case .tencent:
-            fetchedHolding = await fetchFromTencent(code: code)
-        case .fund123:
-            fetchedHolding = await fetchFromFund123(code: code)
-        case .fund10jqka:
-            fetchedHolding = await fetchFromFund10jqka(code: code)
-        }
-        
-        var finalHolding = FundHolding(
-            clientName: "", clientID: "", fundCode: code,
-            purchaseAmount: 0, purchaseShares: 0, purchaseDate: Date(),
-            remarks: "", fundName: "N/A", currentNav: 0, navDate: Date(),
-            isValid: false, isPinned: false, pinnedTimestamp: nil,
-            navReturn1m: nil, navReturn3m: nil, navReturn6m: nil, navReturn1y: nil
-        )
-        
-        if let dataFromAPI = fetchedHolding, dataFromAPI.isValid {
-            finalHolding = dataFromAPI
-
-            if selectedFundAPI == .eastmoney {
-                await addLog("基金代码 \(code): 尝试获取收益率数据", type: .network)
-                let returnsData = await fetchReturnsFromEastmoney(code: code)
-
-                finalHolding.navReturn1m = returnsData.navReturn1m
-                finalHolding.navReturn3m = returnsData.navReturn3m
-                finalHolding.navReturn6m = returnsData.navReturn6m
-                finalHolding.navReturn1y = returnsData.navReturn1y
-                
-                await addLog("基金代码 \(code): 收益率数据获取完成", type: .success)
+        // 创建新的请求任务
+        let task = Task<FundHolding, Never> {
+            defer {
+                Task { @MainActor in
+                    self.activeRequests.removeValue(forKey: code)
+                }
             }
             
-            saveToCache(holding: finalHolding)
-            await addLog("基金代码 \(code): 成功获取有效数据并更新主缓存。", type: .success)
-        } else if !useOnlyEastmoney {
-            await addLog("基金代码 \(code): 首选API失败，尝试备用API。", type: .warning)
+            var fetchedHolding: FundHolding?
+
+            switch selectedFundAPI {
+            case .eastmoney:
+                fetchedHolding = await fetchFromEastmoney(code: code)
+            case .tencent:
+                fetchedHolding = await fetchFromTencent(code: code)
+            case .fund123:
+                fetchedHolding = await fetchFromFund123(code: code)
+            case .fund10jqka:
+                fetchedHolding = await fetchFromFund10jqka(code: code)
+            }
             
-            for api in FundAPI.allCases where api != selectedFundAPI {
-                await addLog("基金代码 \(code): 尝试备用API: \(api.rawValue)", type: .network)
-                
-                var backupHolding: FundHolding?
-                switch api {
-                case .eastmoney:
-                    backupHolding = await fetchFromEastmoney(code: code)
-                case .tencent:
-                    backupHolding = await fetchFromTencent(code: code)
-                case .fund123:
-                    backupHolding = await fetchFromFund123(code: code)
-                case .fund10jqka:
-                    backupHolding = await fetchFromFund10jqka(code: code)
+            var finalHolding = FundHolding(
+                clientName: "", clientID: "", fundCode: code,
+                purchaseAmount: 0, purchaseShares: 0, purchaseDate: Date(),
+                remarks: "", fundName: "N/A", currentNav: 0, navDate: Date(),
+                isValid: false, isPinned: false, pinnedTimestamp: nil,
+                navReturn1m: nil, navReturn3m: nil, navReturn6m: nil, navReturn1y: nil
+            )
+            
+            if let dataFromAPI = fetchedHolding, dataFromAPI.isValid {
+                finalHolding = dataFromAPI
+
+                if selectedFundAPI == .eastmoney {
+                    await addLog("基金代码 \(code): 尝试获取收益率数据", type: .network)
+                    let returnsData = await fetchReturnsFromEastmoney(code: code)
+
+                    finalHolding.navReturn1m = returnsData.navReturn1m
+                    finalHolding.navReturn3m = returnsData.navReturn3m
+                    finalHolding.navReturn6m = returnsData.navReturn6m
+                    finalHolding.navReturn1y = returnsData.navReturn1y
+                    
+                    await addLog("基金代码 \(code): 收益率数据获取完成", type: .success)
                 }
                 
-                if let validBackup = backupHolding, validBackup.isValid {
-                    finalHolding = validBackup
-
-                    if api == .eastmoney {
-                        await addLog("基金代码 \(code): 尝试获取收益率数据", type: .network)
-                        let returnsData = await fetchReturnsFromEastmoney(code: code)
-                        finalHolding.navReturn1m = returnsData.navReturn1m
-                        finalHolding.navReturn3m = returnsData.navReturn3m
-                        finalHolding.navReturn6m = returnsData.navReturn6m
-                        finalHolding.navReturn1y = returnsData.navReturn1y
-                        
-                        await addLog("基金代码 \(code): 收益率数据获取完成", type: .success)
+                saveToCache(holding: finalHolding)
+                await addLog("基金代码 \(code): 成功获取有效数据并更新主缓存。", type: .success)
+            } else if !useOnlyEastmoney {
+                await addLog("基金代码 \(code): 首选API失败，尝试备用API。", type: .warning)
+                
+                for api in FundAPI.allCases where api != selectedFundAPI {
+                    await addLog("基金代码 \(code): 尝试备用API: \(api.rawValue)", type: .network)
+                    
+                    var backupHolding: FundHolding?
+                    switch api {
+                    case .eastmoney:
+                        backupHolding = await fetchFromEastmoney(code: code)
+                    case .tencent:
+                        backupHolding = await fetchFromTencent(code: code)
+                    case .fund123:
+                        backupHolding = await fetchFromFund123(code: code)
+                    case .fund10jqka:
+                        backupHolding = await fetchFromFund10jqka(code: code)
                     }
                     
-                    saveToCache(holding: finalHolding)
-                    await addLog("基金代码 \(code): 备用API \(api.rawValue) 成功获取数据。", type: .success)
-                    break
+                    if let validBackup = backupHolding, validBackup.isValid {
+                        finalHolding = validBackup
+
+                        if api == .eastmoney {
+                            await addLog("基金代码 \(code): 尝试获取收益率数据", type: .network)
+                            let returnsData = await fetchReturnsFromEastmoney(code: code)
+                            finalHolding.navReturn1m = returnsData.navReturn1m
+                            finalHolding.navReturn3m = returnsData.navReturn3m
+                            finalHolding.navReturn6m = returnsData.navReturn6m
+                            finalHolding.navReturn1y = returnsData.navReturn1y
+                            
+                            await addLog("基金代码 \(code): 收益率数据获取完成", type: .success)
+                        }
+                        
+                        saveToCache(holding: finalHolding)
+                        await addLog("基金代码 \(code): 备用API \(api.rawValue) 成功获取数据。", type: .success)
+                        break
+                    }
                 }
+                
+                if !finalHolding.isValid, let cachedData = getFromCache(code: code) {
+                    await addLog("基金代码 \(code): 所有API都失败，返回旧的主缓存数据。", type: .error)
+                    finalHolding = cachedData.holding
+                    finalHolding.isValid = !isCacheExpired(cachedData)
+                }
+            } else {
+                await addLog("基金代码 \(code): 天天基金API失败且不允许使用备用API。", type: .error)
             }
             
-            if !finalHolding.isValid, let cachedData = getFromCache(code: code) {
-                await addLog("基金代码 \(code): 所有API都失败，返回旧的主缓存数据。", type: .error)
-                finalHolding = cachedData.holding
-                finalHolding.isValid = !isCacheExpired(cachedData)
-            }
-        } else {
-            await addLog("基金代码 \(code): 天天基金API失败且不允许使用备用API。", type: .error)
+            return finalHolding
         }
         
-        return finalHolding
+        // 存储任务并等待结果
+        activeRequests[code] = task
+        return await task.value
     }
 
+    // ... 保留其他方法不变 (fetchFromEastmoney, fetchReturnsFromEastmoney, fetchFromTencent, fetchFromFund123, fetchFromFund10jqka) ...
     private func fetchFromEastmoney(code: String) async -> FundHolding {
+        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从天天基金API获取数据", type: .network)
 
         let urlString1 = "https://fundgz.1234567.com.cn/js/\(code).js"
@@ -323,6 +345,7 @@ class FundService: ObservableObject {
     }
 
     private func fetchReturnsFromEastmoney(code: String) async -> (navReturn1m: Double?, navReturn3m: Double?, navReturn6m: Double?, navReturn1y: Double?) {
+        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从天天基金获取收益率数据", type: .network)
         
         let urlString = "https://fund.eastmoney.com/pingzhongdata/\(code).js"
@@ -393,6 +416,7 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromTencent(code: String) async -> FundHolding {
+        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从腾讯财经API获取数据", type: .network)
         
         let urlString = "https://web.ifzq.gtimg.cn/fund/newfund/fundSsgz/getSsgz?app=web&symbol=jj\(code)"
@@ -463,6 +487,7 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromFund123(code: String) async -> FundHolding {
+        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从蚂蚁基金API获取数据", type: .network)
         
         let urlString = "https://www.fund123.cn/matiaria?fundCode=\(code)"
@@ -527,6 +552,7 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromFund10jqka(code: String) async -> FundHolding {
+        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从同花顺API获取数据", type: .network)
         
         let urlString = "https://fund.10jqka.com.cn/data/client/myfund/\(code)"
