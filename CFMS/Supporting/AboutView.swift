@@ -6,42 +6,15 @@ struct UpdateLog: Identifiable {
     let description: String
 }
 
-class UpdateLogViewModel: ObservableObject {
-    @Published var currentIndex: Int = 0
-    private var timer: Timer?
-
-    let logs: [UpdateLog] = [
-        UpdateLog(version: "Version 0.0.3", description: "好的开始是成功的一半\n重构此前版本，优化逻辑。"),
-        UpdateLog(version: "Version X.", description: "To be continued...")
-    ]
-
-    init() {
-        stopScrolling()
-        startScrolling()
-    }
-
-    func startScrolling() {
-        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            withAnimation(.easeInOut(duration: 1.0)) {
-                self.currentIndex = (self.currentIndex + 1) % self.logs.count
-            }
-        }
-    }
-
-    func stopScrolling() {
-        timer?.invalidate()
-        timer = nil
-    }
-    
-    deinit {
-        stopScrolling()
-    }
-}
-
 struct AboutView: View {
     @Environment(\.dismiss) var dismiss
-    @StateObject private var viewModel = UpdateLogViewModel()
+    @State private var currentScrollIndex = 0
+    @State private var timer: Timer?
+    
+    private let updateLogs: [UpdateLog] = [
+        UpdateLog(version: "Version 0.0.1", description: "项目初始化\n搭建基础框架和UI界面。"),
+        UpdateLog(version: "Version X.", description: "To be continued...")
+    ]
 
     var body: some View {
         NavigationView {
@@ -52,7 +25,7 @@ struct AboutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(Color(hex: "FFD700"))
-                        Text("Version: 0.0.1      By: rizona.cn@gmail.com")
+                        Text("Version: 0.0.5      By: rizona.cn@gmail.com")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -67,23 +40,36 @@ struct AboutView: View {
 
                         ScrollViewReader { proxy in
                             ScrollView {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    ForEach(viewModel.logs.indices, id: \.self) { index in
-                                        let log = viewModel.logs[index]
-                                        BulletPointView(text: "\(log.version)\n\(log.description)")
-                                            .foregroundColor(.secondary)
-                                            .id(index)
+                                LazyVStack(alignment: .leading, spacing: 12) {
+                                    ForEach(Array(updateLogs.enumerated()), id: \.element.id) { index, log in
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(log.version)
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                            Text(log.description)
+                                                .font(.body)
+                                                .foregroundColor(.secondary)
+                                                .lineSpacing(4)
+                                        }
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 12)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                        .id(index)
                                     }
                                 }
-                                .padding()
+                                .padding(4)
                             }
-                            .frame(height: 100)
+                            .frame(height: 200)
                             .background(Color(.systemGray6))
                             .cornerRadius(10)
-                            .onChange(of: viewModel.currentIndex) { _, newIndex in
-                                withAnimation(.easeInOut(duration: 1.0)) {
-                                    proxy.scrollTo(newIndex, anchor: .top)
-                                }
+                            .onAppear {
+                                startAutoScroll(proxy: proxy)
+                            }
+                            .onDisappear {
+                                stopAutoScroll()
                             }
                         }
                     }
@@ -129,10 +115,21 @@ struct AboutView: View {
                     }
                 }
             }
-            .onDisappear {
-                viewModel.stopScrolling()
+        }
+    }
+    
+    private func startAutoScroll(proxy: ScrollViewProxy) {
+        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 1.0)) {
+                currentScrollIndex = (currentScrollIndex + 1) % updateLogs.count
+                proxy.scrollTo(currentScrollIndex, anchor: .top)
             }
         }
+    }
+    
+    private func stopAutoScroll() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 

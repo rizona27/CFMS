@@ -1,3 +1,4 @@
+// [file name]: EditHoldingView.swift
 import SwiftUI
 
 struct EditHoldingView: View {
@@ -20,6 +21,7 @@ struct EditHoldingView: View {
     @State private var alertMessage = ""
 
     @State private var showDatePicker = false
+    @State private var tempPurchaseDate: Date // 临时存储日期选择
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -39,6 +41,7 @@ struct EditHoldingView: View {
         _purchaseAmount = State(initialValue: String(format: "%.2f", holding.purchaseAmount))
         _purchaseShares = State(initialValue: String(format: "%.2f", holding.purchaseShares))
         _purchaseDate = State(initialValue: holding.purchaseDate)
+        _tempPurchaseDate = State(initialValue: holding.purchaseDate)
         _remarks = State(initialValue: holding.remarks)
     }
 
@@ -93,6 +96,9 @@ struct EditHoldingView: View {
             removal: .opacity
         ))
         .animation(.easeInOut(duration: 0.4), value: UUID())
+        .onTapGesture {
+            hideKeyboard()
+        }
     }
 
     // MARK: - View Components
@@ -154,6 +160,7 @@ struct EditHoldingView: View {
         inputCard(title: "购买日期", required: true) {
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
+                    tempPurchaseDate = purchaseDate
                     showDatePicker.toggle()
                 }
             }) {
@@ -171,28 +178,35 @@ struct EditHoldingView: View {
     
     private var datePickerSection: some View {
         VStack {
-            DatePicker("", selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
+            DatePicker("", selection: $tempPurchaseDate, in: ...Date(), displayedComponents: .date)
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
                 .environment(\.locale, Locale(identifier: "zh_CN"))
-                .onChange(of: purchaseDate) { oldValue, newValue in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showDatePicker = false
-                        }
+            
+            HStack(spacing: 20) {
+                Button("取消") {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showDatePicker = false
                     }
                 }
-            
-            Button("完成") {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showDatePicker = false
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.gray.opacity(0.1))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                
+                Button("完成") {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        purchaseDate = tempPurchaseDate
+                        showDatePicker = false
+                    }
                 }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
             }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
         }
         .padding(.horizontal)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -341,5 +355,9 @@ struct EditHoldingView: View {
             .cornerRadius(15)
             .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
         }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }

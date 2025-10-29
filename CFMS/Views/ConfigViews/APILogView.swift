@@ -1,3 +1,4 @@
+// [file name]: APILogView.swift
 import SwiftUI
 
 struct APILogView: View {
@@ -142,7 +143,7 @@ struct APILogView: View {
                                 if let logs = groupedLogs[logType], !logs.isEmpty {
                                     LogTypeCard(
                                         logType: logType,
-                                        logs: logs,
+                                        logs: logs.sorted { $0.timestamp > $1.timestamp }, // 修复：确保最新日志显示在最上面
                                         color: color(for: logType),
                                         maxVisibleItems: 3,
                                         isExpanded: Binding(
@@ -294,14 +295,14 @@ struct LogTypeCard: View {
                 if isExpanded {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 8) {
-                            ForEach(logs.reversed()) { log in
+                            ForEach(logs) { log in
                                 LogItemView(log: log)
                             }
                         }
                     }
-                    .frame(maxHeight: 300)
+                    .frame(maxHeight: 300) // 限制最大高度避免崩溃
                 } else {
-                    ForEach(logs.prefix(maxVisibleItems).reversed()) { log in
+                    ForEach(Array(logs.prefix(maxVisibleItems))) { log in
                         LogItemView(log: log)
                     }
                 }
