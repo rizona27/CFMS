@@ -325,7 +325,7 @@ struct ManageHoldingsView: View {
                             
                         }
                         
-                        Spacer()
+                        Spacer() 
 
                         if !isPrivacyModeEnabled && !isExpanded {
                             HStack(spacing: 2) {
@@ -340,30 +340,29 @@ struct ManageHoldingsView: View {
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                             }
-                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                         
-                        HStack(spacing: 8) {
-                            Button("改名") {
-                                clientToRename = clientGroup
-                                newClientName = clientGroup.clientName
-                                isShowingRenameAlert = true
+                        if isExpanded {
+                            HStack(spacing: 8) {
+                                Button("改名") {
+                                    clientToRename = clientGroup
+                                    newClientName = clientGroup.clientName
+                                    isShowingRenameAlert = true
+                                }
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                Button("删除") {
+                                    clientToDelete = clientGroup
+                                    isShowingDeleteAlert = true
+                                }
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.red)
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .buttonStyle(PlainButtonStyle())
-                            .opacity(isExpanded ? 1 : 0)
-                            
-                            Button("删除") {
-                                clientToDelete = clientGroup
-                                isShowingDeleteAlert = true
-                            }
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.red)
-                            .buttonStyle(PlainButtonStyle())
-                            .opacity(isExpanded ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.2).delay(isExpanded ? 0.1 : 0), value: isExpanded)
                         }
-                        .animation(.easeInOut(duration: 0.2).delay(isExpanded ? 0.1 : 0), value: isExpanded)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 16)
