@@ -90,12 +90,8 @@ struct EditHoldingView: View {
         } message: {
             Text(alertMessage)
         }
-        .animation(.easeInOut(duration: 0.3), value: showDatePicker)
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        // FIX: 移除复杂的 transition 和使用 UUID 的 animation，解决编译器无法类型检查的错误。
+        .animation(.easeInOut(duration: 0.3), value: showDatePicker) // 保留对 showDatePicker 的动画
         .onTapGesture {
             hideKeyboard()
         }

@@ -475,6 +475,8 @@ struct ClientView: View {
         .padding(.horizontal, 2)
         .padding(.bottom, 0)
         .allowsHitTesting(!isRefreshing)
+        // FIX: 在这里应用 id(refreshID)，只刷新内容区
+        .id(refreshID)
     }
 
     private func clientGroupItemView(clientGroup: ClientGroup) -> some View {
@@ -856,6 +858,8 @@ struct ClientView: View {
                     
                     if !searchText.isEmpty {
                         searchResultsListView()
+                        // FIX: 移到 searchResultsListView 内部
+                        // .id(refreshID)
                     } else {
                         VStack(spacing: 0) {
                             if groupedHoldingsByClientName.isEmpty && pinnedHoldings.isEmpty {
@@ -901,6 +905,8 @@ struct ClientView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .allowsHitTesting(!isRefreshing)
+                        // FIX: 在这里应用 id(refreshID)，只刷新内容区
+                        .id(refreshID)
                     }
                 }
                 .background(Color(.systemGroupedBackground))
@@ -998,12 +1004,13 @@ struct ClientView: View {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
         }
-        .id(refreshID)
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        // FIX: 移除整个 NavigationView 上的 id 和 transition/animation，防止视图重建时的闪烁
+        // .id(refreshID)
+        // .transition(.asymmetric(
+        //     insertion: .opacity.combined(with: .scale(scale: 0.95)),
+        //     removal: .opacity
+        // ))
+        // .animation(.easeInOut(duration: 0.4), value: UUID())
         .onAppear {
             if !hasLatestNavDate && !dataManager.holdings.isEmpty {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
