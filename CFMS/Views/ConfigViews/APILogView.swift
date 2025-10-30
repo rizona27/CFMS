@@ -1,4 +1,3 @@
-// [file name]: APILogView.swift
 import SwiftUI
 
 struct APILogView: View {
@@ -143,7 +142,7 @@ struct APILogView: View {
                                 if let logs = groupedLogs[logType], !logs.isEmpty {
                                     LogTypeCard(
                                         logType: logType,
-                                        logs: logs.sorted { $0.timestamp > $1.timestamp }, // 修复：确保最新日志显示在最上面
+                                        logs: logs.sorted { $0.timestamp > $1.timestamp },
                                         color: color(for: logType),
                                         maxVisibleItems: 3,
                                         isExpanded: Binding(
@@ -170,14 +169,30 @@ struct APILogView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "chevron.backward")
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            
+                            Image(systemName: "chevron.backward.circle")
+                                .foregroundColor(.white)
+                                .font(.system(size: 22))
+                        }
+                        .frame(width: 36, height: 36)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         fundService.logMessages.removeAll()
                     } label: {
-                        Image(systemName: "trash")
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            
+                            Image(systemName: "trash.circle")
+                                .foregroundColor(.white)
+                                .font(.system(size: 22))
+                        }
+                        .frame(width: 36, height: 36)
                     }
                 }
             }
@@ -300,7 +315,7 @@ struct LogTypeCard: View {
                             }
                         }
                     }
-                    .frame(maxHeight: 300) // 限制最大高度避免崩溃
+                    .frame(maxHeight: 300)
                 } else {
                     ForEach(Array(logs.prefix(maxVisibleItems))) { log in
                         LogItemView(log: log)

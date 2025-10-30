@@ -94,7 +94,6 @@ class FundService: ObservableObject {
     }
 
     func fetchFundInfo(code: String, useOnlyEastmoney: Bool = false) async -> FundHolding {
-        // 检查是否有正在进行的请求
         if let existingTask = activeRequests[code] {
             await addLog("基金代码 \(code): 使用现有请求", type: .cache)
             return await existingTask.value
@@ -116,7 +115,6 @@ class FundService: ObservableObject {
         
         await addLog("基金代码 \(code): 主缓存不可用，开始尝试从API获取。", type: .network)
         
-        // 创建新的请求任务
         let task = Task<FundHolding, Never> {
             defer {
                 Task { @MainActor in
@@ -212,14 +210,11 @@ class FundService: ObservableObject {
             return finalHolding
         }
         
-        // 存储任务并等待结果
         activeRequests[code] = task
         return await task.value
     }
 
-    // ... 保留其他方法不变 (fetchFromEastmoney, fetchReturnsFromEastmoney, fetchFromTencent, fetchFromFund123, fetchFromFund10jqka) ...
     private func fetchFromEastmoney(code: String) async -> FundHolding {
-        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从天天基金API获取数据", type: .network)
 
         let urlString1 = "https://fundgz.1234567.com.cn/js/\(code).js"
@@ -345,7 +340,6 @@ class FundService: ObservableObject {
     }
 
     private func fetchReturnsFromEastmoney(code: String) async -> (navReturn1m: Double?, navReturn3m: Double?, navReturn6m: Double?, navReturn1y: Double?) {
-        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从天天基金获取收益率数据", type: .network)
         
         let urlString = "https://fund.eastmoney.com/pingzhongdata/\(code).js"
@@ -416,7 +410,6 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromTencent(code: String) async -> FundHolding {
-        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从腾讯财经API获取数据", type: .network)
         
         let urlString = "https://web.ifzq.gtimg.cn/fund/newfund/fundSsgz/getSsgz?app=web&symbol=jj\(code)"
@@ -487,7 +480,6 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromFund123(code: String) async -> FundHolding {
-        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从蚂蚁基金API获取数据", type: .network)
         
         let urlString = "https://www.fund123.cn/matiaria?fundCode=\(code)"
@@ -552,7 +544,6 @@ class FundService: ObservableObject {
     }
 
     private func fetchFromFund10jqka(code: String) async -> FundHolding {
-        // 实现保持不变
         await addLog("基金代码 \(code): 尝试从同花顺API获取数据", type: .network)
         
         let urlString = "https://fund.10jqka.com.cn/data/client/myfund/\(code)"

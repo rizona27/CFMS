@@ -1,4 +1,3 @@
-// [file name]: EditHoldingView.swift
 import SwiftUI
 
 struct EditHoldingView: View {
@@ -21,7 +20,7 @@ struct EditHoldingView: View {
     @State private var alertMessage = ""
 
     @State private var showDatePicker = false
-    @State private var tempPurchaseDate: Date // 临时存储日期选择
+    @State private var tempPurchaseDate: Date
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -90,14 +89,11 @@ struct EditHoldingView: View {
         } message: {
             Text(alertMessage)
         }
-        // FIX: 移除复杂的 transition 和使用 UUID 的 animation，解决编译器无法类型检查的错误。
-        .animation(.easeInOut(duration: 0.3), value: showDatePicker) // 保留对 showDatePicker 的动画
+        .animation(.easeInOut(duration: 0.3), value: showDatePicker)
         .onTapGesture {
             hideKeyboard()
         }
     }
-
-    // MARK: - View Components
     
     private var requiredFieldsSection: some View {
         Group {
@@ -270,8 +266,6 @@ struct EditHoldingView: View {
         }
         .padding()
     }
-
-    // MARK: - Helper Methods
 
     private func saveChanges() {
         if clientName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||

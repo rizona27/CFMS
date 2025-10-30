@@ -264,7 +264,15 @@ struct ManageHoldingsMenuView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "chevron.backward")
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            
+                            Image(systemName: "chevron.backward.circle")
+                                .foregroundColor(.white)
+                                .font(.system(size: 22))
+                        }
+                        .frame(width: 36, height: 36)
                     }
                 }
             }
@@ -382,7 +390,6 @@ extension Array {
     }
 }
 
-// FundHolding 重复数据校验扩展
 extension FundHolding {
     func createDeduplicationKey() -> String {
         let dateFormatter = DateFormatter()
@@ -416,7 +423,6 @@ struct ConfigView: View {
     }
 
     func onAppear() {
-        // 确保隐私模式默认值已注册
         UserDefaults.standard.register(defaults: ["isPrivacyModeEnabled": true])
         UserDefaults.standard.register(defaults: ["themeMode": "system"])
         UserDefaults.standard.register(defaults: ["selectedFundAPI": "eastmoney"])
@@ -505,7 +511,6 @@ struct ConfigView: View {
                         }
                         .padding(.horizontal, 8)
 
-                        // 修改布局：将隐私模式和主题模式放在同一行
                         HStack(spacing: 12) {
                             PrivacyModeView()
                                 .frame(maxWidth: .infinity)
@@ -514,7 +519,6 @@ struct ConfigView: View {
                         }
                         .padding(.horizontal, 8)
 
-                        // 修改布局：将数据接口和关于放在同一行
                         HStack(spacing: 12) {
                             FundAPIView()
                                 .frame(maxWidth: .infinity)
@@ -694,7 +698,6 @@ struct ConfigView: View {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
 
-            // 使用 deduplicationKey 进行重复校验
             var existingHoldingsKeys: Set<String> = Set(dataManager.holdings.map { $0.createDeduplicationKey() })
 
             var importedCount = 0

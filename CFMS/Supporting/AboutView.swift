@@ -12,7 +12,7 @@ struct AboutView: View {
     @State private var timer: Timer?
     
     private let updateLogs: [UpdateLog] = [
-        UpdateLog(version: "Version 0.0.1", description: "项目初始化\n搭建基础框架和UI界面。"),
+        UpdateLog(version: "Version 0.0.8", description: "项目初始化\n重建基础框架和UI界面。"),
         UpdateLog(version: "Version X.", description: "To be continued...")
     ]
 
@@ -25,7 +25,7 @@ struct AboutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(Color(hex: "FFD700"))
-                        Text("Version: 0.0.5      By: rizona.cn@gmail.com")
+                        Text("Version: 0.0.8      By: rizona.cn@gmail.com")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }

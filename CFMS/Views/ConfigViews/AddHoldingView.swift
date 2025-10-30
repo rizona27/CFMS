@@ -1,4 +1,3 @@
-// [file name]: AddHoldingView.swift
 import SwiftUI
 
 struct AddHoldingView: View {
@@ -20,7 +19,7 @@ struct AddHoldingView: View {
     @State private var purchaseSharesError: String? = nil
 
     @State private var showDatePicker = false
-    @State private var tempPurchaseDate: Date = Date() // 临时存储日期选择
+    @State private var tempPurchaseDate: Date = Date()
 
     private var isFormValid: Bool {
         return clientNameError == nil &&
@@ -83,8 +82,6 @@ struct AddHoldingView: View {
         }
     }
 
-    // MARK: - View Components
-    
     private var requiredFieldsSection: some View {
         Group {
             clientNameInput
@@ -266,8 +263,6 @@ struct AddHoldingView: View {
         .padding()
     }
 
-    // MARK: - Helper Methods
-    
     private func inputCard<Content: View>(title: String, required: Bool, error: Binding<String?>, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
