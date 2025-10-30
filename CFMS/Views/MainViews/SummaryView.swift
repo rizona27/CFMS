@@ -31,7 +31,7 @@ enum SortKey: String, CaseIterable, Identifiable {
     
     var color: Color {
         switch self {
-        case .none: return .gray // 修改为灰色
+        case .none: return .gray 
         case .navReturn1m: return .blue
         case .navReturn3m: return .purple
         case .navReturn6m: return .orange

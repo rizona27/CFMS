@@ -1,4 +1,3 @@
-// [file name]: ClientView.swift
 import SwiftUI
 import Foundation
 
@@ -38,15 +37,12 @@ struct ClientView: View {
     
     @State private var swipedHoldingStates: [UUID: SwipeState] = [:]
     
-    // 添加缺失的状态变量
     @State private var updatingTextState = 0
     @State private var updatingTextTimer: Timer?
     
-    // 添加缺失的常量
     private let calendar = Calendar.current
     private let maxConcurrentRequests = 3
     
-    // 使用弱引用缓存，避免内存泄漏
     private class CacheManager {
         static let shared = CacheManager()
         private init() {}
@@ -63,8 +59,7 @@ struct ClientView: View {
         func setCachedHoldings(_ holdings: [(holding: FundHolding, profit: ProfitResult, daysHeld: Int)], for key: String) {
             cacheQueue.async {
                 self.cachedSortedHoldings[key] = holdings
-                
-                // 限制缓存大小
+
                 if self.cachedSortedHoldings.count > 20 {
                     let keysToRemove = Array(self.cachedSortedHoldings.keys.prefix(10))
                     for key in keysToRemove {
@@ -475,7 +470,6 @@ struct ClientView: View {
         .padding(.horizontal, 2)
         .padding(.bottom, 0)
         .allowsHitTesting(!isRefreshing)
-        // FIX: 在这里应用 id(refreshID)，只刷新内容区
         .id(refreshID)
     }
 
@@ -864,8 +858,6 @@ struct ClientView: View {
                     
                     if !searchText.isEmpty {
                         searchResultsListView()
-                        // FIX: 移到 searchResultsListView 内部
-                        // .id(refreshID)
                     } else {
                         VStack(spacing: 0) {
                             if groupedHoldingsByClientName.isEmpty && pinnedHoldings.isEmpty {
@@ -911,7 +903,6 @@ struct ClientView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .allowsHitTesting(!isRefreshing)
-                        // FIX: 在这里应用 id(refreshID)，只刷新内容区
                         .id(refreshID)
                     }
                 }
@@ -973,16 +964,15 @@ struct ClientView: View {
                         Spacer()
                         HStack {
                             Spacer()
-                            // 修复：使用固定宽度避免文本移动
                             HStack(spacing: 0) {
                                 Text("更新中")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.primary)
-                                    .frame(width: 48, alignment: .trailing) // 固定"更新中"的宽度
+                                    .frame(width: 48, alignment: .trailing)
                                 Text(String(repeating: ".", count: updatingTextState % 4))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.primary)
-                                    .frame(width: 20, alignment: .leading) // 固定点号的宽度
+                                    .frame(width: 20, alignment: .leading)
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 14)
@@ -1010,8 +1000,6 @@ struct ClientView: View {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
         }
-        // FIX: 移除整个 NavigationView 上的 id 和 transition/animation，防止视图重建时的闪烁
-        // .id(refreshID)
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
         .onAppear {
@@ -1032,7 +1020,6 @@ struct ClientView: View {
             refreshID = UUID()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            // 清理缓存和状态
             CacheManager.shared.clearCache()
             swipedHoldingStates.removeAll()
         }
@@ -1041,8 +1028,7 @@ struct ClientView: View {
                 isSearchExpanded = false
             }
             stopUpdatingTextAnimation()
-            
-            // 清理不必要的状态
+
             swipedHoldingStates.removeAll()
         }
     }

@@ -78,6 +78,7 @@ struct EditHoldingView: View {
                     actionButtons
                         .padding(.horizontal)
                         .padding(.bottom, 16)
+                        .background(Color(.systemGroupedBackground))
                 }
             }
             .navigationBarHidden(true)
@@ -113,13 +114,6 @@ struct EditHoldingView: View {
                 
                 Spacer()
                 
-                Text("编辑持仓")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                // 占位空间，保持标题居中
                 Circle()
                     .fill(Color.clear)
                     .frame(width: 32, height: 32)

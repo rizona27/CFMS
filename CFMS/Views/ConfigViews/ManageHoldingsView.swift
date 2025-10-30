@@ -326,6 +326,22 @@ struct ManageHoldingsView: View {
                         }
                         
                         Spacer()
+
+                        if !isPrivacyModeEnabled && !isExpanded {
+                            HStack(spacing: 2) {
+                                Text("持仓数: ")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                Text("\(clientGroup.holdings.count)")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .italic()
+                                    .foregroundColor(colorForHoldingCount(clientGroup.holdings.count))
+                                Text(" 支")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
                         
                         HStack(spacing: 8) {
                             Button("改名") {
@@ -395,6 +411,16 @@ struct ManageHoldingsView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+    
+    private func colorForHoldingCount(_ count: Int) -> Color {
+        if count == 1 {
+            return .yellow
+        } else if count <= 3 {
+            return .orange
+        } else {
+            return .red
+        }
     }
 
     private func renameClient() async {
