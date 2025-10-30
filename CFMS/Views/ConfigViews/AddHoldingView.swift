@@ -42,59 +42,101 @@ struct AddHoldingView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    requiredFieldsSection
+            ZStack {
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    headerContent
                     
-                    if showDatePicker {
-                        datePickerSection
-                    }
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            requiredFieldsSection
+                            
+                            if showDatePicker {
+                                datePickerSection
+                            }
 
-                    optionalFieldsSection
+                            optionalFieldsSection
+                        }
+                        .padding(.vertical, 16)
+                    }
                     
                     actionButtons
-                }
-                .padding(.top)
-            }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.backward")
-                            .font(.title3)
-                            .foregroundColor(.accentColor)
-                    }
+                        .padding(.horizontal)
+                        .padding(.bottom, 16)
                 }
             }
+            .navigationBarHidden(true)
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationViewStyle(StackNavigationViewStyle())
         .animation(.easeInOut(duration: 0.3), value: showDatePicker)
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
         .onTapGesture {
             hideKeyboard()
         }
     }
+    
+    private var headerContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                        
+                        Image(systemName: "chevron.backward.circle")
+                            .foregroundColor(.white)
+                            .font(.system(size: 20))
+                    }
+                    .frame(width: 32, height: 32)
+                }
+                
+                Spacer()
+                
+                Text("新增持仓")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                // 占位空间，保持标题居中
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 32, height: 32)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(Color(.systemGroupedBackground))
+            
+            Divider()
+        }
+    }
 
     private var requiredFieldsSection: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("必填信息")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+                .padding(.horizontal)
+            
             clientNameInput
             fundCodeInput
             purchaseAmountInput
             purchaseSharesInput
             purchaseDateInput
         }
-        .padding(.horizontal)
     }
     
     private var clientNameInput: some View {
-        inputCard(title: "客户姓名", required: true, error: $clientNameError) {
+        inputCard(
+            title: "客户姓名",
+            required: true,
+            error: $clientNameError,
+            systemImage: "person.fill",
+            gradientColors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]
+        ) {
             TextField("请输入客户姓名", text: $clientName)
                 .onChange(of: clientName) { oldValue, newValue in
                     validateClientName(newValue)
@@ -103,7 +145,13 @@ struct AddHoldingView: View {
     }
     
     private var fundCodeInput: some View {
-        inputCard(title: "基金代码", required: true, error: $fundCodeError) {
+        inputCard(
+            title: "基金代码",
+            required: true,
+            error: $fundCodeError,
+            systemImage: "number.circle.fill",
+            gradientColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
+        ) {
             TextField("请输入6位基金代码", text: $fundCode)
                 .keyboardType(.numberPad)
                 .onChange(of: fundCode) { oldValue, newValue in
@@ -119,7 +167,13 @@ struct AddHoldingView: View {
     }
     
     private var purchaseAmountInput: some View {
-        inputCard(title: "购买金额", required: true, error: $purchaseAmountError) {
+        inputCard(
+            title: "购买金额",
+            required: true,
+            error: $purchaseAmountError,
+            systemImage: "dollarsign.circle.fill",
+            gradientColors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
+        ) {
             TextField("请输入购买金额", text: $purchaseAmount)
                 .keyboardType(.decimalPad)
                 .onChange(of: purchaseAmount) { oldValue, newValue in
@@ -131,7 +185,13 @@ struct AddHoldingView: View {
     }
     
     private var purchaseSharesInput: some View {
-        inputCard(title: "购买份额", required: true, error: $purchaseSharesError) {
+        inputCard(
+            title: "购买份额",
+            required: true,
+            error: $purchaseSharesError,
+            systemImage: "chart.pie.fill",
+            gradientColors: [Color(hex: "4ecdc4"), Color(hex: "44a08d")]
+        ) {
             TextField("请输入购买份额", text: $purchaseShares)
                 .keyboardType(.decimalPad)
                 .onChange(of: purchaseShares) { oldValue, newValue in
@@ -143,7 +203,13 @@ struct AddHoldingView: View {
     }
     
     private var purchaseDateInput: some View {
-        inputCard(title: "购买日期", required: true, error: .constant(nil)) {
+        inputCard(
+            title: "购买日期",
+            required: true,
+            error: .constant(nil),
+            systemImage: "calendar.circle.fill",
+            gradientColors: [Color(hex: "fd746c"), Color(hex: "ff9068")]
+        ) {
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     tempPurchaseDate = purchaseDate
@@ -154,8 +220,9 @@ struct AddHoldingView: View {
                     Text(dateFormatter.string(from: purchaseDate))
                         .foregroundColor(.primary)
                     Spacer()
-                    Image(systemName: "calendar")
+                    Image(systemName: "chevron.down.circle.fill")
                         .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(showDatePicker ? 180 : 0))
                 }
             }
             .buttonStyle(PlainButtonStyle())
@@ -163,13 +230,14 @@ struct AddHoldingView: View {
     }
     
     private var datePickerSection: some View {
-        VStack {
+        VStack(spacing: 12) {
             DatePicker("", selection: $tempPurchaseDate, in: ...Date(), displayedComponents: .date)
                 .datePickerStyle(WheelDatePickerStyle())
                 .labelsHidden()
                 .environment(\.locale, Locale(identifier: "zh_CN"))
+                .padding(.horizontal)
             
-            HStack(spacing: 20) {
+            HStack(spacing: 12) {
                 Button("取消") {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         showDatePicker = false
@@ -177,9 +245,15 @@ struct AddHoldingView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.1))
-                .foregroundColor(.primary)
-                .cornerRadius(8)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(hex: "667eea"), Color(hex: "764ba2")]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(10)
                 
                 Button("完成") {
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -189,30 +263,46 @@ struct AddHoldingView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.blue)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .foregroundColor(.white)
-                .cornerRadius(8)
+                .cornerRadius(10)
             }
+            .padding(.horizontal)
         }
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         .padding(.horizontal)
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
     private var optionalFieldsSection: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("选填信息")
-                .font(.headline)
-                .foregroundColor(.secondary)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
                 .padding(.horizontal)
-
+            
             clientIDInput
             remarksInput
         }
-        .padding(.horizontal)
     }
     
     private var clientIDInput: some View {
-        inputCard(title: "客户号", required: false, error: .constant(nil)) {
+        inputCard(
+            title: "客户号",
+            required: false,
+            error: .constant(nil),
+            systemImage: "creditcard.fill",
+            gradientColors: [Color(hex: "a8edea"), Color(hex: "fed6e3")]
+        ) {
             TextField("选填，最多12位数字", text: $clientID)
                 .keyboardType(.numberPad)
                 .onChange(of: clientID) { oldValue, newValue in
@@ -227,7 +317,13 @@ struct AddHoldingView: View {
     }
     
     private var remarksInput: some View {
-        inputCard(title: "备注", required: false, error: .constant(nil)) {
+        inputCard(
+            title: "备注",
+            required: false,
+            error: .constant(nil),
+            systemImage: "text.bubble.fill",
+            gradientColors: [Color(hex: "d4fc79"), Color(hex: "96e6a1")]
+        ) {
             TextField("选填，最多30个字符", text: $remarks)
                 .onChange(of: remarks) { oldValue, newValue in
                     if newValue.count > 30 {
@@ -238,14 +334,20 @@ struct AddHoldingView: View {
     }
     
     private var actionButtons: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             Button("取消") {
                 dismiss()
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(Color.gray.opacity(0.1))
-            .foregroundColor(.primary)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(hex: "667eea"), Color(hex: "764ba2")]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.white)
             .cornerRadius(10)
             
             Button("保存") {
@@ -255,39 +357,79 @@ struct AddHoldingView: View {
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .background(isFormValid ? Color.blue : Color.gray.opacity(0.1))
-            .foregroundColor(isFormValid ? .white : .secondary)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: isFormValid ? [Color(hex: "4facfe"), Color(hex: "00f2fe")] : [Color.gray, Color.gray.opacity(0.6)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.white)
             .cornerRadius(10)
             .disabled(!isFormValid)
         }
-        .padding()
+        .padding(.top, 8)
     }
 
-    private func inputCard<Content: View>(title: String, required: Bool, error: Binding<String?>, @ViewBuilder content: () -> Content) -> some View {
+    private func inputCard<Content: View>(
+        title: String,
+        required: Bool,
+        error: Binding<String?>,
+        systemImage: String,
+        gradientColors: [Color],
+        @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                if required {
-                    Text("*")
-                        .foregroundColor(.red)
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: gradientColors),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(Circle())
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.primary)
+                        if required {
+                            Text("*")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.red)
+                        }
+                    }
+                    
+                    content()
+                        .font(.system(size: 16))
                 }
+                
                 Spacer()
-                content()
             }
             .padding(16)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
-            .cornerRadius(15)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
             .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
             
             if let errorMessage = error.wrappedValue {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.leading)
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red)
+                    Text(errorMessage)
+                        .font(.system(size: 13))
+                        .foregroundColor(.red)
+                }
+                .padding(.leading, 16)
             }
         }
+        .padding(.horizontal)
     }
 
     private func validateClientName(_ name: String) {
