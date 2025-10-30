@@ -25,6 +25,15 @@ struct ManageHoldingsView: View {
 
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = false
 
+    // 返回按钮样式定义
+    private var backButton: some View {
+        GradientButton(
+            icon: "chevron.backward.circle",
+            action: { dismiss() },
+            colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]
+        )
+    }
+
     private var groupedHoldings: [ClientGroupForManagement] {
         let groupedDictionary = Dictionary(grouping: dataManager.holdings) { holding in
             holding.clientName
@@ -82,12 +91,8 @@ struct ManageHoldingsView: View {
     private var headerContent: some View {
         VStack(spacing: 0) {
             HStack {
-                // 返回按钮
-                GradientButton(
-                    icon: "chevron.backward.circle",
-                    action: { dismiss() },
-                    colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]
-                )
+                // 使用定义好的返回按钮
+                backButton
                 
                 GradientButton(
                     icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
@@ -104,9 +109,9 @@ struct ManageHoldingsView: View {
                     },
                     colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
                 )
-            
+                
                 Spacer()
-            
+                
                 if !dataManager.holdings.isEmpty {
                     Text("客户数: \(groupedHoldings.count)")
                         .font(.system(size: 14))
@@ -192,14 +197,15 @@ struct ManageHoldingsView: View {
                         )
                         .padding(.horizontal, 2)
                     } else {
+                        // 将所有客户组包裹在一个统一的框体内
                         ScrollView {
-                            LazyVStack(spacing: 0) {
+                            LazyVStack(spacing: 8) {
                                 ForEach(filteredClientGroups) { clientGroup in
                                     clientGroupItemView(clientGroup: clientGroup)
                                         .id("\(clientGroup.id)_\(clientGroup.holdings.hashValue)")
                                 }
                             }
-                            .padding(.bottom, 20)
+                            .padding(16)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color(.systemBackground))
@@ -291,13 +297,17 @@ struct ManageHoldingsView: View {
         }
     }
     
+    // MARK: - clientGroupItemView (已修改)
     private func clientGroupItemView(clientGroup: ClientGroupForManagement) -> some View {
         let baseColor = clientGroup.clientName.morandiColor()
         let isExpanded = expandedClientCodes.contains(clientGroup.id)
         let displayClientName = isPrivacyModeEnabled ? processClientName(clientGroup.clientName) : clientGroup.clientName
         
         return VStack(spacing: 0) {
+            // 主容器 HStack，包含可点击区域和操作按钮
             HStack(alignment: .center, spacing: 0) {
+                
+                // 可点击的渐变条部分
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         if isExpanded {
@@ -315,13 +325,15 @@ struct ManageHoldingsView: View {
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                             
-                            Text("\(clientGroup.holdings.count)支")
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundColor(.secondary)
+                            // 移除基金支数显示
+                            // Text("\(clientGroup.holdings.count)支")
+                            //     .font(.system(size: 11, design: .monospaced))
+                            //     .foregroundColor(.secondary)
                         }
                         
                         Spacer()
                         
+                        // 操作按钮（改名、删除）
                         HStack(spacing: 8) {
                             Button("改名") {
                                 clientToRename = clientGroup
@@ -331,6 +343,7 @@ struct ManageHoldingsView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.blue)
                             .buttonStyle(PlainButtonStyle())
+                            .opacity(isExpanded ? 1 : 0) // 展开时显示
                             
                             Button("删除") {
                                 clientToDelete = clientGroup
@@ -339,7 +352,9 @@ struct ManageHoldingsView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.red)
                             .buttonStyle(PlainButtonStyle())
+                            .opacity(isExpanded ? 1 : 0) // 展开时显示
                         }
+                        .animation(.easeInOut(duration: 0.2).delay(isExpanded ? 0.1 : 0), value: isExpanded) // 增加动画延迟
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 16)
@@ -357,21 +372,29 @@ struct ManageHoldingsView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+            // 外部 HACK：通过 padding 来实现展开时的右侧缩进效果
             .padding(.trailing, isExpanded ? 20 : 0)
             .animation(.easeInOut(duration: 0.2), value: isExpanded)
             
+            // 展开的内容 (重新添加整体卡片样式)
             if isExpanded {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) { // 使用 spacing 分隔行
+                    // 使用 ForEach 来显示基金持仓列表
                     ForEach(clientGroup.holdings) { holding in
+                        
                         HoldingRowForManagement(holding: holding) {
                             selectedHolding = holding
                         }
+                        // 移除 .padding(.vertical) 和 Divider，改用 VStack spacing
                     }
                 }
-                .padding(.top, 12)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-                .frame(maxWidth: .infinity)
+                .padding(16) // 整体卡片内边距
+                .background(Color(.secondarySystemGroupedBackground)) // 卡片背景
+                .cornerRadius(10) // 卡片圆角
+                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4) // 卡片阴影
+                .padding(.top, 8)
+                .padding(.leading, 20) // 保持左侧缩进
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95))
@@ -382,12 +405,8 @@ struct ManageHoldingsView: View {
                 )
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
+        // 移除多余的水平填充，依赖父级 ScrollView 的 padding(16)
+        .padding(.vertical, 4)
     }
 
     private func renameClient() async {
@@ -430,6 +449,7 @@ struct ManageHoldingsView: View {
     }
 }
 
+// MARK: - HoldingRowForManagement (维持简洁)
 struct HoldingRowForManagement: View {
     let holding: FundHolding
     let onEdit: () -> Void
@@ -502,13 +522,8 @@ struct HoldingRowForManagement: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity, alignment: .leading) // 确保占满宽度
+        // 保持简洁，不添加卡片样式修饰符
     }
 }
 
