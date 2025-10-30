@@ -272,7 +272,7 @@ struct ManageHoldingsMenuView: View {
                                 .foregroundColor(.white)
                                 .font(.system(size: 16))
                         }
-                        .frame(width: 36, height: 36)
+                        .frame(width: 32, height: 32)
                     }
                 }
             }
