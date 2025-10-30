@@ -270,7 +270,7 @@ struct ManageHoldingsMenuView: View {
                             
                             Image(systemName: "chevron.backward.circle")
                                 .foregroundColor(.white)
-                                .font(.system(size: 22))
+                                .font(.system(size: 16))
                         }
                         .frame(width: 36, height: 36)
                     }

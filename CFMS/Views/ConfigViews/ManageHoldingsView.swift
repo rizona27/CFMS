@@ -91,9 +91,9 @@ struct ManageHoldingsView: View {
                         
                         Image(systemName: "chevron.backward.circle")
                             .foregroundColor(.white)
-                            .font(.system(size: 22))
+                            .font(.system(size: 20))
                     }
-                    .frame(width: 36, height: 36)
+                    .frame(width: 32, height: 32)
                 }
                 
                 GradientButton(

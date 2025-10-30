@@ -56,7 +56,7 @@ struct TopPerformersView: View {
         
         var color: Color {
             switch self {
-            case .none: return .gray // 修改为灰色
+            case .none: return .gray 
             case .amount: return .blue
             case .profit: return .purple
             case .yield: return .orange

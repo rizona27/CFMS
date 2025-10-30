@@ -175,7 +175,7 @@ struct APILogView: View {
                             
                             Image(systemName: "chevron.backward.circle")
                                 .foregroundColor(.white)
-                                .font(.system(size: 22))
+                                .font(.system(size: 16))
                         }
                         .frame(width: 36, height: 36)
                     }
@@ -190,7 +190,7 @@ struct APILogView: View {
                             
                             Image(systemName: "trash.circle")
                                 .foregroundColor(.white)
-                                .font(.system(size: 22))
+                                .font(.system(size: 16))
                         }
                         .frame(width: 36, height: 36)
                     }
