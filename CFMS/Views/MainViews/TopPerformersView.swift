@@ -56,7 +56,7 @@ struct TopPerformersView: View {
         
         var color: Color {
             switch self {
-            case .none: return .primary
+            case .none: return .gray // 修改为灰色
             case .amount: return .blue
             case .profit: return .purple
             case .yield: return .orange
@@ -240,16 +240,37 @@ struct TopPerformersView: View {
         return index == zeroIndex
     }
     
+    private var headerContent: some View {
+        HStack {
+            HStack(spacing: 8) {
+                filterButton
+                sortButtons
+            }
+            
+            Spacer()
+            
+            if isFilterExpanded {
+                filterActionButtons
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(.systemGroupedBackground))
+    }
+    
     var body: some View {
         NavigationView {
-            mainContent
+            ZStack(alignment: .center) {
+                backgroundView
+                mainVStack
+                loadingView
+                toastView
+            }
+            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: isFilterExpanded)
         .onAppear(perform: handleOnAppear)
         .onDisappear(perform: handleOnDisappear)
         .onChange(of: selectedSortKey) { _, _ in
@@ -283,7 +304,7 @@ struct TopPerformersView: View {
     
     private var mainVStack: some View {
         VStack(spacing: 0) {
-            topButtonBar
+            headerContent
             filterSection
             contentSection
         }
@@ -423,18 +444,20 @@ struct TopPerformersView: View {
     private var holdingsList: some View {
         GeometryReader { geometry in
             let widths = calculateWidths(from: geometry)
-            HoldingsListView(
-                filteredAndSortedHoldings: filteredAndSortedHoldings,
-                numberWidth: widths.number,
-                codeNameWidth: widths.codeName,
-                amountWidth: widths.amount,
-                profitWidth: widths.profit,
-                daysWidth: widths.days,
-                rateWidth: widths.rate,
-                clientWidth: widths.client,
-                isPrivacyModeEnabled: isPrivacyModeEnabled,
-                shouldShowDivider: shouldShowDivider
-            )
+            ScrollView {
+                HoldingsListView(
+                    filteredAndSortedHoldings: filteredAndSortedHoldings,
+                    numberWidth: widths.number,
+                    codeNameWidth: widths.codeName,
+                    amountWidth: widths.amount,
+                    profitWidth: widths.profit,
+                    daysWidth: widths.days,
+                    rateWidth: widths.rate,
+                    clientWidth: widths.client,
+                    isPrivacyModeEnabled: isPrivacyModeEnabled,
+                    shouldShowDivider: shouldShowDivider
+                )
+            }
         }
     }
     

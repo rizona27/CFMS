@@ -31,7 +31,7 @@ enum SortKey: String, CaseIterable, Identifiable {
     
     var color: Color {
         switch self {
-        case .none: return .primary
+        case .none: return .gray // 修改为灰色
         case .navReturn1m: return .blue
         case .navReturn3m: return .purple
         case .navReturn6m: return .orange
@@ -454,119 +454,125 @@ struct SummaryView: View {
     
     @State private var isSearchExpanded: Bool = false
     
+    private var headerContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                GradientButton(
+                    icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
+                    action: toggleAllCards,
+                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")]
+                )
+
+                GradientButton(
+                    icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isSearchExpanded.toggle()
+                        }
+                    },
+                    colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                )
+            
+                HStack(spacing: 8) {
+                    Button(action: {
+                        withAnimation {
+                            selectedSortKey = selectedSortKey.next
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: sortButtonIconName())
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(selectedSortKey == .none ? .primary : selectedSortKey.color)
+                            if selectedSortKey != .none {
+                                Text(selectedSortKey.rawValue)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(selectedSortKey.color)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(height: 32)
+                        .background(
+                            Capsule()
+                                .fill(selectedSortKey == .none ? Color.gray.opacity(0.1) : selectedSortKey.color.opacity(0.15))
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(selectedSortKey == .none ? Color.gray.opacity(0.3) : selectedSortKey.color.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+
+                    if selectedSortKey != .none {
+                        Button(action: {
+                            withAnimation {
+                                sortOrder = (sortOrder == .ascending) ? .descending : .ascending
+                            }
+                        }) {
+                            Image(systemName: sortOrder == .ascending ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 24, height: 24)
+                                .background(selectedSortKey.color)
+                                .clipShape(Circle())
+                                .shadow(color: selectedSortKey.color.opacity(0.3), radius: 2, x: 0, y: 1)
+                        }
+                    }
+                }
+            
+                Spacer()
+            
+                if !dataManager.holdings.isEmpty {
+                    Text(statusText)
+                        .font(.system(size: 14))
+                        .foregroundColor(statusColor)
+                        .padding(.trailing, 8)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemGroupedBackground))
+            
+            if isSearchExpanded && !dataManager.holdings.isEmpty {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("输入客户名、基金代码、基金名称...", text: Binding(
+                        get: { searchText },
+                        set: { newValue in
+                            searchText = newValue
+                            performSearch(with: newValue)
+                        }
+                    ))
+                        .textFieldStyle(PlainTextFieldStyle())
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGroupedBackground))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
                 VStack(spacing: 0) {
-                    HStack {
-                        GradientButton(
-                            icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
-                            action: toggleAllCards,
-                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")]
-                        )
-
-                        GradientButton(
-                            icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
-                            action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isSearchExpanded.toggle()
-                                }
-                            },
-                            colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
-                        )
-                    
-                        HStack(spacing: 8) {
-                            Button(action: {
-                                withAnimation {
-                                    selectedSortKey = selectedSortKey.next
-                                }
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: sortButtonIconName())
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(selectedSortKey == .none ? .primary : selectedSortKey.color)
-                                    if selectedSortKey != .none {
-                                        Text(selectedSortKey.rawValue)
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(selectedSortKey.color)
-                                    }
-                                }
-                                .padding(.horizontal, 8)
-                                .frame(height: 32)
-                                .background(
-                                    Capsule()
-                                        .fill(selectedSortKey == .none ? Color.gray.opacity(0.1) : selectedSortKey.color.opacity(0.15))
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .stroke(selectedSortKey == .none ? Color.gray.opacity(0.3) : selectedSortKey.color.opacity(0.3), lineWidth: 1)
-                                )
-                            }
-
-                            if selectedSortKey != .none {
-                                Button(action: {
-                                    withAnimation {
-                                        sortOrder = (sortOrder == .ascending) ? .descending : .ascending
-                                    }
-                                }) {
-                                    Image(systemName: sortOrder == .ascending ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 24, height: 24)
-                                        .background(selectedSortKey.color)
-                                        .clipShape(Circle())
-                                        .shadow(color: selectedSortKey.color.opacity(0.3), radius: 2, x: 0, y: 1)
-                                }
-                            }
-                        }
-                    
-                        Spacer()
-                    
-                        if !dataManager.holdings.isEmpty {
-                            Text(statusText)
-                                .font(.system(size: 14))
-                                .foregroundColor(statusColor)
-                                .padding(.trailing, 8)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGroupedBackground))
-                    
-                    if isSearchExpanded && !dataManager.holdings.isEmpty {
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
-                            TextField("输入客户名、基金代码、基金名称...", text: Binding(
-                                get: { searchText },
-                                set: { newValue in
-                                    searchText = newValue
-                                    performSearch(with: newValue)
-                                }
-                            ))
-                                .textFieldStyle(PlainTextFieldStyle())
-                            if !searchText.isEmpty {
-                                Button(action: {
-                                    searchText = ""
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.secondary)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGroupedBackground))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        )
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
+                    headerContent
                 
                     if dataManager.holdings.isEmpty {
                         EmptyStateView(
@@ -652,11 +658,8 @@ struct SummaryView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
         .id(refreshID)
         .onAppear {
             hasShownInitialToast = false

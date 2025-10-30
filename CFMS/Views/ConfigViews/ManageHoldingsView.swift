@@ -11,15 +11,17 @@ struct ManageHoldingsView: View {
     @EnvironmentObject var fundService: FundService
     @Environment(\.dismiss) var dismiss
     
-    @Environment(\.colorScheme) var colorScheme
-
     @State private var selectedHolding: FundHolding? = nil
     @State private var isShowingRenameAlert: Bool = false
     @State private var clientToRename: ClientGroupForManagement? = nil
     @State private var newClientName: String = ""
     @State private var isShowingDeleteAlert: Bool = false
     @State private var clientToDelete: ClientGroupForManagement? = nil
-    @State private var expandedClient: String? = nil
+    @State private var expandedClientCodes: Set<String> = []
+    @State private var refreshID = UUID()
+    @State private var searchText = ""
+    @State private var searchTask: Task<Void, Never>?
+    @State private var isSearchExpanded: Bool = false
 
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = false
 
@@ -37,44 +39,189 @@ struct ManageHoldingsView: View {
         return clientGroups
     }
 
-    var sectionedClientGroups: [Character: [ClientGroupForManagement]] {
-        var sections: [Character: [ClientGroupForManagement]] = [:]
-        
-        let allGroups = groupedHoldings
-        for group in allGroups {
-            let firstChar = group.clientName.first?.uppercased().first ?? "#"
-            sections[firstChar, default: []].append(group)
+    private var filteredClientGroups: [ClientGroupForManagement] {
+        if searchText.isEmpty {
+            return groupedHoldings
+        } else {
+            return groupedHoldings.filter { group in
+                group.clientName.localizedCaseInsensitiveContains(searchText) ||
+                group.holdings.contains { holding in
+                    holding.fundName.localizedCaseInsensitiveContains(searchText) ||
+                    holding.fundCode.localizedCaseInsensitiveContains(searchText)
+                }
+            }
         }
-        return sections
     }
 
-    var sortedSectionKeys: [Character] {
-        sectionedClientGroups.keys.sorted { (char1, char2) -> Bool in
-            if char1 == "#" { return false }
-            if char2 == "#" { return true }
-            return String(char1).localizedStandardCompare(String(char2)) == .orderedAscending
+    private var areAnyCardsExpanded: Bool {
+        !expandedClientCodes.isEmpty
+    }
+
+    private func toggleAllCards() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            if areAnyCardsExpanded {
+                expandedClientCodes.removeAll()
+            } else {
+                expandedClientCodes = Set(filteredClientGroups.map { $0.id })
+            }
+        }
+    }
+
+    private func performSearch(with text: String) {
+        searchTask?.cancel()
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            
+            await MainActor.run {
+                searchText = text
+            }
+        }
+    }
+
+    private var headerContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                // 返回按钮
+                GradientButton(
+                    icon: "chevron.backward.circle",
+                    action: { dismiss() },
+                    colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]
+                )
+                
+                GradientButton(
+                    icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
+                    action: toggleAllCards,
+                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")]
+                )
+
+                GradientButton(
+                    icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isSearchExpanded.toggle()
+                        }
+                    },
+                    colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                )
+            
+                Spacer()
+            
+                if !dataManager.holdings.isEmpty {
+                    Text("客户数: \(groupedHoldings.count)")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .padding(.trailing, 8)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemGroupedBackground))
+            
+            if isSearchExpanded && !dataManager.holdings.isEmpty {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("输入客户名、基金代码、基金名称...", text: Binding(
+                        get: { searchText },
+                        set: { newValue in
+                            searchText = newValue
+                            performSearch(with: newValue)
+                        }
+                    ))
+                        .textFieldStyle(PlainTextFieldStyle())
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGroupedBackground))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
     }
 
     var body: some View {
         NavigationView {
-            contentView
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 17, weight: .medium))
+            ZStack {
+                VStack(spacing: 0) {
+                    headerContent
+                
+                    if dataManager.holdings.isEmpty {
+                        EmptyStateView(
+                            icon: "person.2.slash",
+                            title: "当前没有持仓数据",
+                            description: "请先导入持仓数据",
+                            action: nil
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 2)
+                    } else if filteredClientGroups.isEmpty && !searchText.isEmpty {
+                        EmptyStateView(
+                            icon: "magnifyingglass",
+                            title: "未找到符合条件的客户",
+                            description: "请尝试其他搜索关键词",
+                            action: nil
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 2)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(filteredClientGroups) { clientGroup in
+                                    clientGroupItemView(clientGroup: clientGroup)
+                                        .id("\(clientGroup.id)_\(clientGroup.holdings.hashValue)")
+                                }
                             }
-                            .foregroundColor(.accentColor)
+                            .padding(.bottom, 20)
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 2)
                     }
                 }
+                .background(Color(.systemGroupedBackground))
+                .navigationBarHidden(true)
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            }
         }
-        .navigationViewStyle(.stack)
+        .navigationViewStyle(StackNavigationViewStyle())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
+        .id(refreshID)
         .sheet(item: $selectedHolding) { holdingToEdit in
             EditHoldingView(holding: holdingToEdit) { updatedHolding in
                 do {
@@ -137,80 +284,110 @@ struct ManageHoldingsView: View {
                 Text("无法找到要删除的客户。")
             }
         }
+        .onDisappear {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isSearchExpanded = false
+            }
+        }
     }
     
-    @ViewBuilder
-    private var contentView: some View {
-        if groupedHoldings.isEmpty {
-            VStack {
-                Spacer()
-                Text("当前没有持仓数据。")
-                    .foregroundColor(.gray)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            List {
-                ForEach(sortedSectionKeys, id: \.self) { sectionKey in
-                    Section(header: EmptyView()) {
-                        let clientsForSection = sectionedClientGroups[sectionKey]?.sorted(by: { $0.clientName < $1.clientName }) ?? []
-                        ForEach(clientsForSection) { clientGroup in
-                            DisclosureGroup(
-                                isExpanded: Binding(
-                                    get: { expandedClient == clientGroup.id },
-                                    set: { isExpanded in
-                                        withAnimation {
-                                            if isExpanded {
-                                                expandedClient = clientGroup.id
-                                            } else {
-                                                expandedClient = nil
-                                            }
-                                        }
-                                    }
-                                )
-                            ) {
-                                ForEach(clientGroup.holdings) { holding in
-                                    HoldingRowForManagement(holding: holding) {
-                                        selectedHolding = holding
-                                    }
-                                }
-                                .onDelete { indexSet in
-                                    Task {
-                                        await deleteHoldings(in: clientGroup, at: indexSet)
-                                    }
-                                }
-                            } label: {
-                                headerView(for: clientGroup)
+    private func clientGroupItemView(clientGroup: ClientGroupForManagement) -> some View {
+        let baseColor = clientGroup.clientName.morandiColor()
+        let isExpanded = expandedClientCodes.contains(clientGroup.id)
+        let displayClientName = isPrivacyModeEnabled ? processClientName(clientGroup.clientName) : clientGroup.clientName
+        
+        return VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if isExpanded {
+                            expandedClientCodes.remove(clientGroup.id)
+                        } else {
+                            expandedClientCodes.insert(clientGroup.id)
+                        }
+                    }
+                }) {
+                    HStack(alignment: .center, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("**\(displayClientName)**")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            
+                            Text("\(clientGroup.holdings.count)支")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Button("改名") {
+                                clientToRename = clientGroup
+                                newClientName = clientGroup.clientName
+                                isShowingRenameAlert = true
                             }
-                            .id(clientGroup.id)
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                            .listRowSeparator(.hidden)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button("删除") {
+                                clientToDelete = clientGroup
+                                isShowingDeleteAlert = true
+                            }
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.red)
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [baseColor.opacity(0.8), Color.clear]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.trailing, isExpanded ? 20 : 0)
+            .animation(.easeInOut(duration: 0.2), value: isExpanded)
+            
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(clientGroup.holdings) { holding in
+                        HoldingRowForManagement(holding: holding) {
+                            selectedHolding = holding
                         }
                     }
                 }
-            }
-            .listStyle(.plain)
-        }
-    }
-    
-    private func refreshAllFundInfo() async {
-        let uniqueFundCodes = Set(dataManager.holdings.map { $0.fundCode })
-        
-        for code in uniqueFundCodes {
-            let fetchedInfo = await fundService.fetchFundInfo(code: code)
-            dataManager.holdings = dataManager.holdings.map { holding in
-                var updatedHolding = holding
-                if holding.fundCode == code {
-                    updatedHolding.fundName = fetchedInfo.fundName
-                    updatedHolding.currentNav = fetchedInfo.currentNav
-                    updatedHolding.navDate = fetchedInfo.navDate
-                    updatedHolding.isValid = fetchedInfo.isValid
-                }
-                return updatedHolding
+                .padding(.top, 12)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity)
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.95))
+                            .animation(.easeInOut(duration: 0.25).delay(0.15)),
+                        removal: .opacity.combined(with: .scale(scale: 0.95))
+                            .animation(.easeInOut(duration: 0.2))
+                    )
+                )
             }
         }
-        dataManager.saveData()
-        await fundService.addLog("ManageHoldingsView: 所有基金信息已刷新。", type: .info)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
     }
 
     private func renameClient() async {
@@ -232,6 +409,7 @@ struct ManageHoldingsView: View {
         await MainActor.run {
             newClientName = ""
             clientToRename = nil
+            refreshID = UUID()
         }
     }
 
@@ -247,82 +425,7 @@ struct ManageHoldingsView: View {
         await MainActor.run {
             clientToDelete = nil
             isShowingDeleteAlert = false
-        }
-    }
-
-    private func deleteHoldings(in clientGroup: ClientGroupForManagement, at offsets: IndexSet) async {
-        let holdingsToDeleteIDs = offsets.map { clientGroup.holdings[$0].id }
-        
-        dataManager.holdings.removeAll { holding in
-            holdingsToDeleteIDs.contains(holding.id)
-        }
-        dataManager.saveData()
-        await fundService.addLog("ManageHoldingsView: 从客户 \(clientGroup.clientName) 下删除了 \(holdingsToDeleteIDs.count) 个持仓。", type: .info)
-    }
-
-    private func headerView(for clientGroup: ClientGroupForManagement) -> some View {
-        let baseColor = clientGroup.clientName.morandiColor()
-        let isExpanded = expandedClient == clientGroup.id
-        let displayClientName = isPrivacyModeEnabled ? processClientName(clientGroup.clientName) : clientGroup.clientName
-        
-        return VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 0) {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        if isExpanded {
-                            expandedClient = nil
-                        } else {
-                            expandedClient = clientGroup.id
-                        }
-                    }
-                }) {
-                    HStack(alignment: .center, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text("**\(displayClientName)**")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(colorScheme == .dark ? .white : .black)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                        }
-                        
-                        Spacer()
-                        
-                        Button("批量改名") {
-                            clientToRename = clientGroup
-                            newClientName = clientGroup.clientName
-                            isShowingRenameAlert = true
-                        }
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.8) : Color.blue)
-                        .buttonStyle(.plain)
-                        .padding(.trailing, 10)
-                        
-                        Button("批量删除") {
-                            clientToDelete = clientGroup
-                            isShowingDeleteAlert = true
-                        }
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? Color.red.opacity(0.8) : Color.red)
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [baseColor.opacity(0.8), Color.clear]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .background(colorScheme == .dark ? Color(.secondarySystemGroupedBackground) : .white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
+            refreshID = UUID()
         }
     }
 }
@@ -332,36 +435,80 @@ struct HoldingRowForManagement: View {
     let onEdit: () -> Void
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(holding.fundName) (\(holding.fundCode))")
-                    .font(.headline)
-                Text("购买金额: \(holding.purchaseAmount, specifier: "%.2f")元")
-                    .font(.caption)
-                Text("购买份额: \(holding.purchaseShares, specifier: "%.2f")份")
-                    .font(.caption)
-                Text("购买日期: \(holding.purchaseDate, formatter: DateFormatter.shortDate)")
-                    .font(.caption)
-                if !holding.remarks.isEmpty {
-                    Text("备注: \(holding.remarks)")
-                        .font(.caption)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(holding.fundName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text("[\(holding.fundCode)]")
+                        .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
+                
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("购买金额")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text("\(holding.purchaseAmount, specifier: "%.2f")元")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("购买份额")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text("\(holding.purchaseShares, specifier: "%.2f")份")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("购买日期")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text(holding.purchaseDate, formatter: DateFormatter.shortDate)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                }
+                
+                if !holding.remarks.isEmpty {
+                    HStack(alignment: .top, spacing: 4) {
+                        Text("备注:")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text(holding.remarks)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                    .padding(.top, 2)
+                }
             }
-            .padding(.leading, 16)
+            
             Spacer()
+            
             Button(action: onEdit) {
-                Text("编辑")
-                    .font(.caption)
+                Image(systemName: "pencil.circle.fill")
+                    .font(.system(size: 20))
                     .foregroundColor(.blue)
+                    .background(Color.white)
+                    .clipShape(Circle())
             }
-            .buttonStyle(.borderless)
-            .padding(.trailing, 16)
+            .buttonStyle(PlainButtonStyle())
         }
-        .padding(.vertical, 8)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

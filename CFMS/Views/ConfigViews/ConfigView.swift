@@ -294,11 +294,8 @@ struct ManageHoldingsMenuView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: UUID())
     }
 }
 
@@ -382,6 +379,20 @@ struct CSVExportDocument: FileDocument {
 extension Array {
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil
+    }
+}
+
+// FundHolding 重复数据校验扩展
+extension FundHolding {
+    func createDeduplicationKey() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let purchaseDateString = dateFormatter.string(from: purchaseDate)
+        
+        let amountString = String(format: "%.2f", purchaseAmount)
+        let sharesString = String(format: "%.2f", purchaseShares)
+        
+        return "\(clientName)-\(fundCode)-\(amountString)-\(sharesString)-\(purchaseDateString)-\(clientID)-\(remarks)"
     }
 }
 
@@ -574,11 +585,8 @@ struct ConfigView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .scale(scale: 0.95)),
-            removal: .opacity
-        ))
-        .animation(.easeInOut(duration: 0.4), value: UUID())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: UUID())
     }
 
     private func generateExportFilename() -> String {
@@ -686,9 +694,12 @@ struct ConfigView: View {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
 
-            let existingHoldingsSet: Set<FundHolding> = Set(dataManager.holdings)
+            // 使用 deduplicationKey 进行重复校验
+            var existingHoldingsKeys: Set<String> = Set(dataManager.holdings.map { $0.createDeduplicationKey() })
 
             var importedCount = 0
+            var duplicateCount = 0
+            
             for i in 1..<lines.count {
                 let values = lines[i].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 guard values.count >= headers.count else { continue }
@@ -748,23 +759,27 @@ struct ConfigView: View {
                     remarks: remarks
                 )
 
-                if !existingHoldingsSet.contains(newHolding) {
+                let deduplicationKey = newHolding.createDeduplicationKey()
+                
+                if !existingHoldingsKeys.contains(deduplicationKey) {
                     do {
                         try dataManager.addHolding(newHolding)
+                        existingHoldingsKeys.insert(deduplicationKey)
                         importedCount += 1
                         await fundService.addLog("导入记录: \(clientName)-\(cleanedFundCode) 金额: \(cleanedAmount) 份额: \(cleanedShares)", type: .info)
                     } catch {
                         await fundService.addLog("导入失败: \(clientName)-\(cleanedFundCode) - \(error.localizedDescription)", type: .error)
                     }
                 } else {
+                    duplicateCount += 1
                     await fundService.addLog("跳过重复记录: \(clientName)-\(cleanedFundCode)", type: .info)
                 }
             }
             
             dataManager.saveData()
-            await fundService.addLog("导入完成: 成功导入 \(importedCount) 条记录", type: .success)
+            await fundService.addLog("导入完成: 成功导入 \(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录", type: .success)
             await MainActor.run {
-                self.showToast(message: "导入成功：\(importedCount) 条记录。")
+                self.showToast(message: "导入成功：\(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录。")
             }
             
             NotificationCenter.default.post(name: NSNotification.Name("HoldingsDataUpdated"), object: nil)

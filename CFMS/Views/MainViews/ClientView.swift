@@ -25,7 +25,7 @@ struct ClientView: View {
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = false
     
     @State private var loadedGroupedClientCount: Int = 10
-    
+
     @State private var searchText = ""
     @State private var searchTask: Task<Void, Never>?
     @State private var loadedSearchResultCount: Int = 10
@@ -730,131 +730,137 @@ struct ClientView: View {
         updatingTextTimer = nil
     }
 
+    private var headerContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                GradientButton(
+                    icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
+                    action: toggleAllCards,
+                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")]
+                )
+
+                GradientButton(
+                    icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isSearchExpanded.toggle()
+                        }
+                    },
+                    colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                )
+            
+                Spacer()
+            
+                HStack(spacing: 8) {
+                    if isRefreshing {
+                        HStack(spacing: 6) {
+                            if !currentRefreshingClientName.isEmpty {
+                                let displayClientName = isPrivacyModeEnabled ? processClientName(currentRefreshingClientName) : currentRefreshingClientName
+                                Text("\(displayClientName)")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                            if !currentRefreshingClientID.isEmpty {
+                                Text("[\(currentRefreshingClientID)]")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            Text("\(refreshProgress.current)/\(refreshProgress.total)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        if dataManager.holdings.isEmpty {
+                            Text("请导入信息")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                        } else if hasLatestNavDate {
+                            Text(latestNavDateString)
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(red: 0.4, green: 0.8, blue: 0.4))
+                        } else {
+                            Text("待更新")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    Button(action: {
+                        Task {
+                            await refreshAllFundInfo()
+                        }
+                    }) {
+                        if isRefreshing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
+                                .frame(width: 32, height: 32)
+                                .background(AppTheme.primaryGradient)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 18))
+                                .foregroundColor(.white)
+                                .frame(width: 32, height: 32)
+                                .background(AppTheme.accentGradient)
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: .themePrimary.opacity(0.3), radius: 3, x: 0, y: 2)
+                        }
+                    }
+                    .disabled(isRefreshing)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(.systemGroupedBackground))
+            
+            if isSearchExpanded && !dataManager.holdings.isEmpty {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("输入客户名、基金代码、基金名称...", text: Binding(
+                        get: { searchText },
+                        set: { newValue in
+                            searchText = newValue
+                            performSearch(with: newValue)
+                        }
+                    ))
+                        .textFieldStyle(PlainTextFieldStyle())
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGroupedBackground))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
                 VStack(spacing: 0) {
-                    HStack {
-                        GradientButton(
-                            icon: areAnyCardsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical",
-                            action: toggleAllCards,
-                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")]
-                        )
-
-                        GradientButton(
-                            icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
-                            action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isSearchExpanded.toggle()
-                                }
-                            },
-                            colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]
-                        )
-                    
-                        Spacer()
-                    
-                        HStack(spacing: 8) {
-                            if isRefreshing {
-                                HStack(spacing: 6) {
-                                    if !currentRefreshingClientName.isEmpty {
-                                        let displayClientName = isPrivacyModeEnabled ? processClientName(currentRefreshingClientName) : currentRefreshingClientName
-                                        Text("\(displayClientName)")
-                                            .font(.caption)
-                                            .foregroundColor(.primary)
-                                    }
-                                    if !currentRefreshingClientID.isEmpty {
-                                        Text("[\(currentRefreshingClientID)]")
-                                            .font(.caption)
-                                            .foregroundColor(.primary)
-                                    }
-                                    
-                                    Text("\(refreshProgress.current)/\(refreshProgress.total)")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            } else {
-                                if dataManager.holdings.isEmpty {
-                                    Text("请导入信息")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.orange)
-                                } else if hasLatestNavDate {
-                                    Text(latestNavDateString)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 0.4))
-                                } else {
-                                    Text("待更新")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.orange)
-                                }
-                            }
-                            
-                            Button(action: {
-                                Task {
-                                    await refreshAllFundInfo()
-                                }
-                            }) {
-                                if isRefreshing {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle())
-                                        .scaleEffect(0.8)
-                                        .frame(width: 32, height: 32)
-                                        .background(AppTheme.primaryGradient)
-                                        .clipShape(Circle())
-                                } else {
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(.white)
-                                        .frame(width: 32, height: 32)
-                                        .background(AppTheme.accentGradient)
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .shadow(color: .themePrimary.opacity(0.3), radius: 3, x: 0, y: 2)
-                                }
-                            }
-                            .disabled(isRefreshing)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGroupedBackground))
-                    
-                    if isSearchExpanded && !dataManager.holdings.isEmpty {
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
-                            TextField("输入客户名、基金代码、基金名称...", text: Binding(
-                                get: { searchText },
-                                set: { newValue in
-                                    searchText = newValue
-                                    performSearch(with: newValue)
-                                }
-                            ))
-                                .textFieldStyle(PlainTextFieldStyle())
-                            if !searchText.isEmpty {
-                                Button(action: {
-                                    searchText = ""
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.secondary)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGroupedBackground))
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                        )
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
+                    headerContent
                     
                     if !searchText.isEmpty {
                         searchResultsListView()
@@ -1006,11 +1012,8 @@ struct ClientView: View {
         }
         // FIX: 移除整个 NavigationView 上的 id 和 transition/animation，防止视图重建时的闪烁
         // .id(refreshID)
-        // .transition(.asymmetric(
-        //     insertion: .opacity.combined(with: .scale(scale: 0.95)),
-        //     removal: .opacity
-        // ))
-        // .animation(.easeInOut(duration: 0.4), value: UUID())
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
         .onAppear {
             if !hasLatestNavDate && !dataManager.holdings.isEmpty {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
