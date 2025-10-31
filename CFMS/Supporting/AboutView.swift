@@ -12,7 +12,7 @@ struct AboutView: View {
     @State private var timer: Timer?
     
     private let updateLogs: [UpdateLog] = [
-        UpdateLog(version: "Version 1.0.0", description: "项目初始化\n重建基础框架和UI界面。"),
+        UpdateLog(version: "Version 2.0.0", description: "MMP项目重构。\n重做UI界面。"),
         UpdateLog(version: "Version X.", description: "To be continued...")
     ]
 
