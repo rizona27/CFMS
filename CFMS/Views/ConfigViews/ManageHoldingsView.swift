@@ -325,9 +325,9 @@ struct ManageHoldingsView: View {
                             
                         }
                         
-                        Spacer() 
+                        Spacer()
 
-                        if !isPrivacyModeEnabled && !isExpanded {
+                        if !isExpanded {
                             HStack(spacing: 2) {
                                 Text("持仓数: ")
                                     .font(.system(size: 11))
@@ -386,16 +386,11 @@ struct ManageHoldingsView: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(clientGroup.holdings) { holding in
-                        
-                        HoldingRowForManagement(holding: holding) {
+                        HoldingCardForManagement(holding: holding) {
                             selectedHolding = holding
                         }
                     }
                 }
-                .padding(16)
-                .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
                 .padding(.top, 8)
                 .padding(.leading, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -462,79 +457,85 @@ struct ManageHoldingsView: View {
     }
 }
 
-struct HoldingRowForManagement: View {
+struct HoldingCardForManagement: View {
     let holding: FundHolding
     let onEdit: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(holding.fundName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(holding.fundName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        
+                        Text("[\(holding.fundCode)]")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("[\(holding.fundCode)]")
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("购买金额")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text("\(holding.purchaseAmount, specifier: "%.2f")元")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("购买份额")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text("\(holding.purchaseShares, specifier: "%.2f")份")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("购买日期")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text(holding.purchaseDate, formatter: DateFormatter.shortDate)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    
+                    if !holding.remarks.isEmpty {
+                        HStack(alignment: .top, spacing: 4) {
+                            Text("备注:")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text(holding.remarks)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        .padding(.top, 2)
+                    }
                 }
                 
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("购买金额")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text("\(holding.purchaseAmount, specifier: "%.2f")元")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("购买份额")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text("\(holding.purchaseShares, specifier: "%.2f")份")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("购买日期")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text(holding.purchaseDate, formatter: DateFormatter.shortDate)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                }
+                Spacer()
                 
-                if !holding.remarks.isEmpty {
-                    HStack(alignment: .top, spacing: 4) {
-                        Text("备注:")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text(holding.remarks)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    .padding(.top, 2)
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
+                        .background(Color.white)
+                        .clipShape(Circle())
                 }
+                .buttonStyle(PlainButtonStyle())
             }
-            
-            Spacer()
-            
-            Button(action: onEdit) {
-                Image(systemName: "pencil.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue)
-                    .background(Color.white)
-                    .clipShape(Circle())
-            }
-            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
 }
 

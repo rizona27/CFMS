@@ -62,17 +62,29 @@ struct EditHoldingView: View {
                 VStack(spacing: 0) {
                     headerContent
                     
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            requiredFieldsSection
-                            
-                            if showDatePicker {
-                                datePickerSection
-                            }
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                requiredFieldsSection
+                                
+                                if showDatePicker {
+                                    datePickerSection
+                                        .id("datePicker")
+                                }
 
-                            optionalFieldsSection
+                                optionalFieldsSection
+                            }
+                            .padding(.vertical, 16)
                         }
-                        .padding(.vertical, 16)
+                        .onChange(of: showDatePicker) { oldValue, newValue in
+                            if newValue {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation {
+                                        proxy.scrollTo("datePicker", anchor: .bottom)
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                     actionButtons
