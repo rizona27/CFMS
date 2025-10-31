@@ -206,7 +206,8 @@ struct ManageHoldingsView: View {
                                         .id("\(clientGroup.id)_\(clientGroup.holdings.hashValue)")
                                 }
                             }
-                            .padding(16)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color(.systemBackground))
@@ -386,14 +387,18 @@ struct ManageHoldingsView: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(clientGroup.holdings) { holding in
-                        HoldingCardForManagement(holding: holding) {
+                        SwipeableHoldingCard(holding: holding, onEdit: {
                             selectedHolding = holding
-                        }
+                        }, onDelete: {
+                            Task {
+                                await deleteSingleHolding(holding)
+                            }
+                        })
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
                 .padding(.leading, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95))
@@ -404,7 +409,18 @@ struct ManageHoldingsView: View {
                 )
             }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+    
+    private func processClientName(_ name: String) -> String {
+        if name.count <= 1 {
+            return name
+        } else if name.count == 2 {
+            return String(name.prefix(1)) + "*"
+        } else {
+            return String(name.prefix(1)) + "*" + String(name.suffix(1))
+        }
     }
     
     private func colorForHoldingCount(_ count: Int) -> Color {
@@ -455,9 +471,114 @@ struct ManageHoldingsView: View {
             refreshID = UUID()
         }
     }
+    
+    private func deleteSingleHolding(_ holding: FundHolding) async {
+        dataManager.holdings.removeAll { $0.id == holding.id }
+        dataManager.saveData()
+        
+        await fundService.addLog("ManageHoldingsView: 已删除客户 '\(holding.clientName)' 的基金持仓 \(holding.fundCode)。", type: .info)
+        
+        await MainActor.run {
+            refreshID = UUID()
+        }
+    }
 }
 
-struct HoldingCardForManagement: View {
+struct SwipeableHoldingCard: View {
+    let holding: FundHolding
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    @State private var isSwiped: Bool = false
+    
+    private let deleteButtonWidth: CGFloat = 45
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if isSwiped {
+                HStack {
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            offset = 0
+                            isSwiped = false
+                        }
+                        onDelete()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.white)
+                            
+                            VStack(spacing: 2) {
+                                Text("删")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                Text("除")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                        }
+                        .frame(width: deleteButtonWidth)
+                        .frame(maxHeight: .infinity)
+                        .background(Color.red)
+                        .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.leading, 8)
+                    
+                    Spacer()
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.8).combined(with: .offset(x: -20))),
+                    removal: .opacity.combined(with: .scale(scale: 0.8).combined(with: .offset(x: -20)))
+                ))
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isSwiped)
+            }
+            
+            HoldingCardContent(holding: holding, onEdit: onEdit)
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(10)
+                .offset(x: offset)
+                .gesture(
+                    DragGesture()
+                        .onChanged { gesture in
+                            if gesture.translation.width > 0 {
+                                withAnimation(.interactiveSpring()) {
+                                    offset = min(gesture.translation.width, deleteButtonWidth + 8)
+                                }
+                            }
+                        }
+                        .onEnded { gesture in
+                            withAnimation(.spring()) {
+                                if gesture.translation.width > deleteButtonWidth / 2 {
+                                    offset = deleteButtonWidth + 8
+                                    isSwiped = true
+                                } else {
+                                    offset = 0
+                                    isSwiped = false
+                                }
+                            }
+                        }
+                )
+                .onTapGesture {
+                    if isSwiped {
+                        withAnimation(.spring()) {
+                            offset = 0
+                            isSwiped = false
+                        }
+                    }
+                }
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.clear)
+    }
+}
+
+struct HoldingCardContent: View {
     let holding: FundHolding
     let onEdit: () -> Void
 
@@ -533,9 +654,6 @@ struct HoldingCardForManagement: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
 }
 

@@ -342,44 +342,55 @@ struct ClientView: View {
                             swipeStateBinding.wrappedValue = SwipeState(isSwiped: false, dragOffset: 0)
                         }
                     }) {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 4) {
                             Image(systemName: holding.isPinned ? "pin.slash.fill" : "pin.fill")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
                             
                             if holding.isPinned {
-                                VStack(spacing: 0) {
+                                VStack(spacing: 2) {
                                     Text("取")
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                     Text("消")
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                     Text("置")
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                     Text("顶")
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                 }
                                 .lineLimit(1)
                             } else {
-                                Text("置\n顶")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
+                                VStack(spacing: 2) {
+                                    Text("置")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                    Text("顶")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
                             }
                         }
-                        .frame(width: 50)
+                        .frame(width: 60)
                         .frame(maxHeight: .infinity)
                         .background(holding.isPinned ? Color.orange : Color.blue)
-                        .cornerRadius(6)
+                        .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
                     }
                     .padding(.leading, 8)
                     
                     Spacer()
                 }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.8).combined(with: .offset(x: -20))),
+                    removal: .opacity.combined(with: .scale(scale: 0.8).combined(with: .offset(x: -20)))
+                ))
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: swipeStateBinding.wrappedValue.isSwiped)
             }
             
             holdingRowView(for: holding, hideClientInfo: hideClientInfo)
@@ -388,17 +399,23 @@ struct ClientView: View {
                     DragGesture(minimumDistance: 10)
                         .onChanged { value in
                             if value.translation.width > 0 {
-                                let newOffset = min(value.translation.width, 60)
+                                let newOffset = min(value.translation.width, 70)
                                 swipeStateBinding.wrappedValue = SwipeState(isSwiped: true, dragOffset: newOffset)
+                            } else if value.translation.width < 0 {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                    swipeStateBinding.wrappedValue = SwipeState(isSwiped: false, dragOffset: 0)
+                                }
                             }
                         }
                         .onEnded { value in
                             if value.translation.width > 40 {
-                                togglePin(for: holding)
-                            }
-                            
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                swipeStateBinding.wrappedValue = SwipeState(isSwiped: false, dragOffset: 0)
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                    swipeStateBinding.wrappedValue = SwipeState(isSwiped: true, dragOffset: 70)
+                                }
+                            } else {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                    swipeStateBinding.wrappedValue = SwipeState(isSwiped: false, dragOffset: 0)
+                                }
                             }
                         }
                 )
@@ -480,7 +497,7 @@ struct ClientView: View {
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 0) {
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         if isExpanded {
                             expandedClients.remove(clientGroup.id)
                         } else {
@@ -558,10 +575,10 @@ struct ClientView: View {
                 .padding(.leading, 20)
                 .transition(
                     .asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.25).delay(0.15)),
-                        removal: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.2))
+                        insertion: .opacity.combined(with: .scale(scale: 0.9))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)),
+                        removal: .opacity.combined(with: .scale(scale: 0.9))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8))
                     )
                 )
             }
@@ -576,7 +593,7 @@ struct ClientView: View {
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 0) {
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         if isExpanded {
                             expandedClients.remove("Pinned")
                         } else {
@@ -586,23 +603,23 @@ struct ClientView: View {
                 }) {
                     HStack {
                         Image(systemName: "pin.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 16))
                                 .foregroundColor(.white)
                         Text("置顶分栏")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                         Spacer()
                         
                         HStack(spacing: 2) {
                             Text("置顶数:")
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.8))
                             Text("\(pinnedHoldings.count)")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .italic()
                                 .foregroundColor(colorForHoldingCount(pinnedHoldings.count))
                             Text("支")
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.8))
                         }
                     }
@@ -635,10 +652,10 @@ struct ClientView: View {
                 .padding(.leading, 20)
                 .transition(
                     .asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.25).delay(0.15)),
-                        removal: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.2))
+                        insertion: .opacity.combined(with: .scale(scale: 0.9))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)),
+                        removal: .opacity.combined(with: .scale(scale: 0.9))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8))
                     )
                 )
             }
@@ -658,7 +675,7 @@ struct ClientView: View {
     }
     
     private func toggleAllCards() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             if areAnyCardsExpanded {
                 expandedClients.removeAll()
             } else {
@@ -684,7 +701,7 @@ struct ClientView: View {
                 }
                 
                 if isPinned && self.pinnedHoldings.isEmpty {
-                    _ = withAnimation(.easeInOut(duration: 0.3)) {
+                    _ = withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         self.expandedClients.remove("Pinned")
                     }
                 }
@@ -736,7 +753,7 @@ struct ClientView: View {
                 GradientButton(
                     icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
                     action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                             isSearchExpanded.toggle()
                         }
                     },
