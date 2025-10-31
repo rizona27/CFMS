@@ -1,4 +1,6 @@
-# CustomerFundsManagementSystem·客户基金管理系统 · 一基暴富 
+# CustomerFundsManagementSystem
+
+# 客户基金管理系统 · 一基暴富 
 
 ![Swift](https://img.shields.io/badge/Swift-5.0+-orange)
 ![Platform](https://img.shields.io/badge/Platform-iOS-blue)
