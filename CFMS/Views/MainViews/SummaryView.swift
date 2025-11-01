@@ -31,7 +31,7 @@ enum SortKey: String, CaseIterable, Identifiable {
     
     var color: Color {
         switch self {
-        case .none: return .gray 
+        case .none: return .gray
         case .navReturn1m: return .blue
         case .navReturn3m: return .purple
         case .navReturn6m: return .orange
@@ -65,6 +65,10 @@ struct SummaryView: View {
     @State private var appLaunchTime: Date = Date()
     @State private var lastToastShowTime: Date = Date.distantPast
     @State private var toastTimer: Timer? = nil
+
+    // 添加更新中文本状态
+    @State private var updatingTextState = 0
+    @State private var updatingTextTimer: Timer?
 
     private let calendar = Calendar.current
     private let toastCooldown: TimeInterval = 3600
@@ -259,6 +263,25 @@ struct SummaryView: View {
         withAnimation(.easeInOut(duration: 0.3)) {
             showingToast = false
         }
+    }
+    
+    // 添加更新中文本动画
+    private var updatingText: String {
+        let baseText = "更新中"
+        let dots = String(repeating: ".", count: updatingTextState % 4)
+        return baseText + dots
+    }
+
+    private func startUpdatingTextAnimation() {
+        updatingTextState = 0
+        updatingTextTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            updatingTextState = (updatingTextState + 1) % 4
+        }
+    }
+
+    private func stopUpdatingTextAnimation() {
+        updatingTextTimer?.invalidate()
+        updatingTextTimer = nil
     }
     
     private func fundGroupItemView(fundCode: String, funds: [FundHolding]) -> some View {
@@ -519,13 +542,65 @@ struct SummaryView: View {
                 }
             
                 Spacer()
-            
-                if !dataManager.holdings.isEmpty {
-                    Text(statusText)
-                        .font(.system(size: 14))
-                        .foregroundColor(statusColor)
-                        .padding(.trailing, 8)
+                
+                HStack(spacing: 8) {
+                    // 日期文字 - 点击后向左移动
+                    Button(action: {
+                        dataManager.triggerRefreshButton()
+                    }) {
+                        if dataManager.holdings.isEmpty {
+                            Text("暂无数据")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                        } else if hasAnyLatestNavDate {
+                            Text(statusText)
+                                .font(.system(size: 14))
+                                .foregroundColor(statusColor)
+                        } else {
+                            Text(statusText)
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    .disabled(dataManager.disableDateTap)
+                    .offset(x: dataManager.showRefreshButton ? -40 : 0)
+                    .opacity(dataManager.showRefreshButton ? 0.0 : 1.0)
+                    .animation(.easeInOut(duration: 0.3), value: dataManager.showRefreshButton)
+                    
+                    // 刷新按钮 - 只在触发后显示
+                    if dataManager.showRefreshButton {
+                        Button(action: {
+                            Task {
+                                await refreshAllFundInfo()
+                            }
+                        }) {
+                            if dataManager.isRefreshing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(0.8)
+                                    .frame(width: 32, height: 32)
+                                    .background(AppTheme.primaryGradient)
+                                    .clipShape(Circle())
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(AppTheme.accentGradient)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: .themePrimary.opacity(0.3), radius: 3, x: 0, y: 2)
+                            }
+                        }
+                        .disabled(dataManager.isRefreshing)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        .animation(.easeInOut(duration: 0.3), value: dataManager.showRefreshButton)
+                    }
                 }
+                .padding(.trailing, 8)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -631,6 +706,46 @@ struct SummaryView: View {
                 .onTapGesture {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
+                
+                if dataManager.isRefreshing {
+                    Color.black.opacity(0.3)
+                        .edgesIgnoringSafeArea(.all)
+                        .allowsHitTesting(true)
+                        .zIndex(999)
+
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            // 修改为与ClientView相同的"更新中"样式
+                            HStack(spacing: 0) {
+                                Text("更新中")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .frame(width: 48, alignment: .trailing)
+                                Text(String(repeating: ".", count: updatingTextState % 4))
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .frame(width: 20, alignment: .leading)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                                    .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                            )
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                    .zIndex(1000)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
             
                 if showingToast || showingNavDateToast {
                     VStack {
@@ -674,6 +789,7 @@ struct SummaryView: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isSearchExpanded = false
             }
+            stopUpdatingTextAnimation()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("HoldingsDataUpdated"))) { _ in
             refreshID = UUID()
@@ -753,6 +869,137 @@ struct SummaryView: View {
         case "syl_6y": return fund.navReturn6m?.formattedPercentage ?? "/"
         case "syl_1n": return fund.navReturn1y?.formattedPercentage ?? "/"
         default: return ""
+        }
+    }
+    
+    private func refreshAllFundInfo() async {
+        await MainActor.run {
+            dataManager.startRefresh()
+            startUpdatingTextAnimation()
+            NotificationCenter.default.post(name: Notification.Name("RefreshStarted"), object: nil)
+            NotificationCenter.default.post(name: Notification.Name("RefreshLockEnabled"), object: nil)
+        }
+        
+        Task {
+            await fundService.addLog("SummaryView: 开始刷新所有基金信息...", type: .info)
+        }
+
+        let totalCount = dataManager.holdings.count
+        
+        if totalCount == 0 {
+            await MainActor.run {
+                completeRefresh()
+            }
+            return
+        }
+        
+        var updatedHoldings: [UUID: FundHolding] = [:]
+        
+        await withTaskGroup(of: (UUID, FundHolding?).self) { group in
+            var iterator = dataManager.holdings.makeIterator()
+            var activeTasks = 0
+            
+            while activeTasks < 3, let holding = iterator.next() {
+                group.addTask {
+                    await self.fetchHoldingWithRetry(holding: holding)
+                }
+                activeTasks += 1
+            }
+
+            while let result = await group.next() {
+                activeTasks -= 1
+                await self.processHoldingResult(result: result, updatedHoldings: &updatedHoldings, totalCount: totalCount)
+                
+                if let nextHolding = iterator.next() {
+                    group.addTask {
+                        await self.fetchHoldingWithRetry(holding: nextHolding)
+                    }
+                    activeTasks += 1
+                }
+            }
+        }
+
+        await MainActor.run {
+            for (index, holding) in dataManager.holdings.enumerated() {
+                if let updatedHolding = updatedHoldings[holding.id] {
+                    dataManager.holdings[index] = updatedHolding
+                }
+            }
+            
+            dataManager.saveData()
+            completeRefresh()
+            
+            let stats = (success: dataManager.refreshProgress.current, fail: totalCount - dataManager.refreshProgress.current)
+            NotificationCenter.default.post(name: Notification.Name("RefreshCompleted"), object: nil, userInfo: ["stats": stats])
+
+            NotificationCenter.default.post(name: Notification.Name("HoldingsDataUpdated"), object: nil)
+            Task {
+                await fundService.addLog("SummaryView: 所有基金信息刷新完成。", type: .info)
+            }
+        }
+    }
+    
+    private func completeRefresh() {
+        dataManager.completeRefresh()
+        stopUpdatingTextAnimation()
+        NotificationCenter.default.post(name: Notification.Name("RefreshLockDisabled"), object: nil)
+    }
+    
+    private func fetchHoldingWithRetry(holding: FundHolding) async -> (UUID, FundHolding?) {
+        var retryCount = 0
+        
+        while retryCount < 3 {
+            let fetchedInfo = await fundService.fetchFundInfo(code: holding.fundCode)
+            var updatedHolding = holding
+            updatedHolding.fundName = fetchedInfo.fundName
+            updatedHolding.currentNav = fetchedInfo.currentNav
+            updatedHolding.navDate = fetchedInfo.navDate
+            updatedHolding.isValid = fetchedInfo.isValid
+            
+            if fetchedInfo.isValid {
+                let fundDetails = await fundService.fetchFundDetailsFromEastmoney(code: holding.fundCode)
+                updatedHolding.navReturn1m = fundDetails.returns.navReturn1m
+                updatedHolding.navReturn3m = fundDetails.returns.navReturn3m
+                updatedHolding.navReturn6m = fundDetails.returns.navReturn6m
+                updatedHolding.navReturn1y = fundDetails.returns.navReturn1y
+                
+                return (holding.id, updatedHolding)
+            }
+            
+            retryCount += 1
+            if retryCount < 3 {
+                let retryDelay = Double(retryCount) * 0.5
+                try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+            }
+        }
+        
+        return (holding.id, nil)
+    }
+    
+    private func processHoldingResult(result: (UUID, FundHolding?), updatedHoldings: inout [UUID: FundHolding], totalCount: Int) async {
+        let (holdingId, updatedHolding) = result
+        
+        await MainActor.run {
+            if let updatedHolding = updatedHolding {
+                updatedHoldings[holdingId] = updatedHolding
+                
+                if let originalHolding = dataManager.holdings.first(where: { $0.id == holdingId }) {
+                    dataManager.currentRefreshingClientName = originalHolding.clientName
+                    dataManager.currentRefreshingClientID = originalHolding.clientID
+                }
+                
+                dataManager.refreshProgress.current = min(dataManager.refreshProgress.current + 1, totalCount)
+                Task {
+                    await fundService.addLog("基金 \(updatedHolding.fundCode) 刷新成功", type: .success)
+                }
+            } else {
+                dataManager.refreshProgress.current = min(dataManager.refreshProgress.current + 1, totalCount)
+                if let originalHolding = dataManager.holdings.first(where: { $0.id == holdingId }) {
+                    Task {
+                        await fundService.addLog("基金 \(originalHolding.fundCode) 刷新失败", type: .error)
+                    }
+                }
+            }
         }
     }
 }
