@@ -200,7 +200,7 @@ struct ManageHoldingsView: View {
                         .padding(.horizontal, 2)
                     } else {
                         ScrollView {
-                            LazyVStack(spacing: 8) {
+                            LazyVStack(spacing: 0) {
                                 ForEach(filteredClientGroups) { clientGroup in
                                     clientGroupItemView(clientGroup: clientGroup)
                                         .id("\(clientGroup.id)_\(clientGroup.holdings.hashValue)")
@@ -542,6 +542,11 @@ struct SwipeableHoldingCard: View {
             HoldingCardContent(holding: holding, onEdit: onEdit)
                 .background(Color(.secondarySystemGroupedBackground))
                 .cornerRadius(10)
+                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
                 .offset(x: offset)
                 .gesture(
                     DragGesture()

@@ -416,6 +416,8 @@ struct ConfigView: View {
     @State private var document: CSVExportDocument?
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var showingImportConfirmation = false
+    @State private var pendingImportURL: URL?
 
     private func showToast(message: String) {
         toastMessage = message
@@ -431,9 +433,21 @@ struct ConfigView: View {
         if let theme = ThemeMode(rawValue: currentTheme) {
             applyTheme(theme)
         }
+        
+        print("ConfigView: 注册文件导入监听")
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("FileImportedFromShare"), object: nil, queue: .main) { notification in
+            print("ConfigView: 收到文件导入通知")
+            if let fileURL = notification.userInfo?["fileURL"] as? URL {
+                print("ConfigView: 准备导入文件: \(fileURL)")
+                pendingImportURL = fileURL
+                showingImportConfirmation = true
+            }
+        }
     }
     
     func onDisappear() {
+        print("ConfigView: 移除文件导入监听")
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name("FileImportedFromShare"), object: nil)
     }
 
     private func applyTheme(_ theme: ThemeMode) {
@@ -584,6 +598,21 @@ struct ConfigView: View {
                 .sheet(isPresented: $showingAboutSheet) {
                     AboutView()
                 }
+                .alert("导入CSV文件", isPresented: $showingImportConfirmation) {
+                    Button("取消", role: .cancel) {
+                        pendingImportURL = nil
+                    }
+                    Button("导入", role: .none) {
+                        if let url = pendingImportURL {
+                            Task {
+                                await processCSVFile(url: url)
+                            }
+                        }
+                        pendingImportURL = nil
+                    }
+                } message: {
+                    Text("是否要导入从其他应用分享的CSV文件？")
+                }
                     
                 ToastView(message: toastMessage, isShowing: $showToast)
             }
@@ -637,18 +666,28 @@ struct ConfigView: View {
         do {
             let urls = try result.get()
             guard let url = urls.first else { return }
-
-            guard url.startAccessingSecurityScopedResource() else {
-                await MainActor.run {
-                    self.showToast(message: "导入失败：无法获取文件访问权限。")
-                }
-                return
+            await processCSVFile(url: url)
+        } catch {
+            await fundService.addLog("导入失败: \(error.localizedDescription)", type: .error)
+            await MainActor.run {
+                self.showToast(message: "导入失败: \(error.localizedDescription)")
             }
-            
-            defer {
-                url.stopAccessingSecurityScopedResource()
+        }
+    }
+    
+    private func processCSVFile(url: URL) async {
+        guard url.startAccessingSecurityScopedResource() else {
+            await MainActor.run {
+                self.showToast(message: "导入失败：无法获取文件访问权限。")
             }
-            
+            return
+        }
+        
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+        
+        do {
             let data = try String(contentsOf: url, encoding: .utf8)
             let lines = data.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             guard lines.count > 1 else {
