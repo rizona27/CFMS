@@ -12,7 +12,9 @@ struct AboutView: View {
     @State private var timer: Timer?
     
     private let updateLogs: [UpdateLog] = [
-        UpdateLog(version: "Version 2.0.0", description: "MMP项目重构。\n重做UI界面。"),
+        UpdateLog(version: "Version 1.0.0", description: "MMP项目构建。"),
+        UpdateLog(version: "Version 2.0.0", description: "项目重构CFMS。\n重做UI界面。"),
+        UpdateLog(version: "Version 2.0.1", description: "编辑持仓页面完善客户号显示搜索。"),
         UpdateLog(version: "Version X.", description: "To be continued...")
     ]
 
@@ -25,7 +27,7 @@ struct AboutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(Color(hex: "FFD700"))
-                        Text("Version: 2.0.0      By: rizona.cn@gmail.com")
+                        Text("Version: 2.0.1      By: rizona.cn@gmail.com")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }

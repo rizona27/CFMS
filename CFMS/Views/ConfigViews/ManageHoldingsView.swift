@@ -2,8 +2,33 @@ import SwiftUI
 
 struct ClientGroupForManagement: Identifiable {
     let id: String
-    let clientName: String
+    let originalClientName: String
+    let displayClientName: String
+    let clientID: String?
     var holdings: [FundHolding]
+    
+    // 获取完整的显示名称
+    func getFullDisplayName(isPrivacyModeEnabled: Bool) -> String {
+        // 隐私模式下只对客户名部分脱敏，客户号保持不变
+        let processedName = isPrivacyModeEnabled ? processClientName(displayClientName) : displayClientName
+        
+        if let clientID = clientID, !clientID.isEmpty {
+            return "\(processedName)(\(clientID))"
+        } else {
+            return processedName
+        }
+    }
+    
+    // 处理客户名脱敏
+    private func processClientName(_ name: String) -> String {
+        if name.count <= 1 {
+            return name
+        } else if name.count == 2 {
+            return String(name.prefix(1)) + "*"
+        } else {
+            return String(name.prefix(1)) + "*" + String(name.suffix(1))
+        }
+    }
 }
 
 struct ManageHoldingsView: View {
@@ -26,15 +51,33 @@ struct ManageHoldingsView: View {
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = false
 
     private var groupedHoldings: [ClientGroupForManagement] {
+        // 使用 clientName 和 clientID 的组合作为分组键
         let groupedDictionary = Dictionary(grouping: dataManager.holdings) { holding in
-            holding.clientName
+            "\(holding.clientName)|\(holding.clientID)"
         }
 
-        var clientGroups: [ClientGroupForManagement] = groupedDictionary.map { (clientName, holdings) in
-            return ClientGroupForManagement(id: clientName, clientName: clientName, holdings: holdings)
+        var clientGroups: [ClientGroupForManagement] = []
+        
+        for (groupKey, holdings) in groupedDictionary {
+            // 从分组键中解析出客户名和客户号
+            let components = groupKey.split(separator: "|", maxSplits: 1).map(String.init)
+            let originalName = components[0]
+            let clientID = components.count > 1 && !components[1].isEmpty ? components[1] : nil
+            
+            // 调试输出
+            print("分组键: \(groupKey) -> 客户名: \(originalName), 客户号: \(clientID ?? "无")")
+            
+            let group = ClientGroupForManagement(
+                id: groupKey,
+                originalClientName: originalName,
+                displayClientName: originalName, // 直接使用原始客户名
+                clientID: clientID,
+                holdings: holdings
+            )
+            clientGroups.append(group)
         }
 
-        clientGroups.sort { $0.clientName < $1.clientName }
+        clientGroups.sort { $0.displayClientName < $1.displayClientName }
         
         return clientGroups
     }
@@ -44,7 +87,9 @@ struct ManageHoldingsView: View {
             return groupedHoldings
         } else {
             return groupedHoldings.filter { group in
-                group.clientName.localizedCaseInsensitiveContains(searchText) ||
+                group.getFullDisplayName(isPrivacyModeEnabled: false).localizedCaseInsensitiveContains(searchText) ||
+                group.displayClientName.localizedCaseInsensitiveContains(searchText) ||
+                group.clientID?.localizedCaseInsensitiveContains(searchText) == true ||
                 group.holdings.contains { holding in
                     holding.fundName.localizedCaseInsensitiveContains(searchText) ||
                     holding.fundCode.localizedCaseInsensitiveContains(searchText)
@@ -129,7 +174,7 @@ struct ManageHoldingsView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    TextField("输入客户名、基金代码、基金名称...", text: Binding(
+                    TextField("输入客户名、客户号、基金代码、基金名称...", text: Binding(
                         get: { searchText },
                         set: { newValue in
                             searchText = newValue
@@ -271,7 +316,7 @@ struct ManageHoldingsView: View {
             }
         } message: {
             if let client = clientToRename {
-                Text("将客户 \"\(client.clientName)\" 下的所有持仓姓名修改为:")
+                Text("将客户 \"\(client.getFullDisplayName(isPrivacyModeEnabled: false))\" 下的所有持仓姓名修改为:")
             } else {
                 Text("无法找到要修改的客户。")
             }
@@ -287,7 +332,7 @@ struct ManageHoldingsView: View {
             }
         } message: {
             if let client = clientToDelete {
-                Text("您确定要删除客户 \"\(client.clientName)\" 名下的所有基金持仓吗？此操作无法撤销。")
+                Text("您确定要删除客户 \"\(client.getFullDisplayName(isPrivacyModeEnabled: false))\" 名下的所有基金持仓吗？此操作无法撤销。")
             } else {
                 Text("无法找到要删除的客户。")
             }
@@ -300,9 +345,11 @@ struct ManageHoldingsView: View {
     }
     
     private func clientGroupItemView(clientGroup: ClientGroupForManagement) -> some View {
-        let baseColor = clientGroup.clientName.morandiColor()
+        let displayName = isPrivacyModeEnabled ?
+            processClientName(clientGroup.displayClientName) :
+            clientGroup.displayClientName
+        let baseColor = clientGroup.originalClientName.morandiColor()
         let isExpanded = expandedClientCodes.contains(clientGroup.id)
-        let displayClientName = isPrivacyModeEnabled ? processClientName(clientGroup.clientName) : clientGroup.clientName
         
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 0) {
@@ -318,12 +365,20 @@ struct ManageHoldingsView: View {
                 }) {
                     HStack(alignment: .center, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text("**\(displayClientName)**")
+                            // 显示客户名部分
+                            Text("**\(displayName)**")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                             
+                            // 显示客户号部分（如果有）
+                            if let clientID = clientGroup.clientID, !clientID.isEmpty {
+                                Text("(\(clientID))")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
                         }
                         
                         Spacer()
@@ -347,7 +402,7 @@ struct ManageHoldingsView: View {
                             HStack(spacing: 8) {
                                 Button("改名") {
                                     clientToRename = clientGroup
-                                    newClientName = clientGroup.clientName
+                                    newClientName = clientGroup.originalClientName
                                     isShowingRenameAlert = true
                                 }
                                 .font(.system(size: 11, weight: .semibold))
@@ -434,13 +489,18 @@ struct ManageHoldingsView: View {
     }
 
     private func renameClient() async {
-        guard let oldClientName = clientToRename?.clientName, !newClientName.isEmpty else { return }
+        guard let oldClientGroup = clientToRename else { return }
+        
+        // 解析分组键获取原始客户名和客户号
+        let components = oldClientGroup.id.split(separator: "|", maxSplits: 1).map(String.init)
+        let oldClientName = components[0]
+        let oldClientID = components.count > 1 ? components[1] : ""
         
         if oldClientName == newClientName { return }
         
         dataManager.holdings = dataManager.holdings.map { holding in
             var updatedHolding = holding
-            if holding.clientName == oldClientName {
+            if holding.clientName == oldClientName && holding.clientID == oldClientID {
                 updatedHolding.clientName = newClientName
             }
             return updatedHolding
@@ -459,11 +519,21 @@ struct ManageHoldingsView: View {
     private func confirmDeleteClientHoldings() async {
         guard let client = clientToDelete else { return }
         
-        let holdingsToDeleteCount = dataManager.holdings.filter { $0.clientName == client.clientName }.count
-        dataManager.holdings.removeAll { $0.clientName == client.clientName }
+        // 解析分组键获取客户名和客户号
+        let components = client.id.split(separator: "|", maxSplits: 1).map(String.init)
+        let clientName = components[0]
+        let clientID = components.count > 1 ? components[1] : ""
+        
+        let holdingsToDeleteCount = dataManager.holdings.filter {
+            $0.clientName == clientName && $0.clientID == clientID
+        }.count
+        
+        dataManager.holdings.removeAll {
+            $0.clientName == clientName && $0.clientID == clientID
+        }
         
         dataManager.saveData()
-        await fundService.addLog("ManageHoldingsView: 已批量删除客户 '\(client.clientName)' 名下的 \(holdingsToDeleteCount) 个持仓。", type: .info)
+        await fundService.addLog("ManageHoldingsView: 已批量删除客户 '\(client.getFullDisplayName(isPrivacyModeEnabled: false))' 名下的 \(holdingsToDeleteCount) 个持仓。", type: .info)
         
         await MainActor.run {
             clientToDelete = nil
@@ -484,6 +554,7 @@ struct ManageHoldingsView: View {
     }
 }
 
+// 其他结构体保持不变...
 struct SwipeableHoldingCard: View {
     let holding: FundHolding
     let onEdit: () -> Void
