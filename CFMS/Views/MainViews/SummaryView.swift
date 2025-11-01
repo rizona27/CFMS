@@ -538,6 +538,7 @@ struct SummaryView: View {
                         }
                     }
                 }
+                .padding(.leading, 8)
             
                 Spacer()
                 
