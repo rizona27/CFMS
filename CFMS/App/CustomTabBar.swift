@@ -140,9 +140,9 @@ struct EnhancedTabBarButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
-            .onChange(of: configuration.isPressed) { isPressed in
+            .onChange(of: configuration.isPressed) { oldValue, newValue in
                 withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
-                    pressingTab = isPressed ? index : nil
+                    pressingTab = newValue ? index : nil
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
