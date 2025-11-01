@@ -28,9 +28,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // 使用自定义TabBar的主界面
             VStack(spacing: 0) {
-                // 根据选中的tab显示不同视图
                 Group {
                     switch selectedTab {
                     case 0:
@@ -57,12 +55,11 @@ struct ContentView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                // 增强版自定义TabBar - 现在会贴住底边
                 CustomTabBar(selectedTab: $selectedTab)
                     .environmentObject(dataManager)
             }
             .disabled(isRefreshLocked)
-            .ignoresSafeArea(.container, edges: .bottom) // 忽略底部安全区域
+            .ignoresSafeArea(.container, edges: .bottom)
 
             if showSplash {
                 ZStack {

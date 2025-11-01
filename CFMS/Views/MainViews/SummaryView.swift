@@ -66,7 +66,6 @@ struct SummaryView: View {
     @State private var lastToastShowTime: Date = Date.distantPast
     @State private var toastTimer: Timer? = nil
 
-    // 添加更新中文本状态
     @State private var updatingTextState = 0
     @State private var updatingTextTimer: Timer?
 
@@ -264,8 +263,7 @@ struct SummaryView: View {
             showingToast = false
         }
     }
-    
-    // 添加更新中文本动画
+
     private var updatingText: String {
         let baseText = "更新中"
         let dots = String(repeating: ".", count: updatingTextState % 4)
@@ -544,7 +542,6 @@ struct SummaryView: View {
                 Spacer()
                 
                 HStack(spacing: 8) {
-                    // 日期文字 - 点击后向左移动
                     Button(action: {
                         dataManager.triggerRefreshButton()
                     }) {
@@ -565,9 +562,7 @@ struct SummaryView: View {
                     .disabled(dataManager.disableDateTap)
                     .offset(x: dataManager.showRefreshButton ? -40 : 0)
                     .opacity(dataManager.showRefreshButton ? 0.0 : 1.0)
-                    .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton) // 延长动画时间
-                    
-                    // 刷新按钮 - 只在触发后显示
+                    .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton)
                     if dataManager.showRefreshButton {
                         Button(action: {
                             Task {
@@ -597,7 +592,7 @@ struct SummaryView: View {
                         }
                         .disabled(dataManager.isRefreshing)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                        .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton) // 延长动画时间
+                        .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton)
                     }
                 }
                 .padding(.trailing, 8)
@@ -717,7 +712,6 @@ struct SummaryView: View {
                         Spacer()
                         HStack {
                             Spacer()
-                            // 修改为与ClientView相同的"更新中"样式
                             HStack(spacing: 0) {
                                 Text("更新中")
                                     .font(.system(size: 16, weight: .medium))
@@ -790,8 +784,7 @@ struct SummaryView: View {
                 isSearchExpanded = false
             }
             stopUpdatingTextAnimation()
-            
-            // 修复动画不连续问题：在视图消失时重置动画状态
+
             withAnimation(.none) {
                 dataManager.showRefreshButton = false
             }
@@ -948,8 +941,7 @@ struct SummaryView: View {
         dataManager.completeRefresh()
         stopUpdatingTextAnimation()
         NotificationCenter.default.post(name: Notification.Name("RefreshLockDisabled"), object: nil)
-        
-        // 刷新完成后才恢复日期文字的显示
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation(.easeInOut(duration: 0.8)) {
                 dataManager.showRefreshButton = false

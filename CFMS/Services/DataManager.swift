@@ -21,8 +21,7 @@ class DataManager: ObservableObject {
     @Published var holdings: [FundHolding] = []
     @Published var favorites: [FavoriteItem] = []
     @Published var isPrivacyMode: Bool = false
-    
-    // 共享刷新状态
+
     @Published var isRefreshing: Bool = false
     @Published var showRefreshButton: Bool = false
     @Published var disableDateTap: Bool = false
@@ -174,18 +173,15 @@ class DataManager: ObservableObject {
         return ""
     }
     
-    // 刷新按钮状态管理
     func triggerRefreshButton() {
         guard !disableDateTap else { return }
-        
-        // 显示刷新按钮3秒，隐藏日期文字
+
         showRefreshButton = true
         refreshButtonTimer?.invalidate()
         refreshButtonTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
             self.showRefreshButton = false
         }
-        
-        // 5秒内禁用再次点击日期
+
         disableDateTap = true
         refreshCooldownTimer?.invalidate()
         refreshCooldownTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in

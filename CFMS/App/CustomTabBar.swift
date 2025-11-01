@@ -11,12 +11,10 @@ struct CustomTabBar: View {
         (icon: "gearshape", title: "设置", colors: [Color(hex: "43e97b"), Color(hex: "38f9d7")])
     ]
     
-    // 徽章计数状态
     @State private var badgeCounts = [0, 0, 0, 0]
     
     var body: some View {
         VStack(spacing: 0) {
-            // 添加一个细分割线
             Divider()
                 .background(Color.gray.opacity(0.2))
             
@@ -29,7 +27,6 @@ struct CustomTabBar: View {
                     }) {
                         VStack(spacing: 4) {
                             ZStack {
-                                // 未选中状态的灰色背景
                                 if selectedTab != index {
                                     Circle()
                                         .fill(Color(.systemGray5))
@@ -37,7 +34,6 @@ struct CustomTabBar: View {
                                         .opacity(0.8)
                                 }
                                 
-                                // 渐变背景（选中状态）
                                 if selectedTab == index {
                                     LinearGradient(
                                         gradient: Gradient(colors: tabs[index].colors),
@@ -54,7 +50,6 @@ struct CustomTabBar: View {
                                     .foregroundColor(selectedTab == index ? .white : .gray)
                                     .scaleEffect(selectedTab == index ? 1.1 : 1.0)
                                 
-                                // 徽章（可选）
                                 if badgeCounts[index] > 0 {
                                     Text("\(badgeCounts[index])")
                                         .font(.system(size: 8, weight: .bold))
@@ -77,24 +72,20 @@ struct CustomTabBar: View {
                     .buttonStyle(TabBarButtonStyle())
                 }
             }
-            .frame(height: 60) // 固定高度，适合底部导航栏
+            .frame(height: 60)
             .padding(.horizontal, 8)
             .background(Color(.systemBackground))
         }
         .background(Color(.systemBackground))
         .onAppear {
-            // 可以在这里初始化徽章数据
             updateBadgeCounts()
         }
     }
     
     private func updateBadgeCounts() {
-        // 这里可以添加更新徽章计数的逻辑
-        // 例如：badgeCounts[0] = dataManager.outdatedFundsCount
     }
 }
 
-// 修复：使用 some View 而不是 View
 struct TabBarButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -103,7 +94,6 @@ struct TabBarButtonStyle: ButtonStyle {
     }
 }
 
-// 预览
 struct CustomTabBar_Previews: PreviewProvider {
     static var previews: some View {
         CustomTabBar(selectedTab: .constant(0))

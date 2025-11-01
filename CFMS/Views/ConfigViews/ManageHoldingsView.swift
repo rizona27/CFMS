@@ -6,10 +6,8 @@ struct ClientGroupForManagement: Identifiable {
     let displayClientName: String
     let clientID: String?
     var holdings: [FundHolding]
-    
-    // 获取完整的显示名称
+
     func getFullDisplayName(isPrivacyModeEnabled: Bool) -> String {
-        // 隐私模式下只对客户名部分脱敏，客户号保持不变
         let processedName = isPrivacyModeEnabled ? processClientName(displayClientName) : displayClientName
         
         if let clientID = clientID, !clientID.isEmpty {
@@ -18,8 +16,7 @@ struct ClientGroupForManagement: Identifiable {
             return processedName
         }
     }
-    
-    // 处理客户名脱敏
+
     private func processClientName(_ name: String) -> String {
         if name.count <= 1 {
             return name
@@ -51,7 +48,6 @@ struct ManageHoldingsView: View {
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = false
 
     private var groupedHoldings: [ClientGroupForManagement] {
-        // 使用 clientName 和 clientID 的组合作为分组键
         let groupedDictionary = Dictionary(grouping: dataManager.holdings) { holding in
             "\(holding.clientName)|\(holding.clientID)"
         }
@@ -59,18 +55,16 @@ struct ManageHoldingsView: View {
         var clientGroups: [ClientGroupForManagement] = []
         
         for (groupKey, holdings) in groupedDictionary {
-            // 从分组键中解析出客户名和客户号
             let components = groupKey.split(separator: "|", maxSplits: 1).map(String.init)
             let originalName = components[0]
             let clientID = components.count > 1 && !components[1].isEmpty ? components[1] : nil
-            
-            // 调试输出
+
             print("分组键: \(groupKey) -> 客户名: \(originalName), 客户号: \(clientID ?? "无")")
             
             let group = ClientGroupForManagement(
                 id: groupKey,
                 originalClientName: originalName,
-                displayClientName: originalName, // 直接使用原始客户名
+                displayClientName: originalName,
                 clientID: clientID,
                 holdings: holdings
             )
@@ -365,14 +359,12 @@ struct ManageHoldingsView: View {
                 }) {
                     HStack(alignment: .center, spacing: 4) {
                         HStack(spacing: 6) {
-                            // 显示客户名部分
                             Text("**\(displayName)**")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
-                            
-                            // 显示客户号部分（如果有）
+
                             if let clientID = clientGroup.clientID, !clientID.isEmpty {
                                 Text("(\(clientID))")
                                     .font(.system(size: 12, weight: .medium))
@@ -490,8 +482,7 @@ struct ManageHoldingsView: View {
 
     private func renameClient() async {
         guard let oldClientGroup = clientToRename else { return }
-        
-        // 解析分组键获取原始客户名和客户号
+
         let components = oldClientGroup.id.split(separator: "|", maxSplits: 1).map(String.init)
         let oldClientName = components[0]
         let oldClientID = components.count > 1 ? components[1] : ""
@@ -518,8 +509,7 @@ struct ManageHoldingsView: View {
 
     private func confirmDeleteClientHoldings() async {
         guard let client = clientToDelete else { return }
-        
-        // 解析分组键获取客户名和客户号
+
         let components = client.id.split(separator: "|", maxSplits: 1).map(String.init)
         let clientName = components[0]
         let clientID = components.count > 1 ? components[1] : ""
@@ -554,7 +544,6 @@ struct ManageHoldingsView: View {
     }
 }
 
-// 其他结构体保持不变...
 struct SwipeableHoldingCard: View {
     let holding: FundHolding
     let onEdit: () -> Void
