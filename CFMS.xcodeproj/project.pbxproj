@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A361C9312EB6369A00BA6AFC /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */; };
 		A3ACC8212EAFAFB8009F7783 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */; };
 		A3ACC8232EAFAFEE009F7783 /* FundModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8222EAFAFEE009F7783 /* FundModels.swift */; };
 		A3ACC8252EAFB014009F7783 /* TableColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8242EAFB014009F7783 /* TableColumn.swift */; };
@@ -38,6 +39,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
 		A3ACC8222EAFAFEE009F7783 /* FundModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FundModels.swift; sourceTree = "<group>"; };
 		A3ACC8242EAFB014009F7783 /* TableColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableColumn.swift; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 				A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */,
 				A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */,
 				A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */,
+				A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */,
 				A3ACC8342EB0B6A5009F7783 /* Info */,
 			);
 			path = App;
@@ -282,6 +285,7 @@
 				A3ACC82E2EAFB706009F7783 /* ManageHoldingsView.swift in Sources */,
 				A3DDB5FC2EAFAA98004F1C8B /* EmptyStateView.swift in Sources */,
 				A3ACC8442EB10491009F7783 /* GradientButton.swift in Sources */,
+				A361C9312EB6369A00BA6AFC /* CustomTabBar.swift in Sources */,
 				A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */,
 				A3DDB6102EAFAE6D004F1C8B /* ConfigView.swift in Sources */,
 				A3ACC8232EAFAFEE009F7783 /* FundModels.swift in Sources */,

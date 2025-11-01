@@ -28,45 +28,41 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            TabView(selection: $selectedTab) {
-                SummaryView()
-                    .tabItem {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                        Text("一览")
+            // 使用自定义TabBar的主界面
+            VStack(spacing: 0) {
+                // 根据选中的tab显示不同视图
+                Group {
+                    switch selectedTab {
+                    case 0:
+                        SummaryView()
+                            .environmentObject(dataManager)
+                            .environmentObject(fundService)
+                    case 1:
+                        ClientView()
+                            .environmentObject(dataManager)
+                            .environmentObject(fundService)
+                    case 2:
+                        TopPerformersView()
+                            .environmentObject(dataManager)
+                            .environmentObject(fundService)
+                    case 3:
+                        ConfigView()
+                            .environmentObject(dataManager)
+                            .environmentObject(fundService)
+                    default:
+                        SummaryView()
+                            .environmentObject(dataManager)
+                            .environmentObject(fundService)
                     }
-                    .tag(0)
-                    .environmentObject(dataManager)
-                    .environmentObject(fundService)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                ClientView()
-                    .tabItem {
-                        Image(systemName: "dollarsign.circle")
-                        Text("客户")
-                    }
-                    .tag(1)
+                // 增强版自定义TabBar - 现在会贴住底边
+                CustomTabBar(selectedTab: $selectedTab)
                     .environmentObject(dataManager)
-                    .environmentObject(fundService)
-                
-                TopPerformersView()
-                    .tabItem {
-                        Image(systemName: "list.bullet.rectangle.portrait")
-                        Text("排名")
-                    }
-                    .tag(2)
-                    .environmentObject(dataManager)
-                    .environmentObject(fundService)
-
-                ConfigView()
-                    .tabItem {
-                        Image(systemName: "gearshape")
-                        Text("设置")
-                    }
-                    .tag(3)
-                    .environmentObject(dataManager)
-                    .environmentObject(fundService)
             }
             .disabled(isRefreshLocked)
-            .animation(.easeInOut(duration: 0.3), value: selectedTab)
+            .ignoresSafeArea(.container, edges: .bottom) // 忽略底部安全区域
 
             if showSplash {
                 ZStack {
