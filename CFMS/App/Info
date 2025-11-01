@@ -11,13 +11,18 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     
-    <!-- 文件访问权限 -->
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>应用需要访问文档文件夹来存储和读取持仓数据文件</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>应用需要访问下载文件夹来导入CSV数据文件</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>应用需要访问桌面文件夹来处理数据文件</string>
+    
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
-    
-    <!-- 支持的文件类型配置 -->
+
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -26,13 +31,13 @@
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Default</string>
+            <string>Owner</string>
             <key>LSItemContentTypes</key>
             <array>
                 <string>public.comma-separated-values-text</string>
-                <string>public.delimited-values-text</string>
-                <string>public.text</string>
             </array>
+            <key>CFBundleTypeIconFiles</key>
+            <array/>
         </dict>
         <dict>
             <key>CFBundleTypeName</key>
@@ -44,11 +49,11 @@
             <key>LSItemContentTypes</key>
             <array>
                 <string>public.plain-text</string>
+                <string>public.text</string>
             </array>
         </dict>
     </array>
-    
-    <!-- 导入类型配置 -->
+
     <key>UTImportedTypeDeclarations</key>
     <array>
         <dict>
@@ -67,11 +72,12 @@
                 <array>
                     <string>csv</string>
                 </array>
+                <key>public.mime-type</key>
+                <string>text/csv</string>
             </dict>
         </dict>
     </array>
-    
-    <!-- 导出类型配置 -->
+
     <key>UTExportedTypeDeclarations</key>
     <array>
         <dict>
@@ -82,6 +88,7 @@
             <key>UTTypeConformsTo</key>
             <array>
                 <string>public.data</string>
+                <string>public.content</string>
             </array>
             <key>UTTypeTagSpecification</key>
             <dict>
@@ -93,14 +100,12 @@
         </dict>
     </array>
     
-    <!-- 网络权限 -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
     
-    <!-- 场景配置 -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
@@ -118,5 +123,24 @@
             </array>
         </dict>
     </dict>
+
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>processing</string>
+    </array>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
 </dict>
 </plist>

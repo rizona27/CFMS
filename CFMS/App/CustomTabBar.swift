@@ -25,7 +25,7 @@ struct CustomTabBar: View {
                             selectedTab = index
                         }
                     }) {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 2) {
                             ZStack {
                                 if selectedTab != index {
                                     Circle()
@@ -68,13 +68,15 @@ struct CustomTabBar: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
+                        .padding(.bottom, 12)
                     }
                     .buttonStyle(TabBarButtonStyle())
                 }
             }
-            .frame(height: 60)
+            .frame(height: 70)
             .padding(.horizontal, 8)
-            .background(Color(.systemBackground))
+            .padding(.top, 0)
+            .padding(.bottom, 8)
         }
         .background(Color(.systemBackground))
         .onAppear {

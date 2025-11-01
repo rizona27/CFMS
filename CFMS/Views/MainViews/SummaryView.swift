@@ -68,6 +68,9 @@ struct SummaryView: View {
 
     @State private var updatingTextState = 0
     @State private var updatingTextTimer: Timer?
+    
+    @State private var isRefreshing = false
+    @State private var refreshProgress: (current: Int, total: Int) = (0, 0)
 
     private let calendar = Calendar.current
     private let toastCooldown: TimeInterval = 3600
@@ -475,6 +478,35 @@ struct SummaryView: View {
     
     @State private var isSearchExpanded: Bool = false
     
+    private var progressToastView: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 0) {
+                Text("更新中")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                Text(String(repeating: ".", count: updatingTextState % 4))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(width: 20, alignment: .leading)
+            }
+            
+            Text("[\(refreshProgress.current)/\(refreshProgress.total)]")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray6))
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+    
     private var headerContent: some View {
         VStack(spacing: 0) {
             HStack {
@@ -544,7 +576,9 @@ struct SummaryView: View {
                 
                 HStack(spacing: 8) {
                     Button(action: {
-                        dataManager.triggerRefreshButton()
+                        if !dataManager.holdings.isEmpty {
+                            dataManager.triggerRefreshButton()
+                        }
                     }) {
                         if dataManager.holdings.isEmpty {
                             Text("暂无数据")
@@ -560,17 +594,18 @@ struct SummaryView: View {
                                 .foregroundColor(.orange)
                         }
                     }
-                    .disabled(dataManager.disableDateTap)
+                    .disabled(dataManager.holdings.isEmpty)
                     .offset(x: dataManager.showRefreshButton ? -40 : 0)
                     .opacity(dataManager.showRefreshButton ? 0.0 : 1.0)
                     .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton)
+                    
                     if dataManager.showRefreshButton {
                         Button(action: {
                             Task {
                                 await refreshAllFundInfo()
                             }
                         }) {
-                            if dataManager.isRefreshing {
+                            if isRefreshing {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle())
                                     .scaleEffect(0.8)
@@ -591,7 +626,7 @@ struct SummaryView: View {
                                     .shadow(color: .themePrimary.opacity(0.3), radius: 3, x: 0, y: 2)
                             }
                         }
-                        .disabled(dataManager.isRefreshing)
+                        .disabled(isRefreshing)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
                         .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton)
                     }
@@ -703,7 +738,7 @@ struct SummaryView: View {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
                 
-                if dataManager.isRefreshing {
+                if isRefreshing {
                     Color.black.opacity(0.3)
                         .edgesIgnoringSafeArea(.all)
                         .allowsHitTesting(true)
@@ -711,31 +746,9 @@ struct SummaryView: View {
 
                     VStack {
                         Spacer()
-                        HStack {
-                            Spacer()
-                            HStack(spacing: 0) {
-                                Text("更新中")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 48, alignment: .trailing)
-                                Text(String(repeating: ".", count: updatingTextState % 4))
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 20, alignment: .leading)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray6))
-                                    .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
-                            Spacer()
-                        }
+                        
+                        progressToastView
+                        
                         Spacer()
                     }
                     .zIndex(1000)
@@ -873,7 +886,8 @@ struct SummaryView: View {
     
     private func refreshAllFundInfo() async {
         await MainActor.run {
-            dataManager.startRefresh()
+            isRefreshing = true
+            refreshProgress = (0, dataManager.holdings.count)
             startUpdatingTextAnimation()
             NotificationCenter.default.post(name: Notification.Name("RefreshStarted"), object: nil)
             NotificationCenter.default.post(name: Notification.Name("RefreshLockEnabled"), object: nil)
@@ -928,7 +942,7 @@ struct SummaryView: View {
             dataManager.saveData()
             completeRefresh()
             
-            let stats = (success: dataManager.refreshProgress.current, fail: totalCount - dataManager.refreshProgress.current)
+            let stats = (success: refreshProgress.current, fail: totalCount - refreshProgress.current)
             NotificationCenter.default.post(name: Notification.Name("RefreshCompleted"), object: nil, userInfo: ["stats": stats])
 
             NotificationCenter.default.post(name: Notification.Name("HoldingsDataUpdated"), object: nil)
@@ -939,7 +953,7 @@ struct SummaryView: View {
     }
     
     private func completeRefresh() {
-        dataManager.completeRefresh()
+        isRefreshing = false
         stopUpdatingTextAnimation()
         NotificationCenter.default.post(name: Notification.Name("RefreshLockDisabled"), object: nil)
 
@@ -988,17 +1002,12 @@ struct SummaryView: View {
             if let updatedHolding = updatedHolding {
                 updatedHoldings[holdingId] = updatedHolding
                 
-                if let originalHolding = dataManager.holdings.first(where: { $0.id == holdingId }) {
-                    dataManager.currentRefreshingClientName = originalHolding.clientName
-                    dataManager.currentRefreshingClientID = originalHolding.clientID
-                }
-                
-                dataManager.refreshProgress.current = min(dataManager.refreshProgress.current + 1, totalCount)
+                refreshProgress.current = min(refreshProgress.current + 1, totalCount)
                 Task {
                     await fundService.addLog("基金 \(updatedHolding.fundCode) 刷新成功", type: .success)
                 }
             } else {
-                dataManager.refreshProgress.current = min(dataManager.refreshProgress.current + 1, totalCount)
+                refreshProgress.current = min(refreshProgress.current + 1, totalCount)
                 if let originalHolding = dataManager.holdings.first(where: { $0.id == holdingId }) {
                     Task {
                         await fundService.addLog("基金 \(originalHolding.fundCode) 刷新失败", type: .error)

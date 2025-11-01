@@ -59,7 +59,7 @@ struct ContentView: View {
                     .environmentObject(dataManager)
             }
             .disabled(isRefreshLocked)
-            .ignoresSafeArea(.container, edges: .bottom)
+            .ignoresSafeArea(.container, edges: [.top, .bottom])
 
             if showSplash {
                 ZStack {
