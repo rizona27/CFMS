@@ -565,7 +565,7 @@ struct SummaryView: View {
                     .disabled(dataManager.disableDateTap)
                     .offset(x: dataManager.showRefreshButton ? -40 : 0)
                     .opacity(dataManager.showRefreshButton ? 0.0 : 1.0)
-                    .animation(.easeInOut(duration: 0.3), value: dataManager.showRefreshButton)
+                    .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton) // 延长动画时间
                     
                     // 刷新按钮 - 只在触发后显示
                     if dataManager.showRefreshButton {
@@ -597,7 +597,7 @@ struct SummaryView: View {
                         }
                         .disabled(dataManager.isRefreshing)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                        .animation(.easeInOut(duration: 0.3), value: dataManager.showRefreshButton)
+                        .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton) // 延长动画时间
                     }
                 }
                 .padding(.trailing, 8)
@@ -790,6 +790,11 @@ struct SummaryView: View {
                 isSearchExpanded = false
             }
             stopUpdatingTextAnimation()
+            
+            // 修复动画不连续问题：在视图消失时重置动画状态
+            withAnimation(.none) {
+                dataManager.showRefreshButton = false
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("HoldingsDataUpdated"))) { _ in
             refreshID = UUID()
@@ -943,6 +948,13 @@ struct SummaryView: View {
         dataManager.completeRefresh()
         stopUpdatingTextAnimation()
         NotificationCenter.default.post(name: Notification.Name("RefreshLockDisabled"), object: nil)
+        
+        // 刷新完成后才恢复日期文字的显示
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.easeInOut(duration: 0.8)) {
+                dataManager.showRefreshButton = false
+            }
+        }
     }
     
     private func fetchHoldingWithRetry(holding: FundHolding) async -> (UUID, FundHolding?) {
