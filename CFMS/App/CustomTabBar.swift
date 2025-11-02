@@ -14,6 +14,7 @@ struct CustomTabBar: View {
     @State private var badgeCounts = [0, 0, 0, 0]
     @State private var animatingTab: Int? = nil
     @State private var pressingTab: Int? = nil
+    @State private var rotationAngles = [0.0, 0.0, 0.0, 0.0]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +49,7 @@ struct CustomTabBar: View {
                             .fill(Color(.systemGray6))
                             .frame(width: 28, height: 28)
                             .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
-                            .scaleEffect(pressingTab == index ? 0.85 : (animatingTab == index ? 0.9 : 1.0))
+                            .scaleEffect(pressingTab == index ? 0.85 : (animatingTab == index ? 1.2 : 1.0))
                     }
                     
                     // 选中状态的渐变圆形
@@ -68,7 +69,7 @@ struct CustomTabBar: View {
                                 x: 0,
                                 y: 2
                             )
-                            .scaleEffect(pressingTab == index ? 1.15 : (animatingTab == index ? 1.1 : 1.0))
+                            .scaleEffect(pressingTab == index ? 1.15 : (animatingTab == index ? 1.3 : 1.0))
                             .transition(.scale.combined(with: .opacity))
                     }
                     
@@ -76,8 +77,8 @@ struct CustomTabBar: View {
                     Image(systemName: tabs[index].icon)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(selectedTab == index ? .white : .gray)
-                        .scaleEffect(pressingTab == index ? 1.4 : (animatingTab == index ? 1.5 : 1.0))
-                        .rotationEffect(animatingTab == index ? .degrees(360) : .degrees(0))
+                        .scaleEffect(pressingTab == index ? 1.4 : (animatingTab == index ? 1.6 : 1.0))
+                        .rotationEffect(.degrees(rotationAngles[index]))
                     
                     // 徽章
                     if badgeCounts[index] > 0 {
@@ -108,7 +109,7 @@ struct CustomTabBar: View {
     
     private func handleTabSelection(_ index: Int) {
         if selectedTab == index {
-            // 点击当前选中的图标时触发放大动画
+            // 再次点击当前页面：放大动画效果
             withAnimation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0.3)) {
                 animatingTab = index
             }
@@ -120,9 +121,19 @@ struct CustomTabBar: View {
                 }
             }
         } else {
-            // 切换标签时的平滑过渡动画
+            // 切换到新页面：旋转动画效果
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0.4)) {
+                // 先旋转当前选中的tab
+                rotationAngles[selectedTab] = 0
                 selectedTab = index
+                rotationAngles[index] = 360
+            }
+            
+            // 旋转动画完成后重置角度
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    rotationAngles[index] = 0
+                }
             }
         }
     }

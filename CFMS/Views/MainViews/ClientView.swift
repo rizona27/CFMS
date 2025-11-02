@@ -810,7 +810,7 @@ struct ClientView: View {
                                 .foregroundColor(.orange)
                         }
                     }
-                    .disabled(dataManager.holdings.isEmpty) 
+                    .disabled(dataManager.holdings.isEmpty)
                     .offset(x: dataManager.showRefreshButton ? -40 : 0)
                     .opacity(dataManager.showRefreshButton ? 0.0 : 1.0)
                     .animation(.easeInOut(duration: 0.8), value: dataManager.showRefreshButton)

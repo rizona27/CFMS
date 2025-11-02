@@ -11,6 +11,22 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     
+    <!-- 添加 URL Schemes 注册 -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.cfms.documenttypes</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>documenttypes</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+        </dict>
+    </array>
+    
+    <!-- 文件访问权限描述 -->
     <key>NSDocumentsFolderUsageDescription</key>
     <string>应用需要访问文档文件夹来存储和读取持仓数据文件</string>
     <key>NSDownloadsFolderUsageDescription</key>
@@ -18,11 +34,13 @@
     <key>NSDesktopFolderUsageDescription</key>
     <string>应用需要访问桌面文件夹来处理数据文件</string>
     
+    <!-- 文件共享支持 -->
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
 
+    <!-- 文档类型声明 -->
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -52,8 +70,22 @@
                 <string>public.text</string>
             </array>
         </dict>
+        <!-- 添加 CFMS 文件类型支持 -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>CFMS Holding Data</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.youcompany.cfms.holding</string>
+            </array>
+        </dict>
     </array>
 
+    <!-- 导入类型声明 -->
     <key>UTImportedTypeDeclarations</key>
     <array>
         <dict>
@@ -78,6 +110,7 @@
         </dict>
     </array>
 
+    <!-- 导出类型声明 -->
     <key>UTExportedTypeDeclarations</key>
     <array>
         <dict>
@@ -88,24 +121,26 @@
             <key>UTTypeConformsTo</key>
             <array>
                 <string>public.data</string>
-                <string>public.content</string>
             </array>
             <key>UTTypeTagSpecification</key>
             <dict>
                 <key>public.filename-extension</key>
                 <array>
                     <string>cfms</string>
+                    <string>holding</string>
                 </array>
             </dict>
         </dict>
     </array>
     
+    <!-- 网络传输安全 -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
     
+    <!-- Scene 配置 -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
@@ -124,11 +159,13 @@
         </dict>
     </dict>
 
+    <!-- 后台模式 -->
     <key>UIBackgroundModes</key>
     <array>
         <string>processing</string>
     </array>
 
+    <!-- 屏幕方向支持 -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

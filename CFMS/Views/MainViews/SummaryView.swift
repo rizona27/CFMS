@@ -212,7 +212,7 @@ struct SummaryView: View {
     }
 
     private func toggleAllCards() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             if areAnyCardsExpanded {
                 expandedFundCodes.removeAll()
             } else {
@@ -295,7 +295,7 @@ struct SummaryView: View {
         return VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 0) {
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         if isExpanded {
                             expandedFundCodes.remove(fundCode)
                         } else {
@@ -442,9 +442,9 @@ struct SummaryView: View {
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.25).delay(0.15)),
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.15)),
                         removal: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.2))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8))
                         )
                 )
             }
@@ -519,7 +519,7 @@ struct SummaryView: View {
                 GradientButton(
                     icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
                     action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                             isSearchExpanded.toggle()
                         }
                     },

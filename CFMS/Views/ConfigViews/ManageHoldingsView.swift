@@ -97,7 +97,7 @@ struct ManageHoldingsView: View {
     }
 
     private func toggleAllCards() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             if areAnyCardsExpanded {
                 expandedClientCodes.removeAll()
             } else {
@@ -144,7 +144,7 @@ struct ManageHoldingsView: View {
                 GradientButton(
                     icon: isSearchExpanded ? "magnifyingglass.circle.fill" : "magnifyingglass.circle",
                     action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                             isSearchExpanded.toggle()
                         }
                     },
@@ -349,7 +349,7 @@ struct ManageHoldingsView: View {
             HStack(alignment: .center, spacing: 0) {
                 
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         if isExpanded {
                             expandedClientCodes.remove(clientGroup.id)
                         } else {
@@ -449,9 +449,9 @@ struct ManageHoldingsView: View {
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.25).delay(0.15)),
+                            .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.15)),
                         removal: .opacity.combined(with: .scale(scale: 0.95))
-                            .animation(.easeInOut(duration: 0.2))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8))
                     )
                 )
             }
