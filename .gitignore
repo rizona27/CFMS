@@ -1,9 +1,25 @@
-.DS_Store
-CFMS.xcodeproj/project.xcworkspace/xcuserdata/rizona.xcuserdatad/UserInterfaceState.xcuserstate
-.DS_Store
-.DS_Store
-/CFMS.xcodeproj/project.xcworkspace/xcuserdata
-CFMS.xcodeproj/project.xcworkspace/xcuserdata/rizona.xcuserdatad/UserInterfaceState.xcuserstate
-CFMS.xcodeproj/project.xcworkspace/xcuserdata/rizona.xcuserdatad/UserInterfaceState.xcuserstate
-/CFMS.xcodeproj/project.xcworkspace/xcuserdata/rizona.xcuserdatad
+# 创建一个干净的 .gitignore 文件
+cat > .gitignore << 'EOF'
+# Xcode
 *.xcuserstate
+*.xcuserdatad/
+*.xccheckout
+*.xcscmblueprint
+
+# macOS
+.DS_Store
+
+# Build directories
+build/
+DerivedData/
+
+# Swift Package Manager
+/.build
+/Packages
+
+# CocoaPods
+/Pods
+
+# Carthage
+/Carthage
+EOF
