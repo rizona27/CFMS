@@ -72,7 +72,6 @@ import SwiftUI
         @State private var isRefreshing = false
         @State private var refreshProgress: (current: Int, total: Int) = (0, 0)
 
-        // 修改状态控制，使用显示状态和透明度
         @State private var showStatusText = true
         @State private var showRefreshButton = false
         @State private var autoHideTimer: Timer? = nil
@@ -514,11 +513,9 @@ import SwiftUI
         
         private func onStatusTextTap() {
             guard !dataManager.holdings.isEmpty else { return }
-            
-            // 取消之前的定时器
+
             autoHideTimer?.invalidate()
-            
-            // 先隐藏状态文字，然后显示刷新按钮
+
             withAnimation(.easeInOut(duration: 1.0)) {
                 showStatusText = false
             }
@@ -528,8 +525,7 @@ import SwiftUI
                     self.showRefreshButton = true
                     dataManager.showRefreshButton = true
                 }
-                
-                // 设置5秒后自动隐藏刷新按钮
+
                 autoHideTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
                     if !isRefreshing {
                         withAnimation(.easeInOut(duration: 1.0)) {
@@ -613,10 +609,8 @@ import SwiftUI
                     .padding(.leading, 8)
                 
                     Spacer()
-                    
-                    // 修改后的右侧布局：使用ZStack让状态文字和刷新按钮共享同一位置
+
                     ZStack {
-                        // 状态文字
                         if showStatusText {
                             Button(action: {
                                 onStatusTextTap()
@@ -639,10 +633,8 @@ import SwiftUI
                             .transition(.opacity.combined(with: .scale(scale: 0.8)))
                         }
                         
-                        // 刷新按钮
                         if showRefreshButton {
                             Button(action: {
-                                // 取消自动隐藏定时器
                                 autoHideTimer?.invalidate()
                                 Task {
                                     await refreshAllFundInfo()
