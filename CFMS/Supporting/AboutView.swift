@@ -15,7 +15,7 @@ struct AboutView: View {
         UpdateLog(version: "Version 1.0.0", description: "MMP项目构建。"),
         UpdateLog(version: "Version 2.0.0", description: "项目重构CFMS。\n重做UI界面。"),
         UpdateLog(version: "Version 2.1.0", description: "编辑持仓页面完善客户号显示搜索。"),
-        UpdateLog(version: "Version 2.2.0", description: "增加自定义导航栏。"),
+        UpdateLog(version: "Version 2.2.0", description: "增加自定义导航栏。\n添加iOS15版本兼容。"),
         UpdateLog(version: "Version X.", description: "To be continued...")
     ]
 
@@ -28,7 +28,7 @@ struct AboutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(Color(hex: "FFD700"))
-                        Text("Version: 2.2.5      By: rizona.cn@gmail.com")
+                        Text("Version: 2.2.6      By: rizona.cn@gmail.com")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }

@@ -114,8 +114,9 @@ struct AnimatedGradientText: View {
     var body: some View {
         Text(text)
             .font(.system(size: 16))
-            .italic()
-            .bold(false)
+            // 修复：使用 iOS 15 兼容的斜体和粗体设置
+            .font(Font.system(size: 16).italic()) // 替代 .italic()
+            .fontWeight(.regular) // 替代 .bold(false)
             .foregroundColor(.clear)
             .overlay(
                 GeometryReader { geometry in
@@ -132,8 +133,9 @@ struct AnimatedGradientText: View {
                     .mask(
                         Text(text)
                             .font(.system(size: 16))
-                            .italic()
-                            .bold(false)
+                            // 修复：内部文本也使用兼容设置
+                            .font(Font.system(size: 16).italic()) // 替代 .italic()
+                            .fontWeight(.regular) // 替代 .bold(false)
                     )
                     .animation(
                         Animation.linear(duration: 3).repeatForever(autoreverses: false),
@@ -324,7 +326,8 @@ struct ThemeModeView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .onChange(of: themeMode) { oldValue, newValue in
+            // 修复：使用 iOS 15 兼容的 onChange
+            .onChange(of: themeMode) { newValue in
                 applyTheme(newValue)
             }
         }

@@ -848,7 +848,7 @@ import SwiftUI
                     checkAndShowOutdatedToastIfNeeded()
                 }
             }
-            .onChange(of: isPrivacyModeEnabled) {
+            .onChange(of: isPrivacyModeEnabled) { _ in
                 refreshID = UUID()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in

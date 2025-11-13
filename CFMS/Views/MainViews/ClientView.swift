@@ -1062,7 +1062,7 @@ import SwiftUI
                         }
                     }
                 }
-                .onChange(of: searchText) { _, newValue in
+                .onChange(of: searchText) { newValue in
                     loadedSearchResultCount = 10
                     loadedGroupedClientCount = 10
                     if newValue.isEmpty {

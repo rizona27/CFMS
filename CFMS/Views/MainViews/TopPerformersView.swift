@@ -273,13 +273,13 @@ struct TopPerformersView: View {
         .animation(.easeInOut(duration: 0.25), value: isFilterExpanded)
         .onAppear(perform: handleOnAppear)
         .onDisappear(perform: handleOnDisappear)
-        .onChange(of: selectedSortKey) { _, _ in
+        .onChange(of: selectedSortKey) { _ in
             cachedSortedHoldings.removeAll()
         }
-        .onChange(of: sortOrder) { _, _ in
+        .onChange(of: sortOrder) { _ in
             cachedSortedHoldings.removeAll()
         }
-        .onChange(of: dataManager.holdings) { _, _ in
+        .onChange(of: dataManager.holdings) { _ in
             refreshData()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in

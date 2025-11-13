@@ -286,7 +286,8 @@ class FundService: ObservableObject {
                 if let arrayStart = trendString.range(of: "["),
                    let arrayEnd = trendString.range(of: "]") {
                     let arrayContent = String(trendString[arrayStart.upperBound..<arrayEnd.lowerBound])
-                    let elements = arrayContent.split(separator: "},{").map(String.init)
+                    // 修复：使用兼容 iOS 15 的 split 方法
+                    let elements = arrayContent.components(separatedBy: "},{").map { String($0) }
                     
                     if let lastElement = elements.last {
                         let datePattern = "\"x\":(\\d+)"
