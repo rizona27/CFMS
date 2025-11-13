@@ -76,7 +76,6 @@ struct EditHoldingView: View {
                             }
                             .padding(.vertical, 16)
                         }
-                        // 修复：使用 iOS 15 兼容的 onChange
                         .onChange(of: showDatePicker) { newValue in
                             if newValue {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -175,7 +174,6 @@ struct EditHoldingView: View {
         ) {
             TextField("请输入6位基金代码", text: $fundCode)
                 .keyboardType(.numberPad)
-                // 修复：使用 iOS 15 兼容的 onChange
                 .onChange(of: fundCode) { newValue in
                     let filtered = newValue.filter { $0.isNumber }
                     if filtered.count > 6 {
@@ -196,7 +194,6 @@ struct EditHoldingView: View {
         ) {
             TextField("请输入购买金额", text: $purchaseAmount)
                 .keyboardType(.decimalPad)
-                // 修复：使用 iOS 15 兼容的 onChange
                 .onChange(of: purchaseAmount) { newValue in
                     purchaseAmount = newValue.filterNumericsAndDecimalPoint()
                 }
@@ -212,7 +209,6 @@ struct EditHoldingView: View {
         ) {
             TextField("请输入购买份额", text: $purchaseShares)
                 .keyboardType(.decimalPad)
-                // 修复：使用 iOS 15 兼容的 onChange
                 .onChange(of: purchaseShares) { newValue in
                     purchaseShares = newValue.filterNumericsAndDecimalPoint()
                 }
@@ -320,7 +316,6 @@ struct EditHoldingView: View {
         ) {
             TextField("选填，最多12位数字", text: $clientID)
                 .keyboardType(.numberPad)
-                // 修复：使用 iOS 15 兼容的 onChange
                 .onChange(of: clientID) { newValue in
                     let filtered = newValue.filter { $0.isNumber }
                     if filtered.count > 12 {
@@ -340,7 +335,6 @@ struct EditHoldingView: View {
             gradientColors: [Color(hex: "d4fc79"), Color(hex: "96e6a1")]
         ) {
             TextField("选填，最多30个字符", text: $remarks)
-                // 修复：使用 iOS 15 兼容的 onChange
                 .onChange(of: remarks) { newValue in
                     if newValue.count > 30 {
                         remarks = String(newValue.prefix(30))
