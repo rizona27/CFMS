@@ -1,12 +1,56 @@
-# CustomerFundsManagementSystem
+# 客户基金管理系统 · 一基暴富(CFMS)
 
-# 客户基金管理系统 · 一基暴富 
-
-![Swift](https://img.shields.io/badge/Swift-5.0+-orange)
-![Platform](https://img.shields.io/badge/Platform-iOS-blue)
+![Swift](https://img.shields.io/badge/Swift-5.5+-orange)
+![Platform](https://img.shields.io/badge/Platform-iOS_15.0+-blue)
 ![License](https://img.shields.io/badge/License-GPL%20v3-green)
 
-这是一个简单的为基金管理设计的持仓管理工具，支持多客户基金持仓跟踪、实时净值查询、收益统计分析等功能。
+简单的为基金管理设计的工具，支持多客户基金持仓跟踪、实时净值查询、收益统计分析等功能。
+
+
+
+## 项目结构
+
+```
+CFMS/
+├── CFMSApp.swift           # 应用入口文件
+├── App/                    # 启动和核心配置
+│   ├── Assets.xcassets     # 图片和资源
+│   ├── ContentView.swift   # 主内容视图
+│   ├── CustomTabBar.swift  # 自定义标签栏视图
+│   └── Info.plist          # 应用信息配置
+├── Models/                 # 数据模型
+│   ├── DataValidation.swift    # 数据验证逻辑
+│   ├── FundModels.swift        # 基金相关的数据模型
+│   └── TableColumn.swift       # 表格列配置或模型
+├── Services/               # 业务逻辑和数据处理服务
+│   ├── DataManager.swift       # 通用数据管理/存储
+│   ├── FundService.swift       # 基金相关的业务/网络服务
+│   └── ToastQueueManager.swift # 提示消息队列管理服务
+├── Utilities/              # 辅助工具类
+│   ├── ColorExtension.swift    # 颜色扩展
+│   ├── PrivacyHelpers.swift    # 隐私保护相关工具
+│   ├── Theme.swift             # 主题配置
+│   └── StringExtensions.swift  # 字符串扩展
+├── Views/                  # 所有用户界面相关文件
+│   ├── Components/             # 可复用的小组件
+│   │   ├── CardModifier.swift      # 卡片样式修改器
+│   │   ├── EmptyStateView.swift    # 空状态视图
+│   │   ├── GradientButton.swift    # 渐变色按钮
+│   │   ├── HoldingRow.swift        # 持仓行组件
+│   │   └── ToastView.swift         # 提示组件
+│   ├── ConfigViews/            # 配置/设置相关视图
+│   │   ├── AddHoldingView.swift    # 添加持仓视图
+│   │   ├── APILogView.swift        # API日志视图
+│   │   ├── ConfigView.swift        # 主要设置视图
+│   │   ├── EditHoldingView.swift   # 编辑持仓视图
+│   │   └── ManageHoldingsView.swift# 管理持仓视图
+│   └── MainViews/              # 主要功能视图
+│       ├── ClientView.swift        # 客户视图/持仓
+│       ├── SummaryView.swift       # 概览视图/摘要
+│       └── TopPerformersView.swift # 业绩排名视图
+└── Supporting/             # 支撑性视图或文件
+    └── AboutView.swift         # 关于页面视图
+```
 
 
 
@@ -29,40 +73,6 @@
 - **多主题支持**: 浅色、深色和跟随系统
 - **响应式设计**: 适配不同尺寸的iOS设备
 - **智能搜索**: 快速定位客户和基金
-
-
-
-## 项目结构
-
-text
-
-```
-FundManagement/
-├── Views/                 # 主要界面
-│   ├── ContentView.swift          # 主入口和标签页
-│   ├── SummaryView.swift          # 基金概览
-│   ├── ClientView.swift           # 客户持仓
-│   ├── TopPerformersView.swift    # 业绩排名
-│   └── ConfigView.swift           # 设置页面
-├── Components/            # 可复用组件
-│   ├── HoldingRow.swift           # 持仓行组件
-│   ├── EmptyStateView.swift       # 空状态
-│   ├── ToastView.swift            # 提示组件
-│   └── CardModifier.swift         # 卡片样式
-├── Models/                # 数据模型
-│   ├── FundModels.swift           # 基金模型
-│   ├── DataManager.swift          # 数据管理
-│   └── FundService.swift          # 网络服务
-├── Utilities/             # 工具类
-│   ├── Theme.swift                # 主题配置
-│   ├── ColorExtension.swift       # 颜色扩展
-│   ├── StringExtensions.swift     # 字符串扩展
-│   └── PrivacyHelpers.swift       # 隐私工具
-└── Resources/             # 资源文件
-    └── Assets.xcassets           # 图片资源
-```
-
-
 
 ### 架构设计
 
