@@ -676,9 +676,19 @@ struct ConfigView: View {
     }
     
     private func processCSVFile(url: URL) async {
+        print("开始处理文件: \(url)")
+        print("文件路径: \(url.path)")
+        print("文件是否存在: \(FileManager.default.fileExists(atPath: url.path))")
+        
+        // 检查权限
+        let canRead = FileManager.default.isReadableFile(atPath: url.path)
+        print("文件可读: \(canRead)")
+        
+        // 获取安全访问权限
         guard url.startAccessingSecurityScopedResource() else {
+            print("无法获取安全范围访问权限")
             await MainActor.run {
-                self.showToast(message: "导入失败：无法获取文件访问权限。")
+                self.showToast(message: "无法访问文件，请检查权限设置")
             }
             return
         }
@@ -687,9 +697,20 @@ struct ConfigView: View {
             url.stopAccessingSecurityScopedResource()
         }
         
+        await processWithURL(url)
+    }
+
+    private func processWithURL(_ url: URL) async {
         do {
-            let data = try String(contentsOf: url, encoding: .utf8)
-            let lines = data.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            let data = try Data(contentsOf: url)
+            guard let csvString = String(data: data, encoding: .utf8) else {
+                await MainActor.run {
+                    self.showToast(message: "文件编码错误，无法读取内容")
+                }
+                return
+            }
+            
+            let lines = csvString.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             guard lines.count > 1 else {
                 await MainActor.run {
                     self.showToast(message: "导入失败：CSV文件为空或只有标题行。")
@@ -747,17 +768,17 @@ struct ConfigView: View {
                 guard values.count >= headers.count else { continue }
                 
                 guard let fundCodeIndex = columnIndices["基金代码"],
-                                     let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+                                 let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
                 let cleanedFundCode = String(format: "%06d", Int(fundCode) ?? 0)
                 
                 guard let amountIndex = columnIndices["购买金额"],
-                                     let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                                     let amount = Double(amountStr) else { continue }
+                                 let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                                 let amount = Double(amountStr) else { continue }
                 let cleanedAmount = (amount * 100).rounded() / 100
 
                 guard let sharesIndex = columnIndices["购买份额"],
-                                     let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                                     let shares = Double(sharesStr) else { continue }
+                                 let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                                 let shares = Double(sharesStr) else { continue }
                 let cleanedShares = (shares * 100).rounded() / 100
 
                 var purchaseDate = Date()
@@ -769,7 +790,7 @@ struct ConfigView: View {
                 }
 
                 guard let clientIDIndex = columnIndices["客户号"],
-                                     let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+                                 let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
                 let desiredLength = 12
                 let currentLength = clientID.count
                 var cleanedClientID = clientID

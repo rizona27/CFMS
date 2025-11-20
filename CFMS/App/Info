@@ -11,30 +11,7 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     
-    <!-- 添加 URL Schemes 注册 -->
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLName</key>
-            <string>com.cfms.documenttypes</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>documenttypes</string>
-            </array>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-        </dict>
-    </array>
-    
-    <!-- 文件访问权限描述 -->
-    <key>NSDocumentsFolderUsageDescription</key>
-    <string>应用需要访问文档文件夹来存储和读取持仓数据文件</string>
-    <key>NSDownloadsFolderUsageDescription</key>
-    <string>应用需要访问下载文件夹来导入CSV数据文件</string>
-    <key>NSDesktopFolderUsageDescription</key>
-    <string>应用需要访问桌面文件夹来处理数据文件</string>
-    
-    <!-- 文件共享支持 -->
+    <!-- 文件共享相关 -->
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
@@ -54,93 +31,17 @@
             <array>
                 <string>public.comma-separated-values-text</string>
             </array>
-            <key>CFBundleTypeIconFiles</key>
-            <array/>
-        </dict>
-        <dict>
-            <key>CFBundleTypeName</key>
-            <string>Text File</string>
-            <key>CFBundleTypeRole</key>
-            <string>Viewer</string>
-            <key>LSHandlerRank</key>
-            <string>Alternate</string>
-            <key>LSItemContentTypes</key>
-            <array>
-                <string>public.plain-text</string>
-                <string>public.text</string>
-            </array>
-        </dict>
-        <!-- 添加 CFMS 文件类型支持 -->
-        <dict>
-            <key>CFBundleTypeName</key>
-            <string>CFMS Holding Data</string>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>LSHandlerRank</key>
-            <string>Owner</string>
-            <key>LSItemContentTypes</key>
-            <array>
-                <string>com.youcompany.cfms.holding</string>
-            </array>
         </dict>
     </array>
 
-    <!-- 导入类型声明 -->
-    <key>UTImportedTypeDeclarations</key>
-    <array>
-        <dict>
-            <key>UTTypeIdentifier</key>
-            <string>public.comma-separated-values-text</string>
-            <key>UTTypeDescription</key>
-            <string>CSV File</string>
-            <key>UTTypeConformsTo</key>
-            <array>
-                <string>public.text</string>
-                <string>public.plain-text</string>
-            </array>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-                <key>public.filename-extension</key>
-                <array>
-                    <string>csv</string>
-                </array>
-                <key>public.mime-type</key>
-                <string>text/csv</string>
-            </dict>
-        </dict>
-    </array>
-
-    <!-- 导出类型声明 -->
-    <key>UTExportedTypeDeclarations</key>
-    <array>
-        <dict>
-            <key>UTTypeIdentifier</key>
-            <string>com.youcompany.cfms.holding</string>
-            <key>UTTypeDescription</key>
-            <string>CFMS Holding Data</string>
-            <key>UTTypeConformsTo</key>
-            <array>
-                <string>public.data</string>
-            </array>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-                <key>public.filename-extension</key>
-                <array>
-                    <string>cfms</string>
-                    <string>holding</string>
-                </array>
-            </dict>
-        </dict>
-    </array>
-    
-    <!-- 网络传输安全 -->
+    <!-- 网络权限 -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
     
-    <!-- Scene 配置 -->
+    <!-- 场景配置 -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
@@ -158,13 +59,7 @@
             </array>
         </dict>
     </dict>
-
-    <!-- 后台模式 -->
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>processing</string>
-    </array>
-
+    
     <!-- 屏幕方向支持 -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
