@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - 主题模式枚举
 enum ThemeMode: String, CaseIterable, Identifiable {
     case light = "浅色"
     case dark = "深色"
@@ -9,6 +10,7 @@ enum ThemeMode: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
+// MARK: - 自定义卡片视图
 struct CustomCardView<Content: View>: View {
     var title: String?
     var description: String?
@@ -107,6 +109,7 @@ struct CustomCardView<Content: View>: View {
     }
 }
 
+// MARK: - 动画渐变文本
 struct AnimatedGradientText: View {
     let text: String
     @State private var gradientOffset: CGFloat = -1.0
@@ -148,6 +151,602 @@ struct AnimatedGradientText: View {
     }
 }
 
+// MARK: - 立体感渐变用户名
+struct AnimatedGradientUsername: View {
+    let username: String
+    @State private var gradientOffset: CGFloat = -1.0
+    
+    // 将用户名首字母大写
+    var formattedUsername: String {
+        guard !username.isEmpty else { return username }
+        return username.prefix(1).uppercased() + username.dropFirst().lowercased()
+    }
+    
+    var body: some View {
+        Text(formattedUsername)
+            .font(.system(size: 22, weight: .bold, design: .rounded))
+            .foregroundColor(.clear)
+            .overlay(
+                GeometryReader { geometry in
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "FF6B6B"),
+                            Color(hex: "4ECDC4"),
+                            Color(hex: "45B7D1"),
+                            Color(hex: "96CEB4"),
+                            Color(hex: "FFEAA7"),
+                            Color(hex: "FF6B6B")
+                        ]),
+                        startPoint: UnitPoint(x: gradientOffset, y: 0),
+                        endPoint: UnitPoint(x: gradientOffset + 1.0, y: 1)
+                    )
+                    .mask(
+                        Text(formattedUsername)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                    )
+                    // 移除阴影效果，保持纯净的渐变
+                    .animation(
+                        Animation.linear(duration: 4).repeatForever(autoreverses: false),
+                        value: gradientOffset
+                    )
+                }
+            )
+            .onAppear {
+                gradientOffset = 1.0
+            }
+    }
+}
+
+// MARK: - 用户信息视图
+struct UserInfoView: View {
+    @EnvironmentObject var authService: AuthService
+    @State private var showingRedemptionView = false
+    @State private var showingLogoutConfirmation = false
+    
+    var body: some View {
+        CustomCardView(
+            title: nil,
+            description: nil,
+            imageName: nil,
+            backgroundColor: Color.purple.opacity(0.1),
+            contentForegroundColor: .purple
+        ) { fgColor in
+            Group {
+                if authService.isLoggedIn, let user = authService.currentUser {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // 顶部区域：用户信息
+                        HStack(alignment: .top) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "person.circle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.purple)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    // 使用新的立体感渐变用户名组件
+                                    AnimatedGradientUsername(username: user.username)
+                                    
+                                    // 试用剩余时间（仅对 subscribed 用户显示）
+                                    if user.userType == "subscribed", let endDate = user.subscriptionEnd {
+                                        SubscriptionCountdownView(endDate: endDate)
+                                    }
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            // 右上角：用户类型徽章 - 使用新的进阶感样式
+                            userTypeBadge(user.userType)
+                                .frame(width: 75, height: 28)
+                        }
+                        .padding(.bottom, 8)
+                        
+                        // 底部区域：升级为VIP和退出登录按钮
+                        HStack {
+                            // 左下角：升级为VIP按钮
+                            if user.userType == "free" {
+                                Button(action: {
+                                    showingRedemptionView = true
+                                }) {
+                                    HStack {
+                                        Text("升级为VIP")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.blue)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            // 右下角：退出登录按钮 - 保持按钮样式
+                            Button("退出登录") {
+                                showingLogoutConfirmation = true
+                            }
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.red)
+                            .frame(width: 75, height: 28)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(6)
+                        }
+                    }
+                    .frame(height: 100)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.badge.questionmark")
+                            .font(.system(size: 40))
+                            .foregroundColor(.secondary)
+                        
+                        Text("未登录")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Text("请登录以查看个人信息")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(.vertical, 20)
+                }
+            }
+        }
+        .sheet(isPresented: $showingRedemptionView) {
+            RedemptionView()
+        }
+        .confirmationDialog("确认退出登录？",
+                          isPresented: $showingLogoutConfirmation,
+                          titleVisibility: .visible) {
+            Button("退出", role: .destructive) {
+                authService.logout()
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("您确定要退出当前登录的账户吗？")
+        }
+        .onAppear {
+            print("🔧 UserInfoView 出现 - 登录状态: \(authService.isLoggedIn), 用户: \(authService.currentUser?.username ?? "nil")")
+        }
+    }
+    
+    private func userTypeBadge(_ userType: String) -> some View {
+        Group {
+            switch userType {
+            case "free":
+                FreeUserBadge()
+            case "subscribed":
+                TrialUserBadge()
+            case "vip":
+                VIPUserBadge()
+            default:
+                UnknownUserBadge()
+            }
+        }
+    }
+}
+
+// MARK: - 免费用户徽章
+struct FreeUserBadge: View {
+    var body: some View {
+        ZStack {
+            // 背景渐变 - 灰色系，简约普通
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "9E9E9E"),
+                            Color(hex: "757575"),
+                            Color(hex: "616161")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 内阴影效果
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .blendMode(.overlay)
+            
+            // 文字
+            Text("免费用户")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
+        }
+        .shadow(color: Color.gray.opacity(0.4), radius: 2, x: 0, y: 1)
+    }
+}
+
+// MARK: - 试用用户徽章
+struct TrialUserBadge: View {
+    @State private var shimmerOffset: CGFloat = -1.0
+    
+    var body: some View {
+        ZStack {
+            // 背景渐变 - 银色系，带有光泽
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "E0E0E0"),
+                            Color(hex: "B0B0B0"),
+                            Color(hex: "909090")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 光泽效果
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.4),
+                            Color.clear,
+                            Color.white.opacity(0.2)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 闪烁效果
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.clear,
+                            Color.white.opacity(0.6),
+                            Color.clear
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .offset(x: shimmerOffset * 20)
+                .mask(RoundedRectangle(cornerRadius: 6))
+                .animation(
+                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: false),
+                    value: shimmerOffset
+                )
+            
+            // 文字
+            Text("试用用户")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color(hex: "424242"))
+                .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: 1)
+        }
+        .shadow(color: Color.gray.opacity(0.5), radius: 3, x: 0, y: 2)
+        .onAppear {
+            shimmerOffset = 1.0
+        }
+    }
+}
+
+// MARK: - VIP用户徽章
+struct VIPUserBadge: View {
+    @State private var glowOpacity: Double = 0.5
+    @State private var rotation: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // 背景渐变 - 金色系，豪华感
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "FFD700"),
+                            Color(hex: "FFA500"),
+                            Color(hex: "FF8C00")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 内层光泽
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.6),
+                            Color.clear,
+                            Color.white.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 脉动光晕效果
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "FFD700").opacity(glowOpacity),
+                            Color(hex: "FFA500").opacity(glowOpacity * 0.7),
+                            Color(hex: "FF8C00").opacity(glowOpacity * 0.5)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
+                .animation(
+                    Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                    value: glowOpacity
+                )
+            
+            // 文字
+            Text("VIP用户")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(Color(hex: "5D4037"))
+                .shadow(color: Color.white.opacity(0.8), radius: 1, x: 0, y: 1)
+        }
+        .shadow(color: Color(hex: "FFA500").opacity(0.5), radius: 4, x: 0, y: 2)
+        .onAppear {
+            glowOpacity = 0.8
+        }
+    }
+}
+
+// MARK: - 未知用户徽章
+struct UnknownUserBadge: View {
+    var body: some View {
+        ZStack {
+            // 背景渐变 - 中性色
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "BDBDBD"),
+                            Color(hex: "9E9E9E")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // 文字
+            Text("未知")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
+        }
+        .shadow(color: Color.gray.opacity(0.4), radius: 2, x: 0, y: 1)
+    }
+}
+
+// MARK: - 订阅倒计时视图
+struct SubscriptionCountdownView: View {
+    let endDate: Date
+    @State private var timeRemaining: String = ""
+    
+    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "clock.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.orange)
+            
+            Text("试用剩余: \(timeRemaining)")
+                .font(.system(size: 12))
+                .foregroundColor(.orange)
+        }
+        .onAppear {
+            updateTimeRemaining()
+        }
+        .onReceive(timer) { _ in
+            updateTimeRemaining()
+        }
+    }
+    
+    private func updateTimeRemaining() {
+        let now = Date()
+        let components = Calendar.current.dateComponents([.day, .hour, .minute], from: now, to: endDate)
+        
+        if let days = components.day, let hours = components.hour, let minutes = components.minute {
+            if days > 0 {
+                timeRemaining = "\(days)天\(hours)小时"
+            } else if hours > 0 {
+                timeRemaining = "\(hours)小时\(minutes)分钟"
+            } else {
+                timeRemaining = "\(minutes)分钟"
+            }
+        } else {
+            timeRemaining = "计算中..."
+        }
+    }
+}
+
+// MARK: - 功能菜单视图
+struct FunctionMenuView: View {
+    @EnvironmentObject var dataManager: DataManager
+    @EnvironmentObject var fundService: FundService
+    @State private var showingManageHoldingsMenuSheet = false
+    @State private var showingAPILogSheet = false
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // 第一行：管理持仓和日志查询
+            HStack(spacing: 12) {
+                // 管理持仓
+                CustomCardView(
+                    title: "管理持仓",
+                    description: "新增、编辑或清空持仓数据",
+                    imageName: "folder.fill",
+                    backgroundColor: Color.blue.opacity(0.1),
+                    contentForegroundColor: .blue,
+                    action: {
+                        showingManageHoldingsMenuSheet = true
+                    }
+                ) { _ in EmptyView() }
+                .frame(maxWidth: .infinity)
+                
+                // 日志查询
+                CustomCardView(
+                    title: "日志查询",
+                    description: "API请求与响应日志",
+                    imageName: "doc.text.magnifyingglass",
+                    backgroundColor: Color.cyan.opacity(0.1),
+                    contentForegroundColor: .cyan,
+                    action: {
+                        showingAPILogSheet = true
+                    }
+                ) { _ in EmptyView() }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 8)
+            
+            // 第二行：上传云端和下载本地
+            HStack(spacing: 12) {
+                // 上传云端
+                CustomCardView(
+                    title: "上传云端",
+                    description: "备份数据到云端",
+                    imageName: "icloud.and.arrow.up.fill",
+                    backgroundColor: Color.green.opacity(0.1),
+                    contentForegroundColor: .green,
+                    action: {
+                        // 上传云端功能
+                    }
+                ) { _ in EmptyView() }
+                .frame(maxWidth: .infinity)
+                
+                // 下载本地
+                CustomCardView(
+                    title: "下载本地",
+                    description: "导入数据到本地",
+                    imageName: "arrow.down.circle.fill",
+                    backgroundColor: Color.orange.opacity(0.1),
+                    contentForegroundColor: .orange,
+                    action: {
+                        // 下载本地功能
+                    }
+                ) { _ in EmptyView() }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 8)
+        }
+        .sheet(isPresented: $showingManageHoldingsMenuSheet) {
+            ManageHoldingsMenuView()
+                .environmentObject(dataManager)
+                .environmentObject(fundService)
+        }
+        .sheet(isPresented: $showingAPILogSheet) {
+            APILogView()
+                .environmentObject(fundService)
+        }
+    }
+}
+
+// MARK: - 设置视图
+struct SettingsView: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            PrivacyModeView()
+                .frame(maxWidth: .infinity)
+            ThemeModeView()
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 8)
+    }
+}
+
+// MARK: - 隐私模式视图
+struct PrivacyModeView: View {
+    @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = true
+    
+    var body: some View {
+        CustomCardView(
+            title: "隐私模式",
+            description: nil,
+            imageName: "lock.fill",
+            backgroundColor: Color.mint.opacity(0.1),
+            contentForegroundColor: .mint
+        ) { fgColor in
+            Picker("隐私模式", selection: $isPrivacyModeEnabled) {
+                Text("开启").tag(true)
+                Text("关闭").tag(false)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+}
+
+// MARK: - 主题模式视图
+struct ThemeModeView: View {
+    @AppStorage("themeMode") private var themeMode: ThemeMode = .system
+    
+    var body: some View {
+        CustomCardView(
+            title: "主题模式",
+            description: nil,
+            imageName: "paintbrush.fill",
+            backgroundColor: Color.teal.opacity(0.1),
+            contentForegroundColor: .teal
+        ) { fgColor in
+            Picker("主题", selection: $themeMode) {
+                ForEach(ThemeMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: themeMode) { newValue in
+                applyTheme(newValue)
+            }
+        }
+    }
+
+    private func applyTheme(_ theme: ThemeMode) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return
+        }
+        
+        switch theme {
+        case .light:
+            window.overrideUserInterfaceStyle = .light
+        case .dark:
+            window.overrideUserInterfaceStyle = .dark
+        case .system:
+            window.overrideUserInterfaceStyle = .unspecified
+        }
+    }
+}
+
+// MARK: - 服务设置视图
+struct ServiceSettingsView: View {
+    @State private var showingAboutSheet = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            FundAPIView()
+                .frame(maxWidth: .infinity)
+            
+            CustomCardView(
+                title: "关于",
+                description: "程序版本信息和说明",
+                imageName: "info.circle.fill",
+                contentForegroundColor: .white,
+                action: {
+                    showingAboutSheet = true
+                },
+                hasAnimatedBackground: true
+            ) { _ in EmptyView() }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 8)
+        .sheet(isPresented: $showingAboutSheet) {
+            AboutView()
+        }
+    }
+}
+
+// MARK: - 基金API视图
 struct FundAPIView: View {
     @AppStorage("selectedFundAPI") private var selectedFundAPI: FundAPI = .eastmoney
     @EnvironmentObject var fundService: FundService
@@ -196,6 +795,7 @@ struct FundAPIView: View {
     }
 }
 
+// MARK: - 管理持仓菜单视图
 struct ManageHoldingsMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -307,124 +907,22 @@ struct ManageHoldingsMenuView: View {
     }
 }
 
-struct ThemeModeView: View {
-    @AppStorage("themeMode") private var themeMode: ThemeMode = .system
-    
-    var body: some View {
-        CustomCardView(
-            title: "主题模式",
-            description: nil,
-            imageName: "paintbrush.fill",
-            backgroundColor: Color.teal.opacity(0.1),
-            contentForegroundColor: .teal
-        ) { fgColor in
-            Picker("主题", selection: $themeMode) {
-                ForEach(ThemeMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: themeMode) { newValue in
-                applyTheme(newValue)
-            }
-        }
-    }
-
-    private func applyTheme(_ theme: ThemeMode) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            return
-        }
-        
-        switch theme {
-        case .light:
-            window.overrideUserInterfaceStyle = .light
-        case .dark:
-            window.overrideUserInterfaceStyle = .dark
-        case .system:
-            window.overrideUserInterfaceStyle = .unspecified
-        }
-    }
-}
-
-struct PrivacyModeView: View {
-    @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = true
-    
-    var body: some View {
-        CustomCardView(
-            title: "隐私模式",
-            description: nil,
-            imageName: "lock.fill",
-            backgroundColor: Color.mint.opacity(0.1),
-            contentForegroundColor: .mint
-        ) { fgColor in
-            Picker("隐私模式", selection: $isPrivacyModeEnabled) {
-                Text("开启").tag(true)
-                Text("关闭").tag(false)
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-}
-
-struct CSVExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
-    var message: String
-    
-    init(message: String) {
-        self.message = message
-    }
-    
-    init(configuration: ReadConfiguration) throws {
-        throw CocoaError(.fileReadCorruptFile)
-    }
-    
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        return FileWrapper(regularFileWithContents: message.data(using: .utf8)!)
-    }
-}
-
-extension Array {
-    subscript(safe index: Index) -> Element? {
-        return indices.contains(index) ? self[index] : nil
-    }
-}
-
-extension FundHolding {
-    func createDeduplicationKey() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let purchaseDateString = dateFormatter.string(from: purchaseDate)
-        
-        let amountString = String(format: "%.2f", purchaseAmount)
-        let sharesString = String(format: "%.2f", purchaseShares)
-        
-        return "\(clientName)-\(fundCode)-\(amountString)-\(sharesString)-\(purchaseDateString)-\(clientID)-\(remarks)"
-    }
-}
-
+// MARK: - 配置主视图
 struct ConfigView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
+    @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) var dismiss
 
-    @State private var showingManageHoldingsMenuSheet = false
-    @State private var showingAPILogSheet = false
-    @State private var showingAboutSheet = false
-    @State private var isImporting = false
-    @State private var isExporting = false
-    @State private var document: CSVExportDocument?
     @State private var showToast = false
     @State private var toastMessage = ""
-    @State private var showingImportConfirmation = false
-    @State private var pendingImportURL: URL?
 
     private func showToast(message: String) {
         toastMessage = message
         showToast = true
     }
 
-    func onAppear() {
+    private func onAppear() {
         UserDefaults.standard.register(defaults: ["isPrivacyModeEnabled": true])
         UserDefaults.standard.register(defaults: ["themeMode": "system"])
         UserDefaults.standard.register(defaults: ["selectedFundAPI": "eastmoney"])
@@ -434,20 +932,12 @@ struct ConfigView: View {
             applyTheme(theme)
         }
         
-        print("ConfigView: 注册文件导入监听")
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("FileImportedFromShare"), object: nil, queue: .main) { notification in
-            print("ConfigView: 收到文件导入通知")
-            if let fileURL = notification.userInfo?["fileURL"] as? URL {
-                print("ConfigView: 准备导入文件: \(fileURL)")
-                pendingImportURL = fileURL
-                showingImportConfirmation = true
-            }
-        }
+        // 调试信息
+        print("🔧 ConfigView 出现 - 登录状态: \(authService.isLoggedIn), 用户: \(authService.currentUser?.username ?? "nil")")
     }
     
-    func onDisappear() {
-        print("ConfigView: 移除文件导入监听")
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name("FileImportedFromShare"), object: nil)
+    private func onDisappear() {
+        // 清理操作（如果有）
     }
 
     private func applyTheme(_ theme: ThemeMode) {
@@ -471,90 +961,20 @@ struct ConfigView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            CustomCardView(
-                                title: "导入数据",
-                                description: "从CSV文件导入持仓数据",
-                                imageName: "square.and.arrow.down.fill",
-                                backgroundColor: Color.orange.opacity(0.1),
-                                contentForegroundColor: .orange,
-                                action: {
-                                    isImporting = true
-                                }
-                            ) { _ in EmptyView() }
-                            .frame(maxWidth: .infinity)
-                            
-                            CustomCardView(
-                                title: "导出数据",
-                                description: "导出持仓数据到CSV文件",
-                                imageName: "square.and.arrow.up.fill",
-                                backgroundColor: Color.orange.opacity(0.1),
-                                contentForegroundColor: .orange,
-                                action: {
-                                    exportHoldingsToCSV()
-                                }
-                            ) { _ in EmptyView() }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 8)
+                        // 1. 用户信息区域
+                        UserInfoView()
+                            .padding(.horizontal, 8)
                         
-                        HStack(spacing: 12) {
-                            CustomCardView(
-                                title: "管理持仓",
-                                description: "新增、编辑或清空持仓数据",
-                                imageName: "folder.fill",
-                                backgroundColor: Color.blue.opacity(0.1),
-                                contentForegroundColor: .blue,
-                                action: {
-                                    showingManageHoldingsMenuSheet = true
-                                }
-                            ) { _ in EmptyView() }
-                            .frame(maxWidth: .infinity)
-                            
-                            CustomCardView(
-                                title: "日志查询",
-                                description: "API请求与响应日志",
-                                imageName: "doc.text.magnifyingglass",
-                                backgroundColor: Color.cyan.opacity(0.1),
-                                contentForegroundColor: .cyan,
-                                action: {
-                                    showingAPILogSheet = true
-                                }
-                            ) { _ in EmptyView() }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 8)
-
-                        HStack(spacing: 12) {
-                            PrivacyModeView()
-                                .frame(maxWidth: .infinity)
-                            ThemeModeView()
-                                .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 8)
-
-                        HStack(spacing: 12) {
-                            FundAPIView()
-                                .frame(maxWidth: .infinity)
-                            
-                            CustomCardView(
-                                title: "关于",
-                                description: "程序版本信息和说明",
-                                imageName: "info.circle.fill",
-                                contentForegroundColor: .white,
-                                action: {
-                                    showingAboutSheet = true
-                                },
-                                hasAnimatedBackground: true
-                            ) { _ in EmptyView() }
-                                .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 8)
+                        // 2. 功能菜单区域（包含管理持仓、日志查询、上传云端和下载本地）
+                        FunctionMenuView()
                         
-                        Divider()
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-
+                        // 3. 设置区域
+                        SettingsView()
+                        
+                        // 4. 服务设置区域
+                        ServiceSettingsView()
+                        
+                        // 底部装饰文本
                         VStack {
                             AnimatedGradientText(text: "Happiness around the corner.")
                         }
@@ -567,53 +987,8 @@ struct ConfigView: View {
                 .navigationBarHidden(true)
                 .onAppear(perform: onAppear)
                 .onDisappear(perform: onDisappear)
-                .fileImporter(
-                    isPresented: $isImporting,
-                    allowedContentTypes: [.commaSeparatedText],
-                    allowsMultipleSelection: false
-                ) { result in
-                    Task {
-                        await handleFileImport(result: result)
-                    }
-                }
-                .fileExporter(
-                    isPresented: $isExporting,
-                    document: document,
-                    contentType: .commaSeparatedText,
-                    defaultFilename: generateExportFilename()
-                ) { result in
-                    Task {
-                        await handleFileExport(result: result)
-                    }
-                }
-                .sheet(isPresented: $showingManageHoldingsMenuSheet) {
-                    ManageHoldingsMenuView()
-                        .environmentObject(dataManager)
-                        .environmentObject(fundService)
-                }
-                .sheet(isPresented: $showingAPILogSheet) {
-                    APILogView()
-                        .environmentObject(fundService)
-                }
-                .sheet(isPresented: $showingAboutSheet) {
-                    AboutView()
-                }
-                .alert("导入CSV文件", isPresented: $showingImportConfirmation) {
-                    Button("取消", role: .cancel) {
-                        pendingImportURL = nil
-                    }
-                    Button("导入", role: .none) {
-                        if let url = pendingImportURL {
-                            Task {
-                                await processCSVFile(url: url)
-                            }
-                        }
-                        pendingImportURL = nil
-                    }
-                } message: {
-                    Text("是否要导入从其他应用分享的CSV文件？")
-                }
-                    
+                
+                // 使用项目中已定义的 ToastView
                 ToastView(message: toastMessage, isShowing: $showToast)
             }
         }
@@ -621,237 +996,24 @@ struct ConfigView: View {
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.25), value: UUID())
     }
+}
 
-    private func generateExportFilename() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd"
-        let dateString = dateFormatter.string(from: Date())
-        return "fundlist_\(dateString).csv"
+// MARK: - 辅助扩展
+extension Array {
+    subscript(safe index: Index) -> Element? {
+        return indices.contains(index) ? self[index] : nil
     }
+}
 
-    private func exportHoldingsToCSV() {
+extension FundHolding {
+    func createDeduplicationKey() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        let purchaseDateString = dateFormatter.string(from: purchaseDate)
         
-        var csvString = "客户姓名,基金代码,购买金额,购买份额,购买日期,客户号,备注\n"
+        let amountString = String(format: "%.2f", purchaseAmount)
+        let sharesString = String(format: "%.2f", purchaseShares)
         
-        for holding in dataManager.holdings {
-            let formattedDate = dateFormatter.string(from: holding.purchaseDate)
-            let amountStr = String(format: "%.2f", holding.purchaseAmount)
-            let sharesStr = String(format: "%.2f", holding.purchaseShares)
-            
-            csvString += "\(holding.clientName),\(holding.fundCode),\(amountStr),\(sharesStr),\(formattedDate),\(holding.clientID),\(holding.remarks)\n"
-        }
-        
-        document = CSVExportDocument(message: csvString)
-        isExporting = true
-    }
-
-    private func handleFileExport(result: Result<URL, Error>) async {
-        switch result {
-        case .success(let url):
-            await fundService.addLog("导出成功: \(url.lastPathComponent)", type: .success)
-            await MainActor.run {
-                self.showToast(message: "导出成功")
-            }
-        case .failure(let error):
-            await fundService.addLog("导出失败: \(error.localizedDescription)", type: .error)
-            await MainActor.run {
-                self.showToast(message: "导出失败: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func handleFileImport(result: Result<[URL], Error>) async {
-        do {
-            let urls = try result.get()
-            guard let url = urls.first else { return }
-            await processCSVFile(url: url)
-        } catch {
-            await fundService.addLog("导入失败: \(error.localizedDescription)", type: .error)
-            await MainActor.run {
-                self.showToast(message: "导入失败: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    private func processCSVFile(url: URL) async {
-        print("开始处理文件: \(url)")
-        print("文件路径: \(url.path)")
-        print("文件是否存在: \(FileManager.default.fileExists(atPath: url.path))")
-        
-        // 检查权限
-        let canRead = FileManager.default.isReadableFile(atPath: url.path)
-        print("文件可读: \(canRead)")
-        
-        // 获取安全访问权限
-        guard url.startAccessingSecurityScopedResource() else {
-            print("无法获取安全范围访问权限")
-            await MainActor.run {
-                self.showToast(message: "无法访问文件，请检查权限设置")
-            }
-            return
-        }
-        
-        defer {
-            url.stopAccessingSecurityScopedResource()
-        }
-        
-        await processWithURL(url)
-    }
-
-    private func processWithURL(_ url: URL) async {
-        do {
-            let data = try Data(contentsOf: url)
-            guard let csvString = String(data: data, encoding: .utf8) else {
-                await MainActor.run {
-                    self.showToast(message: "文件编码错误，无法读取内容")
-                }
-                return
-            }
-            
-            let lines = csvString.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            guard lines.count > 1 else {
-                await MainActor.run {
-                    self.showToast(message: "导入失败：CSV文件为空或只有标题行。")
-                }
-                return
-            }
-            
-            let headers = lines[0].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-            
-            let columnMapping: [String: [String]] = [
-                "客户姓名": ["客户姓名", "姓名"],
-                "基金代码": ["基金代码", "代码"],
-                "购买金额": ["购买金额", "持仓成本（元）", "持仓成本", "成本"],
-                "购买份额": ["购买份额", "当前份额", "份额"],
-                "购买日期": ["购买日期", "最早购买日期", "日期"],
-                "客户号": ["客户号", "核心客户号"],
-                "备注": ["备注"]
-            ]
-
-            var columnIndices = [String: Int]()
-            var missingRequiredHeaders: [String] = []
-
-            for (key, aliases) in columnMapping {
-                var found = false
-                for alias in aliases {
-                    if let index = headers.firstIndex(where: { $0.contains(alias) }) {
-                        columnIndices[key] = index
-                        found = true
-                        break
-                    }
-                }
-                if !found && ["基金代码", "购买金额", "购买份额", "客户号"].contains(key) {
-                    missingRequiredHeaders.append(key)
-                }
-            }
-
-            if !missingRequiredHeaders.isEmpty {
-                let missingColumnsString = missingRequiredHeaders.joined(separator: ", ")
-                await MainActor.run {
-                    self.showToast(message: "导入失败：缺少必要的列 (\(missingColumnsString))")
-                }
-                return
-            }
-            
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-
-            var existingHoldingsKeys: Set<String> = Set(dataManager.holdings.map { $0.createDeduplicationKey() })
-
-            var importedCount = 0
-            var duplicateCount = 0
-            
-            for i in 1..<lines.count {
-                let values = lines[i].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                guard values.count >= headers.count else { continue }
-                
-                guard let fundCodeIndex = columnIndices["基金代码"],
-                                 let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
-                let cleanedFundCode = String(format: "%06d", Int(fundCode) ?? 0)
-                
-                guard let amountIndex = columnIndices["购买金额"],
-                                 let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 let amount = Double(amountStr) else { continue }
-                let cleanedAmount = (amount * 100).rounded() / 100
-
-                guard let sharesIndex = columnIndices["购买份额"],
-                                 let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 let shares = Double(sharesStr) else { continue }
-                let cleanedShares = (shares * 100).rounded() / 100
-
-                var purchaseDate = Date()
-                if let dateIndex = columnIndices["购买日期"],
-                   let dateStr = values[safe: dateIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    if let date = dateFormatter.date(from: dateStr) {
-                        purchaseDate = date
-                    }
-                }
-
-                guard let clientIDIndex = columnIndices["客户号"],
-                                 let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
-                let desiredLength = 12
-                let currentLength = clientID.count
-                var cleanedClientID = clientID
-
-                if currentLength < desiredLength {
-                    let numberOfZerosToAdd = desiredLength - currentLength
-                    let leadingZeros = String(repeating: "0", count: numberOfZerosToAdd)
-                    cleanedClientID = leadingZeros + clientID
-                }
-
-                var clientName: String
-                if let clientNameIndex = columnIndices["客户姓名"],
-                   let nameFromCSV = values[safe: clientNameIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                   !nameFromCSV.isEmpty {
-                    clientName = nameFromCSV
-                } else {
-                    clientName = cleanedClientID
-                }
-
-                let remarks = columnIndices["备注"].flatMap { values[safe: $0]?.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
-                
-                let newHolding = FundHolding(
-                    clientName: clientName,
-                    clientID: cleanedClientID,
-                    fundCode: cleanedFundCode,
-                    purchaseAmount: cleanedAmount,
-                    purchaseShares: cleanedShares,
-                    purchaseDate: purchaseDate,
-                    remarks: remarks
-                )
-
-                let deduplicationKey = newHolding.createDeduplicationKey()
-                
-                if !existingHoldingsKeys.contains(deduplicationKey) {
-                    do {
-                        try dataManager.addHolding(newHolding)
-                        existingHoldingsKeys.insert(deduplicationKey)
-                        importedCount += 1
-                        await fundService.addLog("导入记录: \(clientName)-\(cleanedFundCode) 金额: \(cleanedAmount) 份额: \(cleanedShares)", type: .info)
-                    } catch {
-                        await fundService.addLog("导入失败: \(clientName)-\(cleanedFundCode) - \(error.localizedDescription)", type: .error)
-                    }
-                } else {
-                    duplicateCount += 1
-                    await fundService.addLog("跳过重复记录: \(clientName)-\(cleanedFundCode)", type: .info)
-                }
-            }
-            
-            dataManager.saveData()
-            await fundService.addLog("导入完成: 成功导入 \(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录", type: .success)
-            await MainActor.run {
-                self.showToast(message: "导入成功：\(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录。")
-            }
-            
-            NotificationCenter.default.post(name: NSNotification.Name("HoldingsDataUpdated"), object: nil)
-            
-        } catch {
-            await fundService.addLog("导入失败: \(error.localizedDescription)", type: .error)
-            await MainActor.run {
-                self.showToast(message: "导入失败: \(error.localizedDescription)")
-            }
-        }
+        return "\(clientName)-\(fundCode)-\(amountString)-\(sharesString)-\(purchaseDateString)-\(clientID)-\(remarks)"
     }
 }

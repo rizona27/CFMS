@@ -4,6 +4,7 @@ import SwiftUI
 struct CFMSApp: App {
     @StateObject private var dataManager = DataManager()
     @StateObject private var fundService = FundService()
+    @StateObject private var authService = AuthService()  // 添加认证服务
     @State private var importedFileURL: URL?
     
     init() {
@@ -16,6 +17,7 @@ struct CFMSApp: App {
             ContentView()
                 .environmentObject(dataManager)
                 .environmentObject(fundService)
+                .environmentObject(authService)  // 添加认证服务环境对象
                 .onOpenURL { url in
                     handleIncomingFile(url: url)
                 }
