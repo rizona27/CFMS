@@ -197,7 +197,7 @@ struct AnimatedGradientUsername: View {
     }
 }
 
-// MARK: - 用户信息视图
+// MARK: - 用户信息视图（修正后的关键部分）
 struct UserInfoView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showingRedemptionView = false
@@ -225,30 +225,32 @@ struct UserInfoView: View {
                                     // 使用新的立体感渐变用户名组件
                                     AnimatedGradientUsername(username: user.username)
                                     
-                                    // 试用剩余时间（仅对 subscribed 用户显示）
-                                    if user.userType == "subscribed", let endDate = user.subscriptionEnd {
-                                        SubscriptionCountdownView(endDate: endDate)
+                                    // 只显示体验用户的到期时间，不显示用户ID
+                                    if user.userType == .subscribed, let endDateText = authService.getSubscriptionEndDateForDisplay() {
+                                        Text(endDateText)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.orange)
                                     }
                                 }
                             }
                             
                             Spacer()
                             
-                            // 右上角：用户类型徽章 - 使用新的进阶感样式
+                            // 右上角：用户类型徽章
                             userTypeBadge(user.userType)
                                 .frame(width: 75, height: 28)
                         }
                         .padding(.bottom, 8)
                         
-                        // 底部区域：升级为VIP和退出登录按钮
+                        // 底部区域：升级为尊享和退出登录按钮
                         HStack {
-                            // 左下角：升级为VIP按钮
-                            if user.userType == "free" {
+                            // 左下角：升级为尊享按钮 - 只有基础用户和试用用户显示
+                            if user.userType == .free || user.userType == .subscribed {
                                 Button(action: {
                                     showingRedemptionView = true
                                 }) {
                                     HStack {
-                                        Text("升级为VIP")
+                                        Text("升级到尊享")
                                             .font(.system(size: 14))
                                             .foregroundColor(.blue)
                                         Image(systemName: "chevron.right")
@@ -260,7 +262,7 @@ struct UserInfoView: View {
                             
                             Spacer()
                             
-                            // 右下角：退出登录按钮 - 保持按钮样式
+                            // 右下角：退出登录按钮
                             Button("退出登录") {
                                 showingLogoutConfirmation = true
                             }
@@ -309,24 +311,22 @@ struct UserInfoView: View {
         }
     }
     
-    private func userTypeBadge(_ userType: String) -> some View {
+    private func userTypeBadge(_ userType: AuthService.UserType) -> some View {
         Group {
             switch userType {
-            case "free":
-                FreeUserBadge()
-            case "subscribed":
-                TrialUserBadge()
-            case "vip":
-                VIPUserBadge()
-            default:
-                UnknownUserBadge()
+            case .free:
+                BasicUserBadge()
+            case .subscribed:
+                ExperienceUserBadge()
+            case .vip:
+                PremiumUserBadge()
             }
         }
     }
 }
 
-// MARK: - 免费用户徽章
-struct FreeUserBadge: View {
+// MARK: - 基础用户徽章
+struct BasicUserBadge: View {
     var body: some View {
         ZStack {
             // 背景渐变 - 灰色系，简约普通
@@ -349,7 +349,7 @@ struct FreeUserBadge: View {
                 .blendMode(.overlay)
             
             // 文字
-            Text("免费用户")
+            Text("基础用户")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white)
                 .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
@@ -358,8 +358,8 @@ struct FreeUserBadge: View {
     }
 }
 
-// MARK: - 试用用户徽章
-struct TrialUserBadge: View {
+// MARK: - 体验用户徽章
+struct ExperienceUserBadge: View {
     @State private var shimmerOffset: CGFloat = -1.0
     
     var body: some View {
@@ -413,7 +413,7 @@ struct TrialUserBadge: View {
                 )
             
             // 文字
-            Text("试用用户")
+            Text("体验用户")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Color(hex: "424242"))
                 .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: 1)
@@ -425,8 +425,8 @@ struct TrialUserBadge: View {
     }
 }
 
-// MARK: - VIP用户徽章
-struct VIPUserBadge: View {
+// MARK: - 尊享用户徽章
+struct PremiumUserBadge: View {
     @State private var glowOpacity: Double = 0.5
     @State private var rotation: Double = 0
     
@@ -480,7 +480,7 @@ struct VIPUserBadge: View {
                 )
             
             // 文字
-            Text("VIP用户")
+            Text("尊享用户")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "5D4037"))
                 .shadow(color: Color.white.opacity(0.8), radius: 1, x: 0, y: 1)
@@ -519,53 +519,12 @@ struct UnknownUserBadge: View {
     }
 }
 
-// MARK: - 订阅倒计时视图
-struct SubscriptionCountdownView: View {
-    let endDate: Date
-    @State private var timeRemaining: String = ""
-    
-    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "clock.fill")
-                .font(.system(size: 10))
-                .foregroundColor(.orange)
-            
-            Text("试用剩余: \(timeRemaining)")
-                .font(.system(size: 12))
-                .foregroundColor(.orange)
-        }
-        .onAppear {
-            updateTimeRemaining()
-        }
-        .onReceive(timer) { _ in
-            updateTimeRemaining()
-        }
-    }
-    
-    private func updateTimeRemaining() {
-        let now = Date()
-        let components = Calendar.current.dateComponents([.day, .hour, .minute], from: now, to: endDate)
-        
-        if let days = components.day, let hours = components.hour, let minutes = components.minute {
-            if days > 0 {
-                timeRemaining = "\(days)天\(hours)小时"
-            } else if hours > 0 {
-                timeRemaining = "\(hours)小时\(minutes)分钟"
-            } else {
-                timeRemaining = "\(minutes)分钟"
-            }
-        } else {
-            timeRemaining = "计算中..."
-        }
-    }
-}
-
 // MARK: - 功能菜单视图
 struct FunctionMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
+    @EnvironmentObject var authService: AuthService
+    
     @State private var showingManageHoldingsMenuSheet = false
     @State private var showingAPILogSheet = false
     
@@ -635,6 +594,7 @@ struct FunctionMenuView: View {
             ManageHoldingsMenuView()
                 .environmentObject(dataManager)
                 .environmentObject(fundService)
+                .environmentObject(authService)
         }
         .sheet(isPresented: $showingAPILogSheet) {
             APILogView()
@@ -799,6 +759,7 @@ struct FundAPIView: View {
 struct ManageHoldingsMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
+    @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) var dismiss
 
     @State private var showingAddSheet = false
@@ -880,6 +841,7 @@ struct ManageHoldingsMenuView: View {
                 AddHoldingView()
                     .environmentObject(dataManager)
                     .environmentObject(fundService)
+                    .environmentObject(authService)
             }
             .sheet(isPresented: $showingManageHoldingsSheet) {
                 ManageHoldingsView()

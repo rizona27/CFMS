@@ -399,24 +399,56 @@ struct RedemptionView: View {
     
     // MARK: - 更新用户信息
     private func updateUserInfo(_ userInfo: [String: Any]) {
-        // 更新AuthService中的用户信息
-        if var currentUser = authService.currentUser {
+        print("🔧 开始更新用户信息: \(userInfo)")
+        
+        // 创建新的User对象
+        if let currentUser = authService.currentUser {
             // 更新用户类型
-            if let userType = userInfo["user_type"] as? String {
-                // 由于User是值类型，我们需要创建一个新的User实例
+            if let userTypeString = userInfo["user_type"] as? String,
+               let userType = AuthService.UserType(rawValue: userTypeString) {
+                
+                // 解析日期
+                let subscriptionStart = parseDate(from: userInfo["subscription_start"] as? String)
+                let subscriptionEnd = parseDate(from: userInfo["subscription_end"] as? String)
+                
+                print("🔧 更新用户信息 - 类型: \(userType), 开始: \(subscriptionStart?.description ?? "nil"), 结束: \(subscriptionEnd?.description ?? "nil")")
+                
+                // 创建更新后的用户对象
                 let updatedUser = User(
                     id: currentUser.id,
                     username: currentUser.username,
                     userType: userType,
-                    subscriptionStart: (userInfo["subscription_start"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) },
-                    subscriptionEnd: (userInfo["subscription_end"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) }
+                    subscriptionStart: subscriptionStart,
+                    subscriptionEnd: subscriptionEnd
                 )
                 
+                // 更新AuthService
                 authService.currentUser = updatedUser
                 
+                // 构建完整的用户数据用于保存
+                var completeUserData: [String: Any] = [
+                    "user_id": Int(currentUser.id) ?? 0,
+                    "username": currentUser.username,
+                    "user_type": userType.rawValue,
+                    "has_full_access": userType == .vip || userType == .subscribed,
+                    "email": "" // 如果没有email字段，使用空字符串
+                ]
+                
+                // 添加订阅信息
+                if let subscriptionStart = subscriptionStart {
+                    let formatter = ISO8601DateFormatter()
+                    completeUserData["subscription_start"] = formatter.string(from: subscriptionStart)
+                }
+                
+                if let subscriptionEnd = subscriptionEnd {
+                    let formatter = ISO8601DateFormatter()
+                    completeUserData["subscription_end"] = formatter.string(from: subscriptionEnd)
+                }
+                
                 // 保存到UserDefaults
-                if let userData = try? JSONSerialization.data(withJSONObject: userInfo) {
-                    UserDefaults.standard.set(userData, forKey: "userData")
+                if let userJsonData = try? JSONSerialization.data(withJSONObject: completeUserData) {
+                    UserDefaults.standard.set(userJsonData, forKey: "userData")
+                    print("🔧 用户信息已保存到UserDefaults")
                 }
                 
                 // 发送通知更新界面
@@ -424,8 +456,46 @@ struct RedemptionView: View {
                     name: NSNotification.Name("UserInfoUpdated"),
                     object: nil
                 )
+                
+                // 强制刷新AuthService
+                authService.objectWillChange.send()
             }
         }
+    }
+    
+    // MARK: - 日期解析辅助方法
+    private func parseDate(from string: String?) -> Date? {
+        guard let string = string else { return nil }
+        
+        let formatters = [
+            // ISO8601 格式
+            { () -> DateFormatter in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+                return formatter
+            }(),
+            // 简单的日期格式
+            { () -> DateFormatter in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+                return formatter
+            }(),
+            // 包含时间的格式
+            { () -> DateFormatter in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                return formatter
+            }()
+        ]
+        
+        for formatter in formatters {
+            if let date = formatter.date(from: string) {
+                return date
+            }
+        }
+        
+        print("🔧 无法解析日期字符串: \(string)")
+        return nil
     }
 }
 
