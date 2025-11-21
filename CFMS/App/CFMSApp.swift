@@ -1,23 +1,22 @@
+// CFMSApp是SwiftUI应用程序的入口点，负责初始化核心服务、配置全局设置、处理异常和外部文件导入。
 import SwiftUI
-
 @main
 struct CFMSApp: App {
     @StateObject private var dataManager = DataManager()
     @StateObject private var fundService = FundService()
-    @StateObject private var authService = AuthService()  // 添加认证服务
+    @StateObject private var authService = AuthService()
     @State private var importedFileURL: URL?
     
     init() {
         setupExceptionHandling()
         configureAppInfo()
     }
-    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(dataManager)
                 .environmentObject(fundService)
-                .environmentObject(authService)  // 添加认证服务环境对象
+                .environmentObject(authService)
                 .onOpenURL { url in
                     handleIncomingFile(url: url)
                 }
@@ -26,14 +25,13 @@ struct CFMSApp: App {
                 }
         }
     }
-    
     private func setupExceptionHandling() {
         NSSetUncaughtExceptionHandler { exception in
             print("CRASH: \(exception)")
             print("Stack Trace: \(exception.callStackSymbols)")
         }
     }
-    
+
     private func configureAppInfo() {
         UserDefaults.standard.register(defaults: [
             "isPrivacyModeEnabled": true,
@@ -41,7 +39,7 @@ struct CFMSApp: App {
             "selectedFundAPI": "eastmoney"
         ])
     }
-    
+
     private func registerDocumentTypes() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             if let url = URL(string: "documenttypes://reload") {
@@ -49,7 +47,6 @@ struct CFMSApp: App {
             }
         }
     }
-    
     private func handleIncomingFile(url: URL) {
         print("收到文件URL: \(url)")
         guard url.pathExtension.lowercased() == "csv" else {

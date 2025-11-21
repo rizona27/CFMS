@@ -1,5 +1,5 @@
+//Color 和 String 的扩展，核心作用是增强 SwiftUI 中颜色的处理能力和文本的颜色生成能力。
 import SwiftUI
-
 extension Color {
     static let positiveReturn = Color.red
     static let negativeReturn = Color.green

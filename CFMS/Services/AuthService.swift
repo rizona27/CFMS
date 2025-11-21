@@ -1,3 +1,4 @@
+//后端认证模块
 import Foundation
 import Combine
 import SwiftUI
@@ -8,31 +9,27 @@ class AuthService: ObservableObject {
     @Published var isLoggedIn = false
     @Published var currentUser: User?
     @Published var authToken: String?
-    
-    // 用户类型常量
+
     enum UserType: String {
-        case free = "free"           // 基础用户
-        case subscribed = "subscribed" // 试用用户
-        case vip = "vip"             // 尊享用户
+        case free = "free"
+        case subscribed = "subscribed"
+        case vip = "vip"
     }
-    
-    // 超时管理
+
     private var inactivityTimer: Timer?
-    private let inactivityTimeout: TimeInterval = 5 * 60 // 5分钟
+    private let inactivityTimeout: TimeInterval = 5 * 60
     private var lastActivityTime: Date = Date()
-    
-    // 登录限制管理
+
     private let maxLoginAttempts = 3
-    private let loginLockoutDuration: TimeInterval = 10 * 60 // 10分钟
-    private let registerCooldownDuration: TimeInterval = 5 * 60 // 5分钟
+    private let loginLockoutDuration: TimeInterval = 10 * 60
+    private let registerCooldownDuration: TimeInterval = 5 * 60
     
     init() {
         print("🔧 AuthService 初始化")
         checkLoginStatus()
         setupInactivityMonitoring()
     }
-    
-    // MARK: - 新增功能：获取体验用户到期时间
+
     func getSubscriptionEndDate() -> String? {
         guard let user = currentUser, user.userType == .subscribed else {
             return nil
@@ -58,7 +55,6 @@ class AuthService: ObservableObject {
         return "到期时间: \(endDateString)"
     }
     
-    // MARK: - 新增功能：检查订阅状态
     var isSubscriptionActive: Bool {
         guard let user = currentUser, user.userType == .subscribed else {
             return false
@@ -82,7 +78,6 @@ class AuthService: ObservableObject {
         return components.day
     }
     
-    // 检查是否可以注册
     func canRegister() -> (canRegister: Bool, remainingTime: TimeInterval?) {
         if let lastRegisterTime = UserDefaults.standard.object(forKey: "lastRegisterTime") as? Date {
             let elapsedTime = Date().timeIntervalSince(lastRegisterTime)
@@ -94,9 +89,7 @@ class AuthService: ObservableObject {
         return (true, nil)
     }
     
-    // 检查是否可以登录
     func canLogin() -> (canLogin: Bool, remainingTime: TimeInterval?) {
-        // 检查登录尝试次数
         let failedAttempts = UserDefaults.standard.integer(forKey: "loginFailedAttempts")
         if let lockoutTime = UserDefaults.standard.object(forKey: "loginLockoutTime") as? Date {
             let elapsedTime = Date().timeIntervalSince(lockoutTime)
@@ -104,22 +97,19 @@ class AuthService: ObservableObject {
                 let remainingTime = loginLockoutDuration - elapsedTime
                 return (false, remainingTime)
             } else {
-                // 锁定时间已过，重置计数器
                 UserDefaults.standard.set(0, forKey: "loginFailedAttempts")
                 UserDefaults.standard.removeObject(forKey: "loginLockoutTime")
             }
         }
         
         if failedAttempts >= maxLoginAttempts {
-            // 设置锁定时间
             UserDefaults.standard.set(Date(), forKey: "loginLockoutTime")
             return (false, loginLockoutDuration)
         }
         
         return (true, nil)
     }
-    
-    // 记录登录失败
+
     private func recordLoginFailure() {
         var failedAttempts = UserDefaults.standard.integer(forKey: "loginFailedAttempts")
         failedAttempts += 1
@@ -132,23 +122,19 @@ class AuthService: ObservableObject {
             print("🔧 登录已被锁定，请10分钟后再试")
         }
     }
-    
-    // 记录注册时间
+
     private func recordRegisterTime() {
         UserDefaults.standard.set(Date(), forKey: "lastRegisterTime")
     }
     
-    // 重置登录失败计数（登录成功时调用）
     private func resetLoginFailure() {
         UserDefaults.standard.set(0, forKey: "loginFailedAttempts")
         UserDefaults.standard.removeObject(forKey: "loginLockoutTime")
     }
-    
-    // 用户登录
+
     func login(username: String, password: String, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始登录流程，用户名: \(username)")
-        
-        // 检查登录限制
+
         let loginCheck = canLogin()
         if !loginCheck.canLogin {
             if let remainingTime = loginCheck.remainingTime {
@@ -236,8 +222,7 @@ class AuthService: ObservableObject {
             }
         }.resume()
     }
-    
-    // 用户注册
+
     func register(username: String, password: String, confirmPassword: String, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始注册流程，用户名: \(username)")
         
@@ -328,8 +313,7 @@ class AuthService: ObservableObject {
             }
         }.resume()
     }
-    
-    // 退出登录
+
     func logout() {
         print("🔧 执行退出登录")
         
@@ -352,8 +336,7 @@ class AuthService: ObservableObject {
             object: nil
         )
     }
-    
-    // 保存登录状态
+
     private func saveLoginStatus(token: String, userData: [String: Any]) {
         UserDefaults.standard.set(token, forKey: "authToken")
         if let userJsonData = try? JSONSerialization.data(withJSONObject: userData) {
@@ -361,8 +344,7 @@ class AuthService: ObservableObject {
         }
         print("🔧 登录状态已保存到 UserDefaults")
     }
-    
-    // 检查登录状态
+
     private func checkLoginStatus() {
         print("🔧 检查登录状态")
         
@@ -385,8 +367,7 @@ class AuthService: ObservableObject {
             print("🔧 没有找到保存的登录信息")
         }
     }
-    
-    // MARK: - 超时管理
+
     private func setupInactivityMonitoring() {
         NotificationCenter.default.addObserver(
             self,
@@ -434,8 +415,7 @@ class AuthService: ObservableObject {
             object: nil
         )
     }
-    
-    // MARK: - 开发调试方法
+
     func debugResetLogin() {
         UserDefaults.standard.removeObject(forKey: "authToken")
         UserDefaults.standard.removeObject(forKey: "userData")
@@ -468,7 +448,6 @@ class AuthService: ObservableObject {
     }
 }
 
-// 用户模型
 struct User {
     let id: String
     let username: String
@@ -479,37 +458,31 @@ struct User {
     init(from dict: [String: Any]) {
         self.id = String(dict["user_id"] as? Int ?? 0)
         self.username = dict["username"] as? String ?? ""
-        
-        // 解析用户类型，确保是三种类型之一
+
         if let userTypeString = dict["user_type"] as? String,
            let userType = AuthService.UserType(rawValue: userTypeString) {
             self.userType = userType
         } else {
-            // 默认为基础用户
             self.userType = .free
         }
-        
-        // 修复：先初始化所有属性，然后再解析日期
+
         var tempSubscriptionStart: Date? = nil
         var tempSubscriptionEnd: Date? = nil
-        
-        // 解析订阅开始日期
+
         if let startString = dict["subscription_start"] as? String {
-            tempSubscriptionStart = User.parseDate(from: startString) // 👈 修复点: 调用静态方法
+            tempSubscriptionStart = User.parseDate(from: startString)
             if tempSubscriptionStart == nil {
                 print("🔧 无法解析订阅开始日期: \(startString)")
             }
         }
-        
-        // 解析订阅结束日期
+
         if let endString = dict["subscription_end"] as? String {
-            tempSubscriptionEnd = User.parseDate(from: endString) // 👈 修复点: 调用静态方法
+            tempSubscriptionEnd = User.parseDate(from: endString)
             if tempSubscriptionEnd == nil {
                 print("🔧 无法解析订阅结束日期: \(endString)")
             }
         }
-        
-        // 现在赋值给常量属性
+
         self.subscriptionStart = tempSubscriptionStart
         self.subscriptionEnd = tempSubscriptionEnd
         
@@ -524,7 +497,6 @@ struct User {
         self.subscriptionEnd = subscriptionEnd
     }
     
-    // 辅助方法：检查是否为试用用户且订阅未过期
     var isSubscribedAndActive: Bool {
         guard userType == .subscribed, let endDate = subscriptionEnd else {
             return false
@@ -532,43 +504,34 @@ struct User {
         return endDate > Date()
     }
     
-    // 辅助方法：解析日期字符串
-    // **已修改为 static func，解决初始化错误**
     private static func parseDate(from string: String) -> Date? {
-        // 先尝试 ISO8601DateFormatter
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = isoFormatter.date(from: string) {
             return date
         }
-        
-        // 如果 ISO8601 失败，尝试其他格式
+
         let formatters = [
-            // ISO8601 格式（带时区）
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
                 return formatter
             }(),
-            // 简单的日期格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd"
                 return formatter
             }(),
-            // 包含时间的格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
                 return formatter
             }(),
-            // 不带毫秒的ISO8601格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
                 return formatter
             }(),
-            // 不带时区的ISO8601格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"

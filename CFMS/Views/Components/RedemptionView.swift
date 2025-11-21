@@ -1,5 +1,5 @@
+//权益兑换页面
 import SwiftUI
-
 struct RedemptionView: View {
     @EnvironmentObject var authService: AuthService
     @Environment(\.presentationMode) var presentationMode
@@ -9,15 +9,13 @@ struct RedemptionView: View {
     @State private var message = ""
     @State private var messageColor: Color = .red
     @State private var showSuccessAnimation = false
-    
-    // 动画状态
+
     @State private var animationOffset: CGFloat = 50
     @State private var animationOpacity: Double = 0
     
     var body: some View {
         NavigationView {
             ZStack {
-                // 背景
                 Rectangle()
                     .fill(
                         LinearGradient(
@@ -33,12 +31,10 @@ struct RedemptionView: View {
                     .edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // 头部
                     headerSection
                     
                     ScrollView {
                         VStack(spacing: 24) {
-                            // 图标和标题
                             VStack(spacing: 16) {
                                 Image(systemName: "gift.circle.fill")
                                     .font(.system(size: 80))
@@ -57,8 +53,7 @@ struct RedemptionView: View {
                             }
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
-                            
-                            // 输入框
+
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("兑换码")
                                     .font(.system(size: 16, weight: .semibold))
@@ -80,8 +75,7 @@ struct RedemptionView: View {
                             }
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
-                            
-                            // 兑换按钮
+
                             Button(action: {
                                 redeemCode()
                             }) {
@@ -106,8 +100,7 @@ struct RedemptionView: View {
                             .disabled(redemptionCode.isEmpty || isLoading)
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
-                            
-                            // 消息提示
+
                             if !message.isEmpty {
                                 HStack {
                                     Image(systemName: messageColor == .green ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
@@ -120,8 +113,7 @@ struct RedemptionView: View {
                                 .cornerRadius(8)
                                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
                             }
-                            
-                            // VIP特权说明
+
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("VIP特权")
                                     .font(.system(size: 18, weight: .bold))
@@ -154,8 +146,7 @@ struct RedemptionView: View {
                     
                     Spacer()
                 }
-                
-                // 成功动画
+
                 if showSuccessAnimation {
                     SuccessAnimationView()
                         .onAppear {
@@ -173,8 +164,7 @@ struct RedemptionView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
-    
-    // MARK: - 头部区域
+
     private var headerSection: some View {
         VStack(spacing: 0) {
             HStack {
@@ -203,19 +193,16 @@ struct RedemptionView: View {
             .background(Color(.systemGroupedBackground).opacity(0.8))
         }
     }
-    
-    // MARK: - VIP特权列表
+
     private var vipFeatures: [String] {
         [
-            "无限次数据刷新",
-            "高级数据分析功能",
-            "专属客户支持",
-            "数据导出无限制",
+            "收益报告导出",
+            "数据库备份",
+            "解锁用户/产品上限",
             "优先体验新功能"
         ]
     }
-    
-    // MARK: - 动画
+
     private func startAnimations() {
         animationOffset = 50
         animationOpacity = 0
@@ -225,28 +212,23 @@ struct RedemptionView: View {
             animationOpacity = 1
         }
     }
-    
-    // MARK: - 兑换逻辑
+
     private func redeemCode() {
         isLoading = true
         message = ""
-        
-        // 隐藏键盘
+
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        
-        // 验证兑换码格式
+
         guard !redemptionCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             messageColor = .red
             message = "兑换码不能为空"
             isLoading = false
             return
         }
-        
-        // 调用后端API验证兑换码
+
         validateRedemptionCode()
     }
-    
-    // MARK: - 验证兑换码API调用
+
     private func validateRedemptionCode() {
         guard let url = URL(string: "\(authService.baseURL)/api/validate_redemption_code") else {
             messageColor = .red
@@ -258,8 +240,7 @@ struct RedemptionView: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // 添加认证token
+
         if let token = authService.authToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -296,7 +277,6 @@ struct RedemptionView: View {
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                         if let success = json["success"] as? Bool, success {
-                            // 兑换码有效，进行兑换
                             self.redeemCodeAPI()
                         } else {
                             let errorMessage = json["error"] as? String ?? "兑换码无效"
@@ -317,8 +297,7 @@ struct RedemptionView: View {
             }
         }.resume()
     }
-    
-    // MARK: - 兑换API调用
+
     private func redeemCodeAPI() {
         guard let url = URL(string: "\(authService.baseURL)/api/redeem_code") else {
             messageColor = .red
@@ -330,8 +309,7 @@ struct RedemptionView: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // 添加认证token
+
         if let token = authService.authToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -368,16 +346,13 @@ struct RedemptionView: View {
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                         if let success = json["success"] as? Bool, success {
-                            // 兑换成功
                             self.messageColor = .green
                             self.message = json["message"] as? String ?? "兑换成功"
                             
-                            // 更新用户信息
                             if let userInfo = json["user_info"] as? [String: Any] {
                                 self.updateUserInfo(userInfo)
                             }
-                            
-                            // 显示成功动画
+
                             self.showSuccessAnimation = true
                             
                         } else {
@@ -396,24 +371,19 @@ struct RedemptionView: View {
             }
         }.resume()
     }
-    
-    // MARK: - 更新用户信息
+
     private func updateUserInfo(_ userInfo: [String: Any]) {
         print("🔧 开始更新用户信息: \(userInfo)")
-        
-        // 创建新的User对象
+
         if let currentUser = authService.currentUser {
-            // 更新用户类型
             if let userTypeString = userInfo["user_type"] as? String,
                let userType = AuthService.UserType(rawValue: userTypeString) {
-                
-                // 解析日期
+
                 let subscriptionStart = parseDate(from: userInfo["subscription_start"] as? String)
                 let subscriptionEnd = parseDate(from: userInfo["subscription_end"] as? String)
                 
                 print("🔧 更新用户信息 - 类型: \(userType), 开始: \(subscriptionStart?.description ?? "nil"), 结束: \(subscriptionEnd?.description ?? "nil")")
-                
-                // 创建更新后的用户对象
+
                 let updatedUser = User(
                     id: currentUser.id,
                     username: currentUser.username,
@@ -421,20 +391,17 @@ struct RedemptionView: View {
                     subscriptionStart: subscriptionStart,
                     subscriptionEnd: subscriptionEnd
                 )
-                
-                // 更新AuthService
+
                 authService.currentUser = updatedUser
-                
-                // 构建完整的用户数据用于保存
+
                 var completeUserData: [String: Any] = [
                     "user_id": Int(currentUser.id) ?? 0,
                     "username": currentUser.username,
                     "user_type": userType.rawValue,
                     "has_full_access": userType == .vip || userType == .subscribed,
-                    "email": "" // 如果没有email字段，使用空字符串
+                    "email": ""
                 ]
-                
-                // 添加订阅信息
+
                 if let subscriptionStart = subscriptionStart {
                     let formatter = ISO8601DateFormatter()
                     completeUserData["subscription_start"] = formatter.string(from: subscriptionStart)
@@ -444,43 +411,36 @@ struct RedemptionView: View {
                     let formatter = ISO8601DateFormatter()
                     completeUserData["subscription_end"] = formatter.string(from: subscriptionEnd)
                 }
-                
-                // 保存到UserDefaults
+
                 if let userJsonData = try? JSONSerialization.data(withJSONObject: completeUserData) {
                     UserDefaults.standard.set(userJsonData, forKey: "userData")
                     print("🔧 用户信息已保存到UserDefaults")
                 }
-                
-                // 发送通知更新界面
+
                 NotificationCenter.default.post(
                     name: NSNotification.Name("UserInfoUpdated"),
                     object: nil
                 )
                 
-                // 强制刷新AuthService
                 authService.objectWillChange.send()
             }
         }
     }
     
-    // MARK: - 日期解析辅助方法
     private func parseDate(from string: String?) -> Date? {
         guard let string = string else { return nil }
         
         let formatters = [
-            // ISO8601 格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
                 return formatter
             }(),
-            // 简单的日期格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd"
                 return formatter
             }(),
-            // 包含时间的格式
             { () -> DateFormatter in
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -499,7 +459,6 @@ struct RedemptionView: View {
     }
 }
 
-// MARK: - 成功动画视图
 struct SuccessAnimationView: View {
     @State private var scale: CGFloat = 0.5
     @State private var opacity: Double = 0

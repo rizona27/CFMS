@@ -1,5 +1,5 @@
+//String 类型的扩展，其核心作用是提供字符串净化和格式化处理工具，主要针对用户输入场景，以确保数据格式的正确性。
 import Foundation
-
 extension String {
     func filterNumericsAndDecimalPoint() -> String {
         var filtered = ""

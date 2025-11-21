@@ -1,5 +1,5 @@
+//定义了一个名为 ToastQueueManager 的 ObservableObject 类，其核心作用是管理和显示应用中的轻量级、短暂的通知（Toast 提示）。
 import SwiftUI
-
 class ToastQueueManager: ObservableObject {
     @Published var toasts: [ToastItem] = []
     private var activeToastIds: Set<String> = []

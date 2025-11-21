@@ -1,5 +1,5 @@
+//空值显示模块
 import SwiftUI
-
 struct EmptyStateView: View {
     let icon: String
     let title: String
@@ -27,16 +27,5 @@ struct EmptyStateView: View {
             }
         }
         .padding()
-    }
-}
-
-struct EmptyStateView_Previews: PreviewProvider {
-    static var previews: some View {
-        EmptyStateView(
-            icon: "chart.bar.doc.horizontal",
-            title: "暂无数据",
-            description: "当前没有持仓数据，请导入数据开始使用",
-            action: { }
-        )
     }
 }

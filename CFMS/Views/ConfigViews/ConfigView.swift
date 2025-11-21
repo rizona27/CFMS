@@ -1,7 +1,7 @@
+//设置页面主视图
 import SwiftUI
 import UniformTypeIdentifiers
 
-// MARK: - 主题模式枚举
 enum ThemeMode: String, CaseIterable, Identifiable {
     case light = "浅色"
     case dark = "深色"
@@ -10,7 +10,6 @@ enum ThemeMode: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
-// MARK: - 自定义卡片视图
 struct CustomCardView<Content: View>: View {
     var title: String?
     var description: String?
@@ -109,7 +108,6 @@ struct CustomCardView<Content: View>: View {
     }
 }
 
-// MARK: - 动画渐变文本
 struct AnimatedGradientText: View {
     let text: String
     @State private var gradientOffset: CGFloat = -1.0
@@ -151,53 +149,59 @@ struct AnimatedGradientText: View {
     }
 }
 
-// MARK: - 立体感渐变用户名
 struct AnimatedGradientUsername: View {
     let username: String
+    let userType: AuthService.UserType
     @State private var gradientOffset: CGFloat = -1.0
-    
-    // 将用户名首字母大写
+
     var formattedUsername: String {
         guard !username.isEmpty else { return username }
         return username.prefix(1).uppercased() + username.dropFirst().lowercased()
     }
     
     var body: some View {
-        Text(formattedUsername)
-            .font(.system(size: 22, weight: .bold, design: .rounded))
-            .foregroundColor(.clear)
-            .overlay(
-                GeometryReader { geometry in
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "FF6B6B"),
-                            Color(hex: "4ECDC4"),
-                            Color(hex: "45B7D1"),
-                            Color(hex: "96CEB4"),
-                            Color(hex: "FFEAA7"),
-                            Color(hex: "FF6B6B")
-                        ]),
-                        startPoint: UnitPoint(x: gradientOffset, y: 0),
-                        endPoint: UnitPoint(x: gradientOffset + 1.0, y: 1)
-                    )
-                    .mask(
-                        Text(formattedUsername)
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                    )
-                    // 移除阴影效果，保持纯净的渐变
-                    .animation(
-                        Animation.linear(duration: 4).repeatForever(autoreverses: false),
-                        value: gradientOffset
-                    )
+        if userType == .free {
+            Text(formattedUsername)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .italic()
+                .foregroundColor(.primary)
+        } else {
+            Text(formattedUsername)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .italic()
+                .foregroundColor(.clear)
+                .overlay(
+                    GeometryReader { geometry in
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "FF6B6B"),
+                                Color(hex: "4ECDC4"),
+                                Color(hex: "45B7D1"),
+                                Color(hex: "96CEB4"),
+                                Color(hex: "FFEAA7"),
+                                Color(hex: "FF6B6B")
+                            ]),
+                            startPoint: UnitPoint(x: gradientOffset, y: 0),
+                            endPoint: UnitPoint(x: gradientOffset + 1.0, y: 1)
+                        )
+                        .mask(
+                            Text(formattedUsername)
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .italic()
+                        )
+                        .animation(
+                            Animation.linear(duration: 4).repeatForever(autoreverses: false),
+                            value: gradientOffset
+                        )
+                    }
+                )
+                .onAppear {
+                    gradientOffset = 1.0
                 }
-            )
-            .onAppear {
-                gradientOffset = 1.0
-            }
+        }
     }
 }
 
-// MARK: - 用户信息视图（修正后的关键部分）
 struct UserInfoView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showingRedemptionView = false
@@ -214,7 +218,6 @@ struct UserInfoView: View {
             Group {
                 if authService.isLoggedIn, let user = authService.currentUser {
                     VStack(alignment: .leading, spacing: 0) {
-                        // 顶部区域：用户信息
                         HStack(alignment: .top) {
                             HStack(spacing: 12) {
                                 Image(systemName: "person.circle.fill")
@@ -222,10 +225,8 @@ struct UserInfoView: View {
                                     .foregroundColor(.purple)
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    // 使用新的立体感渐变用户名组件
-                                    AnimatedGradientUsername(username: user.username)
-                                    
-                                    // 只显示体验用户的到期时间，不显示用户ID
+                                    AnimatedGradientUsername(username: user.username, userType: user.userType)
+
                                     if user.userType == .subscribed, let endDateText = authService.getSubscriptionEndDateForDisplay() {
                                         Text(endDateText)
                                             .font(.system(size: 11))
@@ -235,16 +236,13 @@ struct UserInfoView: View {
                             }
                             
                             Spacer()
-                            
-                            // 右上角：用户类型徽章
+
                             userTypeBadge(user.userType)
                                 .frame(width: 75, height: 28)
                         }
                         .padding(.bottom, 8)
-                        
-                        // 底部区域：升级为尊享和退出登录按钮
+
                         HStack {
-                            // 左下角：升级为尊享按钮 - 只有基础用户和试用用户显示
                             if user.userType == .free || user.userType == .subscribed {
                                 Button(action: {
                                     showingRedemptionView = true
@@ -261,8 +259,7 @@ struct UserInfoView: View {
                             }
                             
                             Spacer()
-                            
-                            // 右下角：退出登录按钮
+
                             Button("退出登录") {
                                 showingLogoutConfirmation = true
                             }
@@ -325,11 +322,9 @@ struct UserInfoView: View {
     }
 }
 
-// MARK: - 基础用户徽章
 struct BasicUserBadge: View {
     var body: some View {
         ZStack {
-            // 背景渐变 - 灰色系，简约普通
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -342,13 +337,11 @@ struct BasicUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 内阴影效果
+
             RoundedRectangle(cornerRadius: 6)
                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
                 .blendMode(.overlay)
-            
-            // 文字
+
             Text("基础用户")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white)
@@ -358,13 +351,11 @@ struct BasicUserBadge: View {
     }
 }
 
-// MARK: - 体验用户徽章
 struct ExperienceUserBadge: View {
     @State private var shimmerOffset: CGFloat = -1.0
     
     var body: some View {
         ZStack {
-            // 背景渐变 - 银色系，带有光泽
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -377,8 +368,7 @@ struct ExperienceUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 光泽效果
+
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -391,8 +381,7 @@ struct ExperienceUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 闪烁效果
+
             Rectangle()
                 .fill(
                     LinearGradient(
@@ -411,8 +400,7 @@ struct ExperienceUserBadge: View {
                     Animation.easeInOut(duration: 2).repeatForever(autoreverses: false),
                     value: shimmerOffset
                 )
-            
-            // 文字
+
             Text("体验用户")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Color(hex: "424242"))
@@ -425,14 +413,12 @@ struct ExperienceUserBadge: View {
     }
 }
 
-// MARK: - 尊享用户徽章
 struct PremiumUserBadge: View {
     @State private var glowOpacity: Double = 0.5
     @State private var rotation: Double = 0
     
     var body: some View {
         ZStack {
-            // 背景渐变 - 金色系，豪华感
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -445,8 +431,7 @@ struct PremiumUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 内层光泽
+
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -459,8 +444,7 @@ struct PremiumUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 脉动光晕效果
+
             RoundedRectangle(cornerRadius: 6)
                 .stroke(
                     LinearGradient(
@@ -478,8 +462,7 @@ struct PremiumUserBadge: View {
                     Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true),
                     value: glowOpacity
                 )
-            
-            // 文字
+
             Text("尊享用户")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "5D4037"))
@@ -492,11 +475,9 @@ struct PremiumUserBadge: View {
     }
 }
 
-// MARK: - 未知用户徽章
 struct UnknownUserBadge: View {
     var body: some View {
         ZStack {
-            // 背景渐变 - 中性色
             RoundedRectangle(cornerRadius: 6)
                 .fill(
                     LinearGradient(
@@ -508,8 +489,7 @@ struct UnknownUserBadge: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            
-            // 文字
+
             Text("未知")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.white)
@@ -519,7 +499,6 @@ struct UnknownUserBadge: View {
     }
 }
 
-// MARK: - 功能菜单视图
 struct FunctionMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -530,9 +509,7 @@ struct FunctionMenuView: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            // 第一行：管理持仓和日志查询
             HStack(spacing: 12) {
-                // 管理持仓
                 CustomCardView(
                     title: "管理持仓",
                     description: "新增、编辑或清空持仓数据",
@@ -544,8 +521,7 @@ struct FunctionMenuView: View {
                     }
                 ) { _ in EmptyView() }
                 .frame(maxWidth: .infinity)
-                
-                // 日志查询
+
                 CustomCardView(
                     title: "日志查询",
                     description: "API请求与响应日志",
@@ -560,9 +536,7 @@ struct FunctionMenuView: View {
             }
             .padding(.horizontal, 8)
             
-            // 第二行：上传云端和下载本地
             HStack(spacing: 12) {
-                // 上传云端
                 CustomCardView(
                     title: "上传云端",
                     description: "备份数据到云端",
@@ -570,12 +544,10 @@ struct FunctionMenuView: View {
                     backgroundColor: Color.green.opacity(0.1),
                     contentForegroundColor: .green,
                     action: {
-                        // 上传云端功能
                     }
                 ) { _ in EmptyView() }
                 .frame(maxWidth: .infinity)
-                
-                // 下载本地
+
                 CustomCardView(
                     title: "下载本地",
                     description: "导入数据到本地",
@@ -583,7 +555,6 @@ struct FunctionMenuView: View {
                     backgroundColor: Color.orange.opacity(0.1),
                     contentForegroundColor: .orange,
                     action: {
-                        // 下载本地功能
                     }
                 ) { _ in EmptyView() }
                 .frame(maxWidth: .infinity)
@@ -603,7 +574,6 @@ struct FunctionMenuView: View {
     }
 }
 
-// MARK: - 设置视图
 struct SettingsView: View {
     var body: some View {
         HStack(spacing: 12) {
@@ -616,7 +586,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - 隐私模式视图
 struct PrivacyModeView: View {
     @AppStorage("isPrivacyModeEnabled") private var isPrivacyModeEnabled: Bool = true
     
@@ -637,7 +606,6 @@ struct PrivacyModeView: View {
     }
 }
 
-// MARK: - 主题模式视图
 struct ThemeModeView: View {
     @AppStorage("themeMode") private var themeMode: ThemeMode = .system
     
@@ -678,7 +646,6 @@ struct ThemeModeView: View {
     }
 }
 
-// MARK: - 服务设置视图
 struct ServiceSettingsView: View {
     @State private var showingAboutSheet = false
     
@@ -706,7 +673,6 @@ struct ServiceSettingsView: View {
     }
 }
 
-// MARK: - 基金API视图
 struct FundAPIView: View {
     @AppStorage("selectedFundAPI") private var selectedFundAPI: FundAPI = .eastmoney
     @EnvironmentObject var fundService: FundService
@@ -755,7 +721,6 @@ struct FundAPIView: View {
     }
 }
 
-// MARK: - 管理持仓菜单视图
 struct ManageHoldingsMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -869,7 +834,6 @@ struct ManageHoldingsMenuView: View {
     }
 }
 
-// MARK: - 配置主视图
 struct ConfigView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -893,13 +857,10 @@ struct ConfigView: View {
         if let theme = ThemeMode(rawValue: currentTheme) {
             applyTheme(theme)
         }
-        
-        // 调试信息
         print("🔧 ConfigView 出现 - 登录状态: \(authService.isLoggedIn), 用户: \(authService.currentUser?.username ?? "nil")")
     }
     
     private func onDisappear() {
-        // 清理操作（如果有）
     }
 
     private func applyTheme(_ theme: ThemeMode) {
@@ -923,20 +884,11 @@ struct ConfigView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 12) {
-                        // 1. 用户信息区域
                         UserInfoView()
                             .padding(.horizontal, 8)
-                        
-                        // 2. 功能菜单区域（包含管理持仓、日志查询、上传云端和下载本地）
                         FunctionMenuView()
-                        
-                        // 3. 设置区域
                         SettingsView()
-                        
-                        // 4. 服务设置区域
                         ServiceSettingsView()
-                        
-                        // 底部装饰文本
                         VStack {
                             AnimatedGradientText(text: "Happiness around the corner.")
                         }
@@ -949,8 +901,7 @@ struct ConfigView: View {
                 .navigationBarHidden(true)
                 .onAppear(perform: onAppear)
                 .onDisappear(perform: onDisappear)
-                
-                // 使用项目中已定义的 ToastView
+
                 ToastView(message: toastMessage, isShowing: $showToast)
             }
         }
@@ -960,7 +911,6 @@ struct ConfigView: View {
     }
 }
 
-// MARK: - 辅助扩展
 extension Array {
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil

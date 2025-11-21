@@ -1,5 +1,5 @@
+//定义了 ViewModifier 结构体和一个 View 的扩展，其核心作用是封装通用的卡片式 UI 样式
 import SwiftUI
-
 struct CardModifier: ViewModifier {
     let backgroundColor: Color
     let cornerRadius: CGFloat

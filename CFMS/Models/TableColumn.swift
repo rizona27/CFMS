@@ -1,3 +1,4 @@
+//定义了一个名为 TableColumn 的结构体，其作用是配置和管理数据表格中的列信息。
 import SwiftUI
 import Foundation
 
@@ -22,13 +23,5 @@ extension TableColumn {
             TableColumn(title: "近6月收益率", keyPath: "navReturn6m", isSelected: true),
             TableColumn(title: "近1年收益率", keyPath: "navReturn1y", isSelected: true)
         ]
-    }
-}
-
-struct TableColumn_Previews: PreviewProvider {
-    static var previews: some View {
-        List(TableColumn.allColumns) { column in
-            Text("\(column.title) - \(column.keyPath)")
-        }
     }
 }

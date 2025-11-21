@@ -1,16 +1,16 @@
+// ContentView是应用的根视图，负责处理应用的主布局（Tab Bar）、启动加载动画（Splash Screen）和用户认证流程。
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var authService: AuthService
-    @StateObject private var fundService = FundService()
 
     @State private var showSplash = true
     @State private var selectedTab = 0
-    @State private var previousTab = 0
-    @State private var showAuthView = false
-    
+    @State private var isRefreshLocked = false
+    @State private var animationFinished = false
+    @State private var shouldShowAuthView = false
     @State private var splashOpacity: Double = 1.0
     @State private var mainTextOpacity: Double = 1.0
     @State private var subtitleOpacity: Double = 1.0
@@ -26,16 +26,8 @@ struct ContentView: View {
     @State private var splashBlur: CGFloat = 0.0
     @State private var splashScale: CGFloat = 1.0
 
-    @State private var isRefreshLocked = false
-    
-    // 控制动画是否结束
-    @State private var animationFinished = false
-    // 控制是否显示登录页面
-    @State private var shouldShowAuthView = false
-
     var body: some View {
         ZStack {
-            // 主内容区域 - 只有在用户已登录时显示
             if authService.isLoggedIn {
                 VStack(spacing: 0) {
                     Group {
@@ -43,40 +35,33 @@ struct ContentView: View {
                         case 0:
                             SummaryView()
                                 .environmentObject(dataManager)
-                                .environmentObject(fundService)
                         case 1:
                             ClientView()
                                 .environmentObject(dataManager)
-                                .environmentObject(fundService)
                         case 2:
                             TopPerformersView()
                                 .environmentObject(dataManager)
-                                .environmentObject(fundService)
                         case 3:
                             ConfigView()
                                 .environmentObject(dataManager)
-                                .environmentObject(fundService)
                                 .environmentObject(authService)
                         default:
                             SummaryView()
                                 .environmentObject(dataManager)
-                                .environmentObject(fundService)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    
+                        
                     CustomTabBar(selectedTab: $selectedTab)
                         .environmentObject(dataManager)
                 }
                 .disabled(isRefreshLocked)
                 .ignoresSafeArea(.container, edges: [.top, .bottom])
             }
-            
-            // 启动动画背景 - 始终显示，直到用户登录
+
             if showSplash && !authService.isLoggedIn {
                 splashScreen
                     .onTapGesture {
-                        // 点击背景任意位置显示登录页面
                         if animationFinished {
                             shouldShowAuthView = true
                         }
@@ -84,7 +69,6 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // 开始动画
             startNaturalAnimation()
         }
         .sheet(isPresented: $shouldShowAuthView) {
@@ -104,18 +88,15 @@ struct ContentView: View {
             print("收到内存警告，清理缓存...")
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoLogoutDueToInactivity"))) { _ in
-            // 显示登录页面
             shouldShowAuthView = true
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserDidLogout"))) { _ in
-            // 用户退出登录，显示背景和登录页面
             shouldShowAuthView = true
             showSplash = true
             animationFinished = true
         }
     }
-    
-    // 启动动画视图
+
     private var splashScreen: some View {
         ZStack {
             Rectangle()
@@ -131,8 +112,7 @@ struct ContentView: View {
                     )
                 )
                 .edgesIgnoringSafeArea(.all)
-            
-            // 静态光效 - 动画结束后保持显示
+
             ForEach(0..<2, id: \.self) { index in
                 Circle()
                     .fill(
@@ -157,10 +137,9 @@ struct ContentView: View {
                     .offset(glowOffset)
                     .blur(radius: 15 + CGFloat(index) * 5)
             }
-            
+
             VStack(alignment: .center, spacing: 12) {
                 Spacer()
-                
                 VStack(alignment: .center, spacing: 4) {
                     HStack(spacing: 6) {
                         Text("Less")
@@ -181,7 +160,7 @@ struct ContentView: View {
                 }
                 .opacity(mainTextOpacity)
                 .offset(y: mainTextOffset)
-                
+
                 Text("Finding Abundance Through Subtraction")
                     .font(.system(size: 16, weight: .light))
                     .foregroundColor(Color(hex: "6D4C41").opacity(0.8))
@@ -189,9 +168,7 @@ struct ContentView: View {
                     .padding(.top, 20)
                     .opacity(subtitleOpacity)
                     .offset(y: subtitleOffset)
-
                 Spacer()
-
                 VStack(spacing: 4) {
                     Text("专业 · 专注 · 价值")
                         .font(.system(size: 13, weight: .light))
@@ -224,7 +201,7 @@ struct ContentView: View {
                         .blendMode(.plusLighter)
                         .mask(
                             VStack(spacing: 4) {
-                                Text("专注 · 价值")
+                                Text("专业 · 专注 · 价值")
                                     .font(.system(size: 13, weight: .light))
                                 
                                 Text("© 2025 Rizona Developed")
@@ -241,86 +218,60 @@ struct ContentView: View {
         .blur(radius: splashBlur)
         .edgesIgnoringSafeArea(.all)
     }
-    
+
     private func startNaturalAnimation() {
-        // 重置状态
-        splashOpacity = 1.0
-        mainTextOpacity = 0.0
-        subtitleOpacity = 0.0
-        copyrightOpacity = 0.0
-        mainTextOffset = 10.0
-        subtitleOffset = 8.0
-        glowScale = 0.7
-        glowOpacity = 0.0
-        glowRotation = 0.0
-        glowOffset = CGSize(width: -100, height: -100)
-        splashBlur = 0.0
-        splashScale = 1.0
-        animationFinished = false
-        shouldShowAuthView = false
-        
+        splashOpacity = 1.0; mainTextOpacity = 0.0; subtitleOpacity = 0.0; copyrightOpacity = 0.0
+        mainTextOffset = 10.0; subtitleOffset = 8.0; highlightPosition = -1.0; highlightOpacity = 0.0
+        glowScale = 0.7; glowOpacity = 0.0; glowRotation = 0.0; glowOffset = CGSize(width: -100, height: -100)
+        splashBlur = 0.0; splashScale = 1.0; animationFinished = false; shouldShowAuthView = false
+
         withAnimation(.easeOut(duration: 2.5)) {
             glowScale = 1.4
             glowOpacity = 0.4
             glowOffset = CGSize(width: 30, height: 30)
         }
-        
+
         withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
             glowRotation = 360
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.easeOut(duration: 1.2)) {
                 mainTextOpacity = 1.0
                 mainTextOffset = 0.0
             }
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             withAnimation(.easeOut(duration: 1.0)) {
                 subtitleOpacity = 1.0
                 subtitleOffset = 0.0
             }
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             withAnimation(.easeOut(duration: 0.8)) {
                 copyrightOpacity = 1.0
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.easeIn(duration: 0.1)) {
-                    highlightOpacity = 1.0
-                }
-                
-                withAnimation(.easeInOut(duration: 0.8)) {
-                    highlightPosition = 1.0
-                }
+                withAnimation(.easeIn(duration: 0.1)) { highlightOpacity = 1.0 }
+                withAnimation(.easeInOut(duration: 0.8)) { highlightPosition = 1.0 }
                 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        highlightOpacity = 0.0
-                    }
+                    withAnimation(.easeOut(duration: 0.3)) { highlightOpacity = 0.0 }
                 }
             }
         }
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            withAnimation(.easeIn(duration: 0.8)) {
-                glowOpacity = 0.0
-            }
-            
-            // 动画结束后停止所有动画，保持当前状态
+            withAnimation(.easeIn(duration: 0.8)) { glowOpacity = 0.0 }
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                // 停止旋转动画
                 glowRotation = 0.0
-                
-                // 标记动画结束
                 animationFinished = true
-                
-                // 只有在用户未登录时才自动显示登录页面
+
                 if !authService.isLoggedIn {
-                    // 延迟显示登录页面，确保动画完全结束
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         shouldShowAuthView = true
                     }
@@ -328,10 +279,9 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func refreshAppState() {
         print("App became active, refreshing state...")
-        // 检查认证状态
         if !authService.isLoggedIn && animationFinished {
             shouldShowAuthView = true
         }
@@ -383,6 +333,6 @@ struct ContentView_Previews: PreviewProvider {
         return ContentView()
             .environmentObject(dataManager)
             .environmentObject(authService)
-            .environmentObject(fundService)
+            .environmentObject(fundService) 
     }
 }

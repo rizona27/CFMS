@@ -1,3 +1,4 @@
+//提示框模块
 import SwiftUI
 
 struct ToastView: View {
@@ -35,11 +36,5 @@ struct ToastView: View {
                     }
                 }
         }
-    }
-}
-
-struct ToastView_Previews: PreviewProvider {
-    static var previews: some View {
-        ToastView(message: "测试提示消息", isShowing: .constant(true))
     }
 }

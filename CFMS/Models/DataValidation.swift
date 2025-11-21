@@ -1,3 +1,4 @@
+//结构化的错误体系，以便在应用中抛出和显示具体、友好的中文错误信息
 import Foundation
 
 enum DataError: LocalizedError {

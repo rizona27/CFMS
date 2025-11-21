@@ -1,9 +1,10 @@
-    import SwiftUI
+//新增持仓模块
+import SwiftUI
 
     struct AddHoldingView: View {
         @EnvironmentObject var dataManager: DataManager
         @EnvironmentObject var fundService: FundService
-        @EnvironmentObject var authService: AuthService // 添加 AuthService
+        @EnvironmentObject var authService: AuthService
         @Environment(\.dismiss) var dismiss
 
         @State private var clientName: String = ""
@@ -22,7 +23,6 @@
         @State private var showDatePicker = false
         @State private var tempPurchaseDate: Date = Date()
 
-        // 添加 Toast 状态
         @State private var showToast = false
         @State private var toastMessage = ""
 
@@ -89,13 +89,15 @@
                 }
                 .navigationBarHidden(true)
                 .overlay(
-                    // Toast 提示
-                    VStack {
+                    ZStack {
                         if showToast {
-                            ToastView(message: toastMessage, isShowing: $showToast)
-                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                            VStack {
+                                Spacer()
+                                ToastView(message: toastMessage, isShowing: $showToast)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                                Spacer()
+                            }
                         }
-                        Spacer()
                     }
                 )
             }
@@ -259,7 +261,7 @@
                     .labelsHidden()
                     .environment(\.locale, Locale(identifier: "zh_CN"))
                     .padding(.horizontal)
-                
+
                 HStack(spacing: 12) {
                     Button("取消") {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -539,22 +541,19 @@
             guard isFormValid else {
                 return
             }
-            
-            // 检查基础用户限制 - 使用枚举比较
+
             if let currentUser = authService.currentUser, currentUser.userType == .free {
                 let trimmedClientName = clientName.trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                // 检查客户数量限制（最多5个不同的用户名）
+
                 let existingClientNames = Set(dataManager.holdings.map { $0.clientName })
                 if !existingClientNames.contains(trimmedClientName) && existingClientNames.count >= 5 {
-                    await showToastMessage("基础用户最多添加5个不同的客户，请升级到尊享版继续使用")
+                    await showToastMessage("基础用户最多添加5个不同的客户\n请升级后继续使用")
                     return
                 }
-                
-                // 检查每个客户的基金数量限制（每个客户最多2个基金）
+
                 let clientHoldings = dataManager.holdings.filter { $0.clientName == trimmedClientName }
                 if clientHoldings.count >= 2 {
-                    await showToastMessage("基础用户每个客户最多添加2个基金，请升级到尊享版继续使用")
+                    await showToastMessage("基础用户每个客户最多添加2个产品\n请升级后继续使用")
                     return
                 }
             }
@@ -606,16 +605,16 @@
                 await fundService.addLog("添加持仓失败: \(error.localizedDescription)", type: .error)
             }
         }
-        
-        // 显示 Toast 消息
+
         private func showToastMessage(_ message: String) async {
             await MainActor.run {
                 toastMessage = message
                 showToast = true
-                
-                // 2秒后自动隐藏
+
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    showToast = false
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showToast = false
+                    }
                 }
             }
         }

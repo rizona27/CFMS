@@ -1,5 +1,5 @@
+//关于卡片模块
 import SwiftUI
-
 struct UpdateLog: Identifiable {
     let id = UUID()
     let version: String
@@ -16,7 +16,7 @@ struct AboutView: View {
         UpdateLog(version: "Version 2.0.0", description: "项目重构CFMS。\n重做UI界面。"),
         UpdateLog(version: "Version 2.1.0", description: "编辑持仓页面完善客户号显示搜索。"),
         UpdateLog(version: "Version 2.2.0", description: "增加自定义导航栏。\n添加iOS15版本兼容。"),
-        UpdateLog(version: "Version 2.3.0", description: "适配导入导出功能。"),
+        UpdateLog(version: "Version 2.3.0", description: "后端构建。\n新增用户分层功能。"),
         UpdateLog(version: "Version X.", description: "To be continued...")
     ]
 

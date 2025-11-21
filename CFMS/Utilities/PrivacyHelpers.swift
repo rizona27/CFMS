@@ -1,3 +1,4 @@
+//隐私策略定义模块
 import Foundation
 
 func processClientName(_ name: String) -> String {

@@ -1,3 +1,4 @@
+//定义了一个名为 DataManager 的 ObservableObject 类，它是整个应用程序的核心数据管理层。
 import Foundation
 import Combine
 

@@ -1,3 +1,4 @@
+//定义了一个名为 FundHolding 的结构体，其核心作用是作为应用程序中单个基金持仓记录的数据模型
 import Foundation
 
 struct FundHolding: Identifiable, Codable, Hashable {

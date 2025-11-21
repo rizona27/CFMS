@@ -1,5 +1,5 @@
+//定义了一个名为 GradientButton 的 View 组件，其核心作用是创建一个具有视觉吸引力的、圆形图标按钮。
 import SwiftUI
-
 struct GradientButton: View {
     let icon: String
     let action: () -> Void

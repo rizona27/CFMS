@@ -1,345 +1,318 @@
-    import SwiftUI
-    import UIKit
+//基金卡片模块
+import SwiftUI
+import UIKit
 
-    struct HoldingRow: View {
-        @EnvironmentObject var dataManager: DataManager
-        @EnvironmentObject var authService: AuthService // 添加 AuthService
-        let holding: FundHolding
-        let hideClientInfo: Bool
-        let onCopyClientID: ((String) -> Void)?
-        let onGenerateReport: ((FundHolding) -> Void)?
-
-        private static let dateFormatterYY_MM_DD: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yy-MM-dd"
-            return formatter
-        }()
-
-        private static let dateFormatterMM_DD: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MM-dd"
-            return formatter
-        }()
-
-        var holdingDays: Int {
-            let endDate = holding.navDate
-            let calendar = Calendar.current
-            let components = calendar.dateComponents([.day], from: calendar.startOfDay(for: holding.purchaseDate), to: calendar.startOfDay(for: endDate))
-            return (components.day ?? 0) + 1
-        }
-
-        var absoluteReturnPercentage: Double {
-            guard holding.isValid && holding.purchaseAmount > 0 && holding.currentNav > 0 else { return 0.0 }
-            let profit = dataManager.calculateProfit(for: holding)
-            return (profit.absolute / holding.purchaseAmount) * 100
-        }
-
-        var body: some View {
-            let profit = displayProfit
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(holding.fundName)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .truncationMode(.tail)
-                    Text("(\(holding.fundCode))")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .onLongPressGesture {
-                            UIPasteboard.general.string = holding.fundCode
-                            onCopyClientID?("基金代码已复制: \(holding.fundCode)")
-                        }
-
-                    if holding.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(.leading, 4)
-                    }
-
-                    Spacer()
-                    Text(formattedNavValueAndDate)
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-
-                if !hideClientInfo {
-                    HStack {
-                        Text("客户: \(holding.clientName)")
-                            .font(.subheadline)
-                        if !holding.clientID.isEmpty {
-                            Text("(\(holding.clientID))")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                    }
-                }
-                
-                Spacer().frame(height: 8)
-
-                HStack {
-                    Text("购买金额: \(purchaseAmountFormatted)")
-                        .font(.caption)
-                    Text("份额: \(holding.purchaseShares, specifier: "%.2f")份")
-                        .font(.caption)
-                    Spacer()
-                }
-
-                HStack {
-                    Text("收益: ")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                    Text(formattedProfitText(profit.absolute))
-                        .font(.subheadline)
-                        .foregroundColor(profitColor(profit.absolute))
-                    
-                    Spacer()
-                }
-                
-                HStack {
-                    Text("收益率: ")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                    
-                    Group {
-                        Text(formattedPercentageText(absoluteReturnPercentage))
-                            .font(.subheadline)
-                            .foregroundColor(percentageColor(absoluteReturnPercentage))
-                        + Text("[绝对]")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text(" | ")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(formattedPercentageText(profit.annualized))
-                            .font(.subheadline)
-                            .foregroundColor(percentageColor(profit.annualized))
-                        + Text("[年化]")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+struct HoldingRow: View {
+    @EnvironmentObject var dataManager: DataManager
+    @EnvironmentObject var authService: AuthService
+    let holding: FundHolding
+    let hideClientInfo: Bool
+    let onCopyClientID: ((String) -> Void)?
+    let onGenerateReport: ((FundHolding) -> Void)?
+    
+    private static let dateFormatterYY_MM_DD: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yy-MM-dd"
+        return formatter
+    }()
+    
+    private static let dateFormatterMM_DD: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd"
+        return formatter
+    }()
+    
+    var holdingDays: Int {
+        let endDate = holding.navDate
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: calendar.startOfDay(for: holding.purchaseDate), to: calendar.startOfDay(for: endDate))
+        return (components.day ?? 0) + 1
+    }
+    
+    var absoluteReturnPercentage: Double {
+        guard holding.isValid && holding.purchaseAmount > 0 && holding.currentNav > 0 else { return 0.0 }
+        let profit = dataManager.calculateProfit(for: holding)
+        return (profit.absolute / holding.purchaseAmount) * 100
+    }
+    
+    var body: some View {
+        let profit = displayProfit
+        
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(holding.fundName)
+                    .font(.headline)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-
-                    Spacer()
+                    .truncationMode(.tail)
+                Text("(\(holding.fundCode))")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .onLongPressGesture {
+                        UIPasteboard.general.string = holding.fundCode
+                        onCopyClientID?("基金代码已复制: \(holding.fundCode)")
+                    }
+                
+                if holding.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .padding(.leading, 4)
                 }
-
+                
+                Spacer()
+                Text(formattedNavValueAndDate)
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            
+            if !hideClientInfo {
                 HStack {
-                    Text("购买日期: ")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(Self.dateFormatterYY_MM_DD.string(from: holding.purchaseDate))
-                        .font(.caption)
-                    
-                    Spacer()
-                    
-                    Text("持有天数: ")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("\(holdingDays)天")
-                        .font(.caption)
-                }
-                .padding(.top, 4)
-
-                HStack {
-                    if !holding.remarks.isEmpty {
-                        Text("备注: \(holding.remarks)")
+                    Text("客户: \(holding.clientName)")
+                        .font(.subheadline)
+                    if !holding.clientID.isEmpty {
+                        Text("(\(holding.clientID))")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
                     }
-                    
                     Spacer()
-                    
-                    // 复制客户号按钮 - 添加用户类型检查
-                    Button(action: {
-                        // 检查用户类型 - 使用枚举比较
-                        if let currentUser = authService.currentUser {
-                            if currentUser.userType == .free {
-                                onCopyClientID?("不支持基础用户使用此功能")
-                                return
-                            }
-                        }
-                        
-                        if !holding.clientID.isEmpty {
-                            UIPasteboard.general.string = holding.clientID
-                            onCopyClientID?("客户号已复制到剪贴板")
-                        }
-                    }) {
-                        Text("复制客户号")
-                    }
-                    .font(.caption)
-                    .buttonStyle(.plain)
-                    .foregroundColor(holding.clientID.isEmpty ? .gray : .accentColor)
-                    .disabled(holding.clientID.isEmpty)
-                    
-                    // 报告按钮 - 添加用户类型检查
-                    Button("报告") {
-                        // 检查用户类型 - 使用枚举比较
-                        if let currentUser = authService.currentUser {
-                            if currentUser.userType == .free {
-                                onCopyClientID?("不支持基础用户使用此功能")
-                                return
-                            }
-                        }
-                        onGenerateReport?(holding)
-                    }
-                    .font(.caption)
-                    .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
-                    .padding(.leading, 8)
                 }
-                .padding(.top, 4)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 16)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
-            .cornerRadius(10)
-            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
-            .swipeActions(edge: .leading) {
-                Button {
-                    dataManager.togglePinStatus(forHoldingId: holding.id)
-                } label: {
-                    Label(holding.isPinned ? "取消置顶" : "置顶", systemImage: holding.isPinned ? "pin.slash.fill" : "pin.fill")
-                }
-                .tint(holding.isPinned ? .orange : .blue)
-            }
-        }
-        
-        init(holding: FundHolding,
-             hideClientInfo: Bool = false,
-             onCopyClientID: ((String) -> Void)? = nil,
-             onGenerateReport: ((FundHolding) -> Void)? = nil) {
-            self.holding = holding
-            self.hideClientInfo = hideClientInfo
-            self.onCopyClientID = onCopyClientID
-            self.onGenerateReport = onGenerateReport
-        }
-        
-        private var displayProfit: ProfitResult {
-            guard holding.isValid else {
-                return ProfitResult(absolute: 0.0, annualized: 0.0)
-            }
-            return dataManager.calculateProfit(for: holding)
-        }
-
-        private func formattedProfitText(_ profit: Double) -> String {
-            if profit > 0 {
-                return "+\(String(format: "%.2f", profit))元"
-            } else if profit < 0 {
-                return "\(String(format: "%.2f", profit))元"
-            } else {
-                return "0.00元"
-            }
-        }
-
-        private func formattedPercentageText(_ percentage: Double) -> String {
-            if percentage > 0 {
-                return "+\(String(format: "%.2f", percentage))%"
-            } else if percentage < 0 {
-                return "\(String(format: "%.2f", percentage))%"
-            } else {
-                return "0.00%"
-            }
-        }
-
-        private func profitColor(_ profit: Double) -> Color {
-            Color.forValue(profit)
-        }
-
-        private func percentageColor(_ percentage: Double) -> Color {
-            Color.forValue(percentage)
-        }
-        
-        private var formattedNavValueAndDate: String {
-            let navValue = String(format: "%.4f", holding.currentNav)
-            let navDate = Self.dateFormatterMM_DD.string(from: holding.navDate)
-            return "\(navValue)(\(navDate))"
-        }
-
-        private var purchaseAmountFormatted: String {
-            var formattedString: String
-            if holding.purchaseAmount >= 10000 && holding.purchaseAmount.truncatingRemainder(dividingBy: 10000) == 0 {
-                formattedString = String(format: "%.0f", holding.purchaseAmount / 10000.0) + "万"
-            } else if holding.purchaseAmount >= 10000 {
-                formattedString = String(format: "%.2f", holding.purchaseAmount / 10000.0) + "万"
-            } else {
-                formattedString = String(format: "%.2f", holding.purchaseAmount) + "元"
-            }
-            return formattedString
-        }
-
-        private var reportContent: String {
-            let profit = displayProfit
-            let purchaseAmountFormatted = self.purchaseAmountFormatted
-            let formattedCurrentNav = String(format: "%.4f", holding.currentNav)
-            let formattedAbsoluteProfit = formattedProfitText(profit.absolute)
-            let formattedAnnualizedProfit = formattedPercentageText(profit.annualized)
-            let formattedAbsoluteReturnPercentage = formattedPercentageText(self.absoluteReturnPercentage)
-
-            let navDateString = Self.dateFormatterMM_DD.string(from: holding.navDate)
-
-            return """
-            \(holding.fundName) | \(holding.fundCode)
-            ├ 购买日期:\(HoldingRow.dateFormatterYY_MM_DD.string(from: holding.purchaseDate))
-            ├ 持有天数:\(holdingDays)天
-            ├ 购买金额:\(purchaseAmountFormatted)
-            ├ 最新净值:\(formattedCurrentNav) | \(navDateString)
-            ├ 收益:\(formattedAbsoluteProfit)
-            ├ 收益率:\(formattedAnnualizedProfit)(年化)
-            └ 收益率:\(formattedAbsoluteReturnPercentage)(绝对)
-            """
-        }
-    }
-
-    extension Double {
-        func formattedWithSign() -> String {
-            if self > 0 {
-                return "+\(self)"
-            } else {
-                return "\(self)"
-            }
-        }
-        
-        var formattedPercentage: String {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .percent
-            formatter.minimumFractionDigits = 2
-            formatter.maximumFractionDigits = 2
-            return formatter.string(from: NSNumber(value: self / 100)) ?? "\(self)%"
-        }
-    }
-
-    struct HoldingRow_Previews: PreviewProvider {
-        static var previews: some View {
-            let holding = FundHolding(
-                clientName: "测试客户",
-                clientID: "123456789012",
-                fundCode: "000001",
-                purchaseAmount: 50000.0,
-                purchaseShares: 20000.0,
-                purchaseDate: Date().addingTimeInterval(-86400 * 30),
-                remarks: "测试备注",
-                fundName: "测试基金",
-                currentNav: 2.75,
-                navDate: Date(),
-                isValid: true
-            )
             
-            HoldingRow(holding: holding)
-                .environmentObject(DataManager())
-                .environmentObject(AuthService()) // 添加 AuthService
-                .previewLayout(.sizeThatFits)
-                .padding()
+            Spacer().frame(height: 8)
+            
+            HStack {
+                Text("购买金额: \(purchaseAmountFormatted)")
+                    .font(.caption)
+                Text("份额: \(holding.purchaseShares, specifier: "%.2f")份")
+                    .font(.caption)
+                Spacer()
+            }
+            
+            HStack {
+                Text("收益: ")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                Text(formattedProfitText(profit.absolute))
+                    .font(.subheadline)
+                    .foregroundColor(profitColor(profit.absolute))
+                
+                Spacer()
+            }
+            
+            HStack {
+                Text("收益率: ")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+                
+                Group {
+                    Text(formattedPercentageText(absoluteReturnPercentage))
+                        .font(.subheadline)
+                        .foregroundColor(percentageColor(absoluteReturnPercentage))
+                    + Text("[绝对]")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text(" | ")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(formattedPercentageText(profit.annualized))
+                        .font(.subheadline)
+                        .foregroundColor(percentageColor(profit.annualized))
+                    + Text("[年化]")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                
+                Spacer()
+            }
+            
+            HStack {
+                Text("购买日期: ")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text(Self.dateFormatterYY_MM_DD.string(from: holding.purchaseDate))
+                    .font(.caption)
+                
+                Spacer()
+                
+                Text("持有天数: ")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("\(holdingDays)天")
+                    .font(.caption)
+            }
+            .padding(.top, 4)
+            
+            HStack {
+                if !holding.remarks.isEmpty {
+                    Text("备注: \(holding.remarks)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    if let currentUser = authService.currentUser {
+                        if currentUser.userType == .free {
+                            onCopyClientID?("不支持基础用户使用此功能")
+                            return
+                        }
+                    }
+                    
+                    if !holding.clientID.isEmpty {
+                        UIPasteboard.general.string = holding.clientID
+                        onCopyClientID?("客户号已复制到剪贴板")
+                    }
+                }) {
+                    Text("复制客户号")
+                }
+                .font(.caption)
+                .buttonStyle(.plain)
+                .foregroundColor(holding.clientID.isEmpty ? .gray : .accentColor)
+                .disabled(holding.clientID.isEmpty)
+                
+                Button("报告") {
+                    if let currentUser = authService.currentUser {
+                        if currentUser.userType == .free {
+                            onCopyClientID?("不支持基础用户使用此功能")
+                            return
+                        }
+                    }
+                    onGenerateReport?(holding)
+                }
+                .font(.caption)
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+                .padding(.leading, 8)
+            }
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 2)
+        .swipeActions(edge: .leading) {
+            Button {
+                dataManager.togglePinStatus(forHoldingId: holding.id)
+            } label: {
+                Label(holding.isPinned ? "取消置顶" : "置顶", systemImage: holding.isPinned ? "pin.slash.fill" : "pin.fill")
+            }
+            .tint(holding.isPinned ? .orange : .blue)
         }
     }
+    
+    init(holding: FundHolding,
+         hideClientInfo: Bool = false,
+         onCopyClientID: ((String) -> Void)? = nil,
+         onGenerateReport: ((FundHolding) -> Void)? = nil) {
+        self.holding = holding
+        self.hideClientInfo = hideClientInfo
+        self.onCopyClientID = onCopyClientID
+        self.onGenerateReport = onGenerateReport
+    }
+    
+    private var displayProfit: ProfitResult {
+        guard holding.isValid else {
+            return ProfitResult(absolute: 0.0, annualized: 0.0)
+        }
+        return dataManager.calculateProfit(for: holding)
+    }
+    
+    private func formattedProfitText(_ profit: Double) -> String {
+        if profit > 0 {
+            return "+\(String(format: "%.2f", profit))元"
+        } else if profit < 0 {
+            return "\(String(format: "%.2f", profit))元"
+        } else {
+            return "0.00元"
+        }
+    }
+    
+    private func formattedPercentageText(_ percentage: Double) -> String {
+        if percentage > 0 {
+            return "+\(String(format: "%.2f", percentage))%"
+        } else if percentage < 0 {
+            return "\(String(format: "%.2f", percentage))%"
+        } else {
+            return "0.00%"
+        }
+    }
+    
+    private func profitColor(_ profit: Double) -> Color {
+        Color.forValue(profit)
+    }
+    
+    private func percentageColor(_ percentage: Double) -> Color {
+        Color.forValue(percentage)
+    }
+    
+    private var formattedNavValueAndDate: String {
+        let navValue = String(format: "%.4f", holding.currentNav)
+        let navDate = Self.dateFormatterMM_DD.string(from: holding.navDate)
+        return "\(navValue)(\(navDate))"
+    }
+    
+    private var purchaseAmountFormatted: String {
+        var formattedString: String
+        if holding.purchaseAmount >= 10000 && holding.purchaseAmount.truncatingRemainder(dividingBy: 10000) == 0 {
+            formattedString = String(format: "%.0f", holding.purchaseAmount / 10000.0) + "万"
+        } else if holding.purchaseAmount >= 10000 {
+            formattedString = String(format: "%.2f", holding.purchaseAmount / 10000.0) + "万"
+        } else {
+            formattedString = String(format: "%.2f", holding.purchaseAmount) + "元"
+        }
+        return formattedString
+    }
+    
+    private var reportContent: String {
+        let profit = displayProfit
+        let purchaseAmountFormatted = self.purchaseAmountFormatted
+        let formattedCurrentNav = String(format: "%.4f", holding.currentNav)
+        let formattedAbsoluteProfit = formattedProfitText(profit.absolute)
+        let formattedAnnualizedProfit = formattedPercentageText(profit.annualized)
+        let formattedAbsoluteReturnPercentage = formattedPercentageText(self.absoluteReturnPercentage)
+        
+        let navDateString = Self.dateFormatterMM_DD.string(from: holding.navDate)
+        
+        return """
+        \(holding.fundName) | \(holding.fundCode)
+        ├ 购买日期:\(HoldingRow.dateFormatterYY_MM_DD.string(from: holding.purchaseDate))
+        ├ 持有天数:\(holdingDays)天
+        ├ 购买金额:\(purchaseAmountFormatted)
+        ├ 最新净值:\(formattedCurrentNav) | \(navDateString)
+        ├ 收益:\(formattedAbsoluteProfit)
+        ├ 收益率:\(formattedAnnualizedProfit)(年化)
+        └ 收益率:\(formattedAbsoluteReturnPercentage)(绝对)
+        """
+    }
+}
+
+extension Double {
+    func formattedWithSign() -> String {
+        if self > 0 {
+            return "+\(self)"
+        } else {
+            return "\(self)"
+        }
+    }
+    
+    var formattedPercentage: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: self / 100)) ?? "\(self)%"
+    }
+}
