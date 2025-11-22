@@ -78,9 +78,7 @@ struct CustomCardView<Content: View>: View {
         .background(
             ZStack {
                 if hasAnimatedBackground {
-                    // 修改点2: 为动画背景添加遮罩，使其呈现左上到右下的减淡效果
                     ZStack {
-                        // 底层动态背景
                         RoundedRectangle(cornerRadius: 15)
                             .fill(
                                 LinearGradient(
@@ -98,8 +96,7 @@ struct CustomCardView<Content: View>: View {
                                 Animation.easeInOut(duration: 8).repeatForever(autoreverses: true),
                                 value: hueRotation
                             )
-                        
-                        // 叠加层保持不变，提供基础的光泽感
+
                         RoundedRectangle(cornerRadius: 15)
                             .fill(
                                 LinearGradient(
@@ -109,17 +106,15 @@ struct CustomCardView<Content: View>: View {
                                 )
                             )
                     }
-                    // 关键修改：通过Mask实现"减淡"效果，让右下角逐渐透明，与普通卡片风格统一
                     .mask(
                         LinearGradient(
-                            gradient: Gradient(colors: [.black, .black.opacity(0.15)]), // 从完全不透明过渡到低透明度
+                            gradient: Gradient(colors: [.black, .black.opacity(0.15)]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     
                 } else if hasGradientBackground {
-                    // 45°渐变背景
                     RoundedRectangle(cornerRadius: 15)
                         .fill(
                             LinearGradient(
@@ -170,10 +165,9 @@ struct CustomCardView<Content: View>: View {
     }
     
     private func getGradientColors() -> [Color] {
-        // 在深色模式下使用更浅的渐变，确保卡片可见
         if colorScheme == .dark {
             let baseColor = backgroundColor
-            let endColor = baseColor.opacity(0.3) // 使用更浅的渐变结束色
+            let endColor = baseColor.opacity(0.3)
             return [baseColor, endColor]
         } else {
             let baseColor = backgroundColor
@@ -183,7 +177,6 @@ struct CustomCardView<Content: View>: View {
     }
     
     private func getOverlayGradientColors() -> [Color] {
-        // 用于动画背景上的叠加渐变
         if colorScheme == .dark {
             return [Color.clear, Color.black.opacity(0.3)]
         } else {
@@ -195,7 +188,7 @@ struct CustomCardView<Content: View>: View {
 struct UserTypeRibbon: View {
     let userType: AuthService.UserType
     @State private var shimmerOffset: CGFloat = -80.0
-    @State private var hasAnimated = false // 新增状态控制
+    @State private var hasAnimated = false
     
     var ribbonText: String {
         switch userType {
@@ -217,7 +210,6 @@ struct UserTypeRibbon: View {
                     Color(hex: "757575"),
                     Color(hex: "616161")
                 ]),
-                // 修改点2: 将渐变方向从左到右
                 startPoint: .leading,
                 endPoint: .trailing
             )
@@ -228,7 +220,6 @@ struct UserTypeRibbon: View {
                     Color(hex: "B0B0B0"),
                     Color(hex: "909090")
                 ]),
-                // 修改点2: 将渐变方向从左到右
                 startPoint: .leading,
                 endPoint: .trailing
             )
@@ -239,7 +230,6 @@ struct UserTypeRibbon: View {
                     Color(hex: "FFA500"),
                     Color(hex: "FF8C00")
                 ]),
-                // 修改点2: 将渐变方向从左到右
                 startPoint: .leading,
                 endPoint: .trailing
             )
@@ -257,14 +247,12 @@ struct UserTypeRibbon: View {
     
     var body: some View {
         ZStack {
-            // 绶带背景
             Rectangle()
                 .fill(ribbonColor)
                 .frame(width: 80, height: 24)
                 .rotationEffect(.degrees(45))
                 .shadow(color: .black.opacity(0.2), radius: 1.5, x: 0, y: 1.5)
                 .overlay(
-                    // 修改点1: 改进的高光效果 - 使用叠加层和Offset实现锐利的扫光
                     Group {
                         if userType == .subscribed || userType == .vip {
                             Rectangle()
@@ -273,7 +261,7 @@ struct UserTypeRibbon: View {
                                         gradient: Gradient(colors: [
                                             .clear,
                                             .white.opacity(0.2),
-                                            .white.opacity(0.9), // 高亮核心
+                                            .white.opacity(0.9),
                                             .white.opacity(0.2),
                                             .clear
                                         ]),
@@ -281,11 +269,10 @@ struct UserTypeRibbon: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: 30, height: 24) // 较窄的高光条
+                                .frame(width: 30, height: 24)
                                 .offset(x: shimmerOffset)
-                                .rotationEffect(.degrees(45)) // 随绶带旋转
+                                .rotationEffect(.degrees(45))
                                 .mask(
-                                    // 确保高光只在绶带区域内显示
                                     Rectangle()
                                         .frame(width: 80, height: 24)
                                         .rotationEffect(.degrees(45))
@@ -293,8 +280,7 @@ struct UserTypeRibbon: View {
                         }
                     }
                 )
-            
-            // 文字
+
             Text(ribbonText)
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(textColor)
@@ -304,7 +290,6 @@ struct UserTypeRibbon: View {
         }
         .frame(width: 60, height: 60)
         .onAppear {
-            // 只在第一次出现时执行动画，或者重置状态后
             if !hasAnimated && (userType == .subscribed || userType == .vip) {
                 hasAnimated = true
                 shimmerOffset = -80.0
@@ -319,7 +304,6 @@ struct UserTypeRibbon: View {
             }
         }
         .onDisappear {
-            // 当离开页面时重置动画状态，这样下次进入时可以重新执行
             hasAnimated = false
             shimmerOffset = -80.0
         }
@@ -547,7 +531,6 @@ struct UserInfoView: View {
             }
             .padding(.horizontal, 16)
 
-            // 分隔线
             Rectangle()
                 .fill(Color.gray.opacity(0.2))
                 .frame(height: 1)
@@ -610,8 +593,7 @@ struct FunctionMenuView: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 8)
-            
-            // 修改点1: 在基础用户模式下隐藏上传云端和下载本地卡片
+
             if authService.currentUser?.userType != .free {
                 HStack(spacing: 12) {
                     CustomCardView(
@@ -738,13 +720,13 @@ struct ServiceSettingsView: View {
                 title: "关于",
                 description: "程序版本信息和说明",
                 imageName: "info.circle.fill",
-                backgroundColor: Color.blue.opacity(0.1), // 添加基础背景色
+                backgroundColor: Color.blue.opacity(0.1),
                 contentForegroundColor: .white,
                 action: {
                     showingAboutSheet = true
                 },
                 hasAnimatedBackground: true,
-                hasGradientBackground: true // 启用45°渐变背景
+                hasGradientBackground: true
             ) { _ in EmptyView() }
             .frame(maxWidth: .infinity)
         }

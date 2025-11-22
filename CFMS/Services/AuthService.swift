@@ -2,6 +2,9 @@
 import Foundation
 import Combine
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 class AuthService: ObservableObject {
     let baseURL = "https://cfms.crnas.uk:8315"
@@ -10,6 +13,10 @@ class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var authToken: String?
 
+    // 新增：验证码相关
+    @Published var captchaImage: UIImage?
+    @Published var captchaId: String?
+
     enum UserType: String {
         case free = "free"
         case subscribed = "subscribed"
@@ -17,12 +24,16 @@ class AuthService: ObservableObject {
     }
 
     private var inactivityTimer: Timer?
-    private let inactivityTimeout: TimeInterval = 5 * 60 // 5分钟
+    private let inactivityTimeout: TimeInterval = 5 * 60
+    private let backgroundTimeout: TimeInterval = 5 * 60
     private var lastActivityTime: Date = Date()
+    private var backgroundEnterTime: Date?
 
     private let maxAuthAttempts = 3
+    private let maxAuthAttemptsBeforeCaptcha = 5
     private let authLockoutDuration: TimeInterval = 10 * 60
-    private let registerCooldownDuration: TimeInterval = 5 * 60
+    private let registerCooldownDuration: TimeInterval = 24 * 60 * 60
+    private let maxRegistrationsPerDevice = 2
     
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     
@@ -80,13 +91,18 @@ class AuthService: ObservableObject {
         let components = calendar.dateComponents([.day], from: Date(), to: endDate)
         return components.day
     }
-    
+
     func canRegister() -> (canRegister: Bool, remainingTime: TimeInterval?) {
         let authCheck = canAuth()
         if !authCheck.canAuth {
             return (false, authCheck.remainingTime)
         }
-        
+
+        let registeredCount = getRegisteredAccountsCount()
+        if registeredCount >= maxRegistrationsPerDevice {
+            return (false, nil)
+        }
+
         if let lastRegisterTime = UserDefaults.standard.object(forKey: "lastRegisterTime") as? Date {
             let elapsedTime = Date().timeIntervalSince(lastRegisterTime)
             if elapsedTime < registerCooldownDuration {
@@ -96,29 +112,44 @@ class AuthService: ObservableObject {
         }
         return (true, nil)
     }
+
+    private func getRegisteredAccountsCount() -> Int {
+        return UserDefaults.standard.integer(forKey: "registeredAccountsCount")
+    }
+
+    private func incrementRegisteredAccountsCount() {
+        let count = getRegisteredAccountsCount() + 1
+        UserDefaults.standard.set(count, forKey: "registeredAccountsCount")
+        print("🔧 设备已注册账户数量: \(count)")
+    }
     
     func canLogin() -> (canLogin: Bool, remainingTime: TimeInterval?) {
         let authResult = canAuth()
         return (canLogin: authResult.canAuth, remainingTime: authResult.remainingTime)
     }
-    
-    // 修改：将这个方法改为 internal 而不是 private
+
+    func requiresCaptcha() -> Bool {
+        let failedAttempts = UserDefaults.standard.integer(forKey: "authFailedAttempts")
+        return failedAttempts >= 3
+    }
+
     func canAuth() -> (canAuth: Bool, remainingTime: TimeInterval?) {
         let failedAttempts = UserDefaults.standard.integer(forKey: "authFailedAttempts")
-        if let lockoutTime = UserDefaults.standard.object(forKey: "authLockoutTime") as? Date {
-            let elapsedTime = Date().timeIntervalSince(lockoutTime)
-            if elapsedTime < authLockoutDuration {
-                let remainingTime = authLockoutDuration - elapsedTime
-                return (false, remainingTime)
+
+        if failedAttempts >= maxAuthAttemptsBeforeCaptcha {
+            if let lockoutTime = UserDefaults.standard.object(forKey: "authLockoutTime") as? Date {
+                let elapsedTime = Date().timeIntervalSince(lockoutTime)
+                if elapsedTime < authLockoutDuration {
+                    let remainingTime = authLockoutDuration - elapsedTime
+                    return (false, remainingTime)
+                } else {
+                    UserDefaults.standard.set(0, forKey: "authFailedAttempts")
+                    UserDefaults.standard.removeObject(forKey: "authLockoutTime")
+                }
             } else {
-                UserDefaults.standard.set(0, forKey: "authFailedAttempts")
-                UserDefaults.standard.removeObject(forKey: "authLockoutTime")
+                UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
+                return (false, authLockoutDuration)
             }
-        }
-        
-        if failedAttempts >= maxAuthAttempts {
-            UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
-            return (false, authLockoutDuration)
         }
         
         return (true, nil)
@@ -131,7 +162,7 @@ class AuthService: ObservableObject {
         
         print("🔧 认证失败次数: \(failedAttempts)")
         
-        if failedAttempts >= maxAuthAttempts {
+        if failedAttempts >= maxAuthAttemptsBeforeCaptcha {
             UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
             print("🔧 认证已被锁定，请10分钟后再试")
         }
@@ -139,6 +170,7 @@ class AuthService: ObservableObject {
 
     private func recordRegisterTime() {
         UserDefaults.standard.set(Date(), forKey: "lastRegisterTime")
+        incrementRegisteredAccountsCount()
     }
     
     private func resetAuthFailure() {
@@ -146,7 +178,50 @@ class AuthService: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "authLockoutTime")
     }
 
-    func login(username: String, password: String, completion: @escaping (Bool, String) -> Void) {
+    func getLastUsername() -> String {
+        return UserDefaults.standard.string(forKey: "lastUsername") ?? ""
+    }
+
+    private func saveLastUsername(_ username: String) {
+        UserDefaults.standard.set(username, forKey: "lastUsername")
+    }
+
+    func shouldRememberUsername() -> Bool {
+        return UserDefaults.standard.bool(forKey: "rememberUsername")
+    }
+
+    func setRememberUsername(_ remember: Bool) {
+        UserDefaults.standard.set(remember, forKey: "rememberUsername")
+    }
+    
+    // 新增：获取验证码图片
+    func fetchCaptcha() {
+        guard let url = URL(string: "\(baseURL)/api/captcha") else { return }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let success = json["success"] as? Bool, success,
+                       let base64String = json["image_base64"] as? String,
+                       let captchaId = json["captcha_id"] as? String,
+                       let imageData = Data(base64Encoded: base64String),
+                       let image = UIImage(data: imageData) {
+                        
+                        DispatchQueue.main.async {
+                            self.captchaImage = image
+                            self.captchaId = captchaId
+                            print("🔧 验证码获取成功，ID: \(captchaId)")
+                        }
+                    }
+                } catch {
+                    print("🔧 验证码解析失败: \(error)")
+                }
+            }
+        }.resume()
+    }
+
+    func login(username: String, password: String, captcha: String? = nil, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始登录流程，用户名: \(username)")
 
         let loginCheck = canLogin()
@@ -154,6 +229,20 @@ class AuthService: ObservableObject {
             if let remainingTime = loginCheck.remainingTime {
                 let minutes = Int(ceil(remainingTime / 60))
                 completion(false, "登录尝试次数过多，请\(minutes)分钟后再试")
+                return
+            }
+        }
+
+        // 修改：验证码校验逻辑 (此处仅做非空校验，真正校验由后端完成)
+        if requiresCaptcha() {
+            guard let captcha = captcha, !captcha.isEmpty else {
+                completion(false, "请输入验证码")
+                return
+            }
+            
+            // 前端不再校验 "1234"，而是必须确保已经获取到了验证码ID
+            if self.captchaId == nil {
+                completion(false, "验证码加载失败，请点击刷新")
                 return
             }
         }
@@ -167,10 +256,16 @@ class AuthService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "username": username,
             "password": password
         ]
+        
+        // 如果需要验证码，添加到请求体
+        if let captchaCode = captcha, let captchaId = self.captchaId, !captchaCode.isEmpty {
+            body["captcha_code"] = captchaCode
+            body["captcha_id"] = captchaId
+        }
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -182,6 +277,7 @@ class AuthService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
+                    // 网络错误不一定算作认证失败，但为了安全可以记录
                     self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
                     return
@@ -207,21 +303,30 @@ class AuthService: ObservableObject {
                             print("🔧 登录成功，用户数据: \(userData)")
                             
                             self.saveLoginStatus(token: token, userData: userData)
+                            self.saveLastUsername(username)
                             
                             self.isLoggedIn = true
                             self.authToken = token
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
                             
+                            // 登录成功，清除验证码相关状态
                             self.resetAuthFailure()
+                            self.captchaImage = nil
+                            self.captchaId = nil
                             
                             self.objectWillChange.send()
                             
-                            print("🔧 AuthService 状态更新完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil"), 类型: \(self.currentUser?.userType.rawValue ?? "unknown"), 订阅结束: \(self.currentUser?.subscriptionEnd?.description ?? "nil")")
+                            print("🔧 AuthService 状态更新完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil")")
                             
                             completion(true, json["message"] as? String ?? "登录成功")
                         } else {
+                            // 登录失败，记录次数
                             self.recordAuthFailure()
+                            // 登录失败后，刷新验证码
+                            if self.requiresCaptcha() {
+                                self.fetchCaptcha()
+                            }
                             let message = json["message"] as? String ?? json["error"] as? String ?? "登录失败"
                             completion(false, message)
                         }
@@ -252,8 +357,16 @@ class AuthService: ObservableObject {
         let registerCheck = canRegister()
         if !registerCheck.canRegister {
             if let remainingTime = registerCheck.remainingTime {
-                let minutes = Int(ceil(remainingTime / 60))
-                completion(false, "注册过于频繁，请\(minutes)分钟后再试")
+                let hours = Int(ceil(remainingTime / 3600))
+                if hours > 0 {
+                    completion(false, "注册过于频繁，请\(hours)小时后再试")
+                } else {
+                    let minutes = Int(ceil(remainingTime / 60))
+                    completion(false, "注册过于频繁，请\(minutes)分钟后再试")
+                }
+                return
+            } else {
+                completion(false, "当前设备注册账户数量已达上限")
                 return
             }
         }
@@ -312,6 +425,7 @@ class AuthService: ObservableObject {
                             print("🔧 注册成功，用户数据: \(userData)")
                             
                             self.saveLoginStatus(token: token, userData: userData)
+                            self.saveLastUsername(username)
                             
                             self.recordRegisterTime()
                             self.resetAuthFailure()
@@ -322,8 +436,6 @@ class AuthService: ObservableObject {
                             self.resetInactivityTimer()
                             
                             self.objectWillChange.send()
-                            
-                            print("🔧 AuthService 状态更新完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil"), 类型: \(self.currentUser?.userType.rawValue ?? "unknown")")
                             
                             completion(true, json["message"] as? String ?? "注册成功")
                         } else {
@@ -434,23 +546,32 @@ class AuthService: ObservableObject {
     }
     
     @objc private func appWillResignActive() {
-        // 应用即将进入非活跃状态（最小化、锁屏等）
         print("🔧 应用即将进入后台，停止不活跃计时器")
         inactivityTimer?.invalidate()
         inactivityTimer = nil
     }
     
     @objc private func appDidBecomeActive() {
-        // 应用重新激活
         if isLoggedIn {
-            print("🔧 应用重新激活，重新开始不活跃计时器")
+            print("🔧 应用重新激活，检查后台时间")
+
+            if let backgroundTime = backgroundEnterTime {
+                let backgroundDuration = Date().timeIntervalSince(backgroundTime)
+                if backgroundDuration > backgroundTimeout {
+                    print("🔧 后台时间超过5分钟，需要重新登录")
+                    autoLogoutDueToBackgroundTimeout()
+                    return
+                }
+            }
+            
+            print("🔧 重新开始不活跃计时器")
             resetInactivityTimer()
         }
     }
     
     @objc private func appDidEnterBackground() {
-        // 应用已进入后台
-        print("🔧 应用已进入后台，停止不活跃计时器")
+        print("🔧 应用已进入后台，记录进入后台时间")
+        backgroundEnterTime = Date()
         inactivityTimer?.invalidate()
         inactivityTimer = nil
     }
@@ -458,8 +579,7 @@ class AuthService: ObservableObject {
     func resetInactivityTimer() {
         inactivityTimer?.invalidate()
         lastActivityTime = Date()
-        
-        // 只在应用处于活跃状态时启动计时器
+
         if UIApplication.shared.applicationState == .active {
             inactivityTimer = Timer.scheduledTimer(withTimeInterval: inactivityTimeout, repeats: false) { [weak self] _ in
                 self?.autoLogoutDueToInactivity()
@@ -475,6 +595,18 @@ class AuthService: ObservableObject {
         
         NotificationCenter.default.post(
             name: NSNotification.Name("AutoLogoutDueToInactivity"),
+            object: nil
+        )
+    }
+    
+    private func autoLogoutDueToBackgroundTimeout() {
+        guard isLoggedIn else { return }
+        
+        print("由于后台时间过长，需要重新登录")
+        logout()
+        
+        NotificationCenter.default.post(
+            name: NSNotification.Name("AutoLogoutDueToBackgroundTimeout"),
             object: nil
         )
     }
@@ -501,6 +633,10 @@ class AuthService: ObservableObject {
         print("currentUserType: \(currentUser?.userType.rawValue ?? "nil")")
         print("UserDefaults authToken: \(UserDefaults.standard.string(forKey: "authToken")?.prefix(10) ?? "nil")...")
         print("最后活动时间: \(lastActivityTime)")
+        print("最后用户名: \(getLastUsername())")
+        print("记住用户名: \(shouldRememberUsername())")
+        print("注册账户数: \(getRegisteredAccountsCount())")
+        print("认证失败次数: \(UserDefaults.standard.integer(forKey: "authFailedAttempts"))")
         print("订阅结束时间: \(getSubscriptionEndDate() ?? "无")")
         print("应用状态: \(UIApplication.shared.applicationState.rawValue)")
         print("=========================")

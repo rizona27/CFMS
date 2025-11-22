@@ -113,7 +113,7 @@ struct ProfileView: View {
     private func fetchUserProfile() {
         guard let token = authService.authToken else { return }
         
-        let url = URL(string: "http://localhost:30443/api/profile")!
+        let url = URL(string: "\(authService.baseURL)/api/profile")!
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         

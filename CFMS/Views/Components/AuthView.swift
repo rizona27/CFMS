@@ -4,12 +4,13 @@ struct AuthView: View {
     @State private var username = ""
     @State private var password = ""
     @State private var confirmPassword = ""
+    @State private var captcha = ""
     @State private var isLogin = true
     @State private var isLoading = false
     @State private var message = ""
     @State private var messageColor: Color = .red
-
     @State private var showPassword = false
+    @State private var rememberUsername = false
     
     @EnvironmentObject var authService: AuthService
     @Environment(\.presentationMode) var presentationMode
@@ -31,6 +32,12 @@ struct AuthView: View {
                     ScrollView {
                         VStack(spacing: 20) {
                             formSection
+                            
+                            if authService.requiresCaptcha() {
+                                captchaSection
+                            }
+                            
+                            rememberUsernameSection
                             
                             actionButtons
                             
@@ -54,6 +61,11 @@ struct AuthView: View {
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             startAnimations()
+            loadRememberedUsername()
+            // 如果需要验证码，进入页面时预加载
+            if authService.requiresCaptcha() {
+                authService.fetchCaptcha()
+            }
         }
     }
 
@@ -259,6 +271,72 @@ struct AuthView: View {
         .offset(y: animationOffset)
     }
     
+    private var captchaSection: some View {
+        inputCard(
+            title: "验证码",
+            systemImage: "shield.lefthalf.filled",
+            gradientColors: [Color(hex: "ff9a9e"), Color(hex: "fecfef")],
+            content: {
+                HStack {
+                    TextField("请输入验证码", text: $captcha)
+                        .textContentType(.oneTimeCode)
+                    
+                    Button(action: {
+                        // 点击图片刷新验证码
+                        authService.fetchCaptcha()
+                        captcha = ""
+                    }) {
+                        if let image = authService.captchaImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 34)
+                                .cornerRadius(4)
+                        } else {
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .cornerRadius(4)
+                                Text("加载中...")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(width: 100, height: 34)
+                            .onAppear {
+                                // 如果图片为空，自动加载
+                                authService.fetchCaptcha()
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        .opacity(animationOpacity)
+        .offset(y: animationOffset)
+    }
+    
+    private var rememberUsernameSection: some View {
+        HStack {
+            Button(action: {
+                rememberUsername.toggle()
+                authService.setRememberUsername(rememberUsername)
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: rememberUsername ? "checkmark.square.fill" : "square")
+                        .foregroundColor(rememberUsername ? .blue : .gray)
+                    Text("记住用户名")
+                        .font(.system(size: 14))
+                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.8) : .secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+        .opacity(animationOpacity)
+        .offset(y: animationOffset)
+    }
+    
     private var actionButtons: some View {
         VStack(spacing: 16) {
             Button(action: {
@@ -289,6 +367,7 @@ struct AuthView: View {
                     isLogin.toggle()
                     message = ""
                     confirmPassword = ""
+                    captcha = ""
                     showPassword = false
                 }
             }) {
@@ -368,6 +447,10 @@ struct AuthView: View {
             return false
         }
 
+        if authService.requiresCaptcha() && captcha.isEmpty {
+            return false
+        }
+
         if username.count < 3 {
             return false
         }
@@ -398,6 +481,13 @@ struct AuthView: View {
         if !isLogin && password != confirmPassword {
         }
     }
+    
+    private func loadRememberedUsername() {
+        rememberUsername = authService.shouldRememberUsername()
+        if rememberUsername {
+            username = authService.getLastUsername()
+        }
+    }
 
     private func startAnimations() {
         animationOffset = 100
@@ -426,13 +516,21 @@ struct AuthView: View {
                     return
                 }
             }
-            
-            authService.login(username: username, password: password) { success, msg in
-                isLoading = false
-                handleAuthResult(success: success, message: msg)
+
+            if authService.requiresCaptcha() {
+                // 前端已经通过绑定 authService.captchaId 获取了ID
+                // 这里的 captcha 变量是 Textfield 绑定的字符串
+                authService.login(username: username, password: password, captcha: captcha) { success, msg in
+                    isLoading = false
+                    handleAuthResult(success: success, message: msg)
+                }
+            } else {
+                authService.login(username: username, password: password) { success, msg in
+                    isLoading = false
+                    handleAuthResult(success: success, message: msg)
+                }
             }
         } else {
-            // 修复：现在 canAuth() 是公开的，可以直接调用
             let authCheck = authService.canAuth()
             if !authCheck.canAuth {
                 if let remainingTime = authCheck.remainingTime {
@@ -447,9 +545,20 @@ struct AuthView: View {
             let registerCheck = authService.canRegister()
             if !registerCheck.canRegister {
                 if let remainingTime = registerCheck.remainingTime {
-                    let minutes = Int(ceil(remainingTime / 60))
+                    let hours = Int(ceil(remainingTime / 3600))
+                    if hours > 0 {
+                        messageColor = .red
+                        message = "注册过于频繁，请\(hours)小时后再试"
+                    } else {
+                        let minutes = Int(ceil(remainingTime / 60))
+                        messageColor = .red
+                        message = "注册过于频繁，请\(minutes)分钟后再试"
+                    }
+                    isLoading = false
+                    return
+                } else {
                     messageColor = .red
-                    message = "注册过于频繁，请\(minutes)分钟后再试"
+                    message = "当前设备注册账户数量已达上限"
                     isLoading = false
                     return
                 }

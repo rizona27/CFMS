@@ -39,7 +39,7 @@ struct RedemptionView: View {
                                     .shadow(color: .purple.opacity(colorScheme == .dark ? 0.2 : 0.3), radius: 8, x: 0, y: 4)
                                 
                                 VStack(spacing: 8) {
-                                    Text("VIP权益兑换")
+                                    Text("尊享权益兑换")
                                         .font(.system(size: 28, weight: .bold, design: .serif))
                                         .foregroundColor(primaryTextColor)
                                     
@@ -113,7 +113,7 @@ struct RedemptionView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("VIP特权")
+                                Text("尊享特权")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(primaryTextColor)
                                 

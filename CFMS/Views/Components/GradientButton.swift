@@ -1,5 +1,3 @@
-// 在 GradientButton.swift 文件中添加
-
 // 定义了一个名为 GradientButton 的 View 组件，其核心作用是创建一个具有视觉吸引力的、圆形图标按钮。
 import SwiftUI
 
@@ -8,7 +6,7 @@ struct GradientButton: View {
     let action: () -> Void
     var colors: [Color] = [.blue, .purple]
     var size: CGFloat = 32
-    var iconSize: CGFloat = 18  // 将字体大小改为变量
+    var iconSize: CGFloat = 18
     
     var body: some View {
         Button(action: action) {
@@ -33,10 +31,9 @@ struct GradientButton: View {
     }
 }
 
-// 新增：统一的返回按钮组件
 struct BackButton: View {
     let action: () -> Void
-    var colors: [Color] = [Color(hex: "4facfe"), Color(hex: "00f2fe")] // 使用统一的蓝绿色渐变
+    var colors: [Color] = [Color(hex: "4facfe"), Color(hex: "00f2fe")]
     
     var body: some View {
         GradientButton(
@@ -44,12 +41,11 @@ struct BackButton: View {
             action: action,
             colors: colors,
             size: 32,
-            iconSize: 20  // 返回按钮图标稍大
+            iconSize: 20
         )
     }
 }
 
-// 如果需要在某些页面使用主题渐变，可以添加这个变体
 struct ThemedBackButton: View {
     let action: () -> Void
     
@@ -57,7 +53,7 @@ struct ThemedBackButton: View {
         GradientButton(
             icon: "chevron.backward.circle",
             action: action,
-            colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")], // 或者使用您 AppTheme 中的颜色
+            colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")],
             size: 32,
             iconSize: 20
         )
