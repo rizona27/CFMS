@@ -20,69 +20,113 @@ struct CustomCardView<Content: View>: View {
     var toggleBinding: Binding<Bool>? = nil
     var toggleTint: Color = .accentColor
     var hasAnimatedBackground: Bool = false
+    var userType: AuthService.UserType? = nil
+    var isCompact: Bool = false
+    var hasGradientBackground: Bool = true
 
     @State private var hueRotation: Double = 0.0
+    @Environment(\.colorScheme) var colorScheme
 
     @ViewBuilder let content: (Color) -> Content
 
     var body: some View {
-        let cardContent = VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 10) {
-                if let imageName = imageName {
-                    Image(systemName: imageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 28, height: 28)
-                        .foregroundColor(contentForegroundColor)
-                }
-
-                if let title = title {
-                    Text(title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(contentForegroundColor)
-                }
-
-                Spacer()
-
-                if let toggleBinding = toggleBinding {
-                    Toggle(isOn: toggleBinding) {
-                        EmptyView()
+        let cardContent = ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 10) {
+                    if let imageName = imageName {
+                        Image(systemName: imageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: isCompact ? 24 : 28, height: isCompact ? 24 : 28)
+                            .foregroundColor(contentForegroundColor)
                     }
-                    .labelsHidden()
-                    .tint(toggleTint)
-                }
-            }
 
-            if let description = description, toggleBinding == nil {
-                Text(description)
-                    .font(.system(size: 12))
-                    .foregroundColor(contentForegroundColor.opacity(0.7))
-                    .lineLimit(2)
+                    if let title = title {
+                        Text(title)
+                            .font(.system(size: isCompact ? 14 : 16, weight: .semibold))
+                            .foregroundColor(contentForegroundColor)
+                    }
+
+                    Spacer()
+
+                    if let toggleBinding = toggleBinding {
+                        Toggle(isOn: toggleBinding) {
+                            EmptyView()
+                        }
+                        .labelsHidden()
+                        .tint(toggleTint)
+                    }
+                }
+
+                if let description = description, toggleBinding == nil {
+                    Text(description)
+                        .font(.system(size: isCompact ? 11 : 12))
+                        .foregroundColor(contentForegroundColor.opacity(0.7))
+                        .lineLimit(2)
+                }
+                
+                content(contentForegroundColor)
             }
-            
-            content(contentForegroundColor)
+            .padding(isCompact ? 10 : 12)
+            .frame(maxWidth: .infinity, minHeight: isCompact ? 80 : 100, alignment: .leading)
+
+            if let userType = userType {
+                UserTypeRibbon(userType: userType)
+                    .offset(x: isCompact ? 6 : 8, y: isCompact ? -6 : -8)
+            }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
         .background(
             ZStack {
                 if hasAnimatedBackground {
+                    // 修改点2: 为动画背景添加遮罩，使其呈现左上到右下的减淡效果
+                    ZStack {
+                        // 底层动态背景
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.7, green: 0.8, blue: 0.9),
+                                        Color(red: 0.9, green: 0.7, blue: 0.8),
+                                        Color(red: 0.9, green: 0.8, blue: 0.7)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .hueRotation(.degrees(hueRotation))
+                            .animation(
+                                Animation.easeInOut(duration: 8).repeatForever(autoreverses: true),
+                                value: hueRotation
+                            )
+                        
+                        // 叠加层保持不变，提供基础的光泽感
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: getOverlayGradientColors()),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+                    // 关键修改：通过Mask实现“减淡”效果，让右下角逐渐透明，与普通卡片风格统一
+                    .mask(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.black, .black.opacity(0.15)]), // 从完全不透明过渡到低透明度
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    
+                } else if hasGradientBackground {
+                    // 45°渐变背景
                     RoundedRectangle(cornerRadius: 15)
                         .fill(
                             LinearGradient(
-                                colors: [
-                                    Color(red: 0.7, green: 0.8, blue: 0.9),
-                                    Color(red: 0.9, green: 0.7, blue: 0.8),
-                                    Color(red: 0.9, green: 0.8, blue: 0.7)
-                                ],
+                                gradient: Gradient(colors: getGradientColors()),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
-                        )
-                        .hueRotation(.degrees(hueRotation))
-                        .animation(
-                            Animation.easeInOut(duration: 8).repeatForever(autoreverses: true),
-                            value: hueRotation
                         )
                 } else {
                     backgroundColor
@@ -91,6 +135,13 @@ struct CustomCardView<Content: View>: View {
         )
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(getGlowColor(for: userType), lineWidth: userType == .subscribed ? 1.5 : (userType == .vip ? 2 : 0))
+                .blur(radius: userType == .subscribed ? 2 : (userType == .vip ? 2.5 : 0))
+                .opacity(userType == .subscribed ? 0.6 : (userType == .vip ? 0.7 : 0))
+                .padding(userType == .subscribed ? 0.5 : (userType == .vip ? 1 : 0))
+        )
         .onAppear {
             if hasAnimatedBackground {
                 hueRotation = 360
@@ -104,6 +155,160 @@ struct CustomCardView<Content: View>: View {
             .buttonStyle(PlainButtonStyle())
         } else {
             cardContent
+        }
+    }
+    
+    private func getGlowColor(for userType: AuthService.UserType?) -> Color {
+        switch userType {
+        case .subscribed:
+            return Color(hex: "E0E0E0")
+        case .vip:
+            return Color(hex: "FFE55C")
+        default:
+            return .clear
+        }
+    }
+    
+    private func getGradientColors() -> [Color] {
+        // 在深色模式下使用更浅的渐变，确保卡片可见
+        if colorScheme == .dark {
+            let baseColor = backgroundColor
+            let endColor = baseColor.opacity(0.3) // 使用更浅的渐变结束色
+            return [baseColor, endColor]
+        } else {
+            let baseColor = backgroundColor
+            let endColor = Color.white.opacity(0.8)
+            return [baseColor, endColor]
+        }
+    }
+    
+    private func getOverlayGradientColors() -> [Color] {
+        // 用于动画背景上的叠加渐变
+        if colorScheme == .dark {
+            return [Color.clear, Color.black.opacity(0.3)]
+        } else {
+            return [Color.clear, Color.white.opacity(0.6)]
+        }
+    }
+}
+
+struct UserTypeRibbon: View {
+    let userType: AuthService.UserType
+    @State private var shimmerOffset: CGFloat = -80.0 // 修改初始位置
+    
+    var ribbonText: String {
+        switch userType {
+        case .free:
+            return "基础用户"
+        case .subscribed:
+            return "体验用户"
+        case .vip:
+            return "尊享用户"
+        }
+    }
+    
+    var ribbonColor: LinearGradient {
+        switch userType {
+        case .free:
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "9E9E9E"),
+                    Color(hex: "757575"),
+                    Color(hex: "616161")
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .subscribed:
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "E0E0E0"),
+                    Color(hex: "B0B0B0"),
+                    Color(hex: "909090")
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .vip:
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "FFD700"),
+                    Color(hex: "FFA500"),
+                    Color(hex: "FF8C00")
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+    
+    var textColor: Color {
+        switch userType {
+        case .free, .vip:
+            return .white
+        case .subscribed:
+            return Color(hex: "424242")
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // 绶带背景
+            Rectangle()
+                .fill(ribbonColor)
+                .frame(width: 80, height: 24)
+                .rotationEffect(.degrees(45))
+                .shadow(color: .black.opacity(0.2), radius: 1.5, x: 0, y: 1.5)
+                .overlay(
+                    // 修改点1: 改进的高光效果 - 使用叠加层和Offset实现锐利的扫光
+                    Group {
+                        if userType == .subscribed || userType == .vip {
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            .clear,
+                                            .white.opacity(0.2),
+                                            .white.opacity(0.9), // 高亮核心
+                                            .white.opacity(0.2),
+                                            .clear
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 30, height: 24) // 较窄的高光条
+                                .offset(x: shimmerOffset)
+                                .rotationEffect(.degrees(45)) // 随绶带旋转
+                                .mask(
+                                    // 确保高光只在绶带区域内显示
+                                    Rectangle()
+                                        .frame(width: 80, height: 24)
+                                        .rotationEffect(.degrees(45))
+                                )
+                        }
+                    }
+                )
+            
+            // 文字
+            Text(ribbonText)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(textColor)
+                .rotationEffect(.degrees(45))
+                .shadow(color: userType == .subscribed ? .white.opacity(0.3) : .black.opacity(0.2),
+                       radius: 0.5, x: 0, y: 0.5)
+        }
+        .frame(width: 60, height: 60)
+        .onAppear {
+            if userType == .subscribed || userType == .vip {
+                withAnimation(
+                    Animation.linear(duration: 2.0)
+                        .repeatForever(autoreverses: false)
+                        .delay(1.0) // 停顿一下再闪
+                ) {
+                    shimmerOffset = 80.0 // 扫过整个区域
+                }
+            }
         }
     }
 }
@@ -163,7 +368,7 @@ struct AnimatedGradientUsername: View {
         if userType == .free {
             Text(formattedUsername)
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .italic() 
+                .italic()
                 .foregroundColor(.primary)
         } else {
             Text(formattedUsername)
@@ -206,90 +411,137 @@ struct UserInfoView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showingRedemptionView = false
     @State private var showingLogoutConfirmation = false
+
+    private var cardColors: (backgroundColor: Color, foregroundColor: Color) {
+        guard let userType = authService.currentUser?.userType else {
+            return (Color.gray.opacity(0.1), .gray)
+        }
+        
+        switch userType {
+        case .free:
+            return (Color.blue.opacity(0.1), .blue)
+        case .subscribed:
+            return (Color(hex: "F5F5F5").opacity(0.9), Color(hex: "606060"))
+        case .vip:
+            return (Color(hex: "FFFDE7").opacity(0.8), Color(hex: "B8860B"))
+        }
+    }
+
+    private var iconColor: Color {
+        guard let userType = authService.currentUser?.userType else {
+            return .gray
+        }
+        
+        switch userType {
+        case .free:
+            return .blue
+        case .subscribed:
+            return Color(hex: "606060")
+        case .vip:
+            return Color(hex: "B8860B")
+        }
+    }
     
     var body: some View {
-        CustomCardView(
-            title: nil,
-            description: nil,
-            imageName: nil,
-            backgroundColor: Color.purple.opacity(0.1),
-            contentForegroundColor: .purple
-        ) { fgColor in
-            Group {
-                if authService.isLoggedIn, let user = authService.currentUser {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(alignment: .top) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.circle.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.purple)
+        let colors = cardColors
+        
+        VStack(alignment: .leading, spacing: 8) {
+            CustomCardView(
+                title: nil,
+                description: nil,
+                imageName: nil,
+                backgroundColor: colors.backgroundColor,
+                contentForegroundColor: colors.foregroundColor,
+                userType: authService.currentUser?.userType,
+                isCompact: true,
+                hasGradientBackground: false
+            ) { fgColor in
+                Group {
+                    if authService.isLoggedIn, let user = authService.currentUser {
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(alignment: .top) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "person.circle.fill")
+                                        .font(.system(size: 36))
+                                        .foregroundColor(iconColor)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        AnimatedGradientUsername(username: user.username, userType: user.userType)
+
+                                        if user.userType == .subscribed, let endDateText = authService.getSubscriptionEndDateForDisplay() {
+                                            Text(endDateText)
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.orange)
+                                        } else if user.userType == .vip {
+                                            Text("永久有效")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(Color(hex: "B8860B"))
+                                        }
+                                    }
+                                }
                                 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    AnimatedGradientUsername(username: user.username, userType: user.userType)
+                                Spacer()
+                            }
+                            .padding(.bottom, 8)
 
-                                    if user.userType == .subscribed, let endDateText = authService.getSubscriptionEndDateForDisplay() {
-                                        Text(endDateText)
-                                            .font(.system(size: 11))
-                                            .foregroundColor(.orange)
+                            HStack {
+                                if user.userType == .free || user.userType == .subscribed {
+                                    Button(action: {
+                                        showingRedemptionView = true
+                                    }) {
+                                        HStack {
+                                            Text("升级")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(colors.foregroundColor)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(colors.foregroundColor)
+                                        }
                                     }
                                 }
-                            }
-                            
-                            Spacer()
+                                
+                                Spacer()
 
-                            userTypeBadge(user.userType)
+                                Button("退出") {
+                                    showingLogoutConfirmation = true
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.red)
                                 .frame(width: 75, height: 28)
-                        }
-                        .padding(.bottom, 8)
-
-                        HStack {
-                            if user.userType == .free || user.userType == .subscribed {
-                                Button(action: {
-                                    showingRedemptionView = true
-                                }) {
-                                    HStack {
-                                        Text("升级")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.blue)
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.blue)
-                                    }
-                                }
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(6)
                             }
+                        }
+                        .frame(height: 80)
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                .font(.system(size: 36))
+                                .foregroundColor(.secondary)
                             
-                            Spacer()
-
-                            Button("退出登录") {
-                                showingLogoutConfirmation = true
-                            }
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.red)
-                            .frame(width: 75, height: 28)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(6)
+                            Text("未登录")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Text("请登录以查看个人信息")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary.opacity(0.7))
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        .padding(.vertical, 16)
                     }
-                    .frame(height: 100)
-                } else {
-                    VStack(spacing: 12) {
-                        Image(systemName: "person.crop.circle.badge.questionmark")
-                            .font(.system(size: 40))
-                            .foregroundColor(.secondary)
-                        
-                        Text("未登录")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        Text("请登录以查看个人信息")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary.opacity(0.7))
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .padding(.vertical, 20)
                 }
             }
+            .padding(.horizontal, 16)
+
+            // 分隔线
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
         }
+        .padding(.top, 8)
         .sheet(isPresented: $showingRedemptionView) {
             RedemptionView()
         }
@@ -306,196 +558,6 @@ struct UserInfoView: View {
         .onAppear {
             print("🔧 UserInfoView 出现 - 登录状态: \(authService.isLoggedIn), 用户: \(authService.currentUser?.username ?? "nil")")
         }
-    }
-    
-    private func userTypeBadge(_ userType: AuthService.UserType) -> some View {
-        Group {
-            switch userType {
-            case .free:
-                BasicUserBadge()
-            case .subscribed:
-                ExperienceUserBadge()
-            case .vip:
-                PremiumUserBadge()
-            }
-        }
-    }
-}
-
-struct BasicUserBadge: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "9E9E9E"),
-                            Color(hex: "757575"),
-                            Color(hex: "616161")
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                .blendMode(.overlay)
-
-            Text("基础用户")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white)
-                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
-        }
-        .shadow(color: Color.gray.opacity(0.4), radius: 2, x: 0, y: 1)
-    }
-}
-
-struct ExperienceUserBadge: View {
-    @State private var shimmerOffset: CGFloat = -1.0
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "E0E0E0"),
-                            Color(hex: "B0B0B0"),
-                            Color(hex: "909090")
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.white.opacity(0.4),
-                            Color.clear,
-                            Color.white.opacity(0.2)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.clear,
-                            Color.white.opacity(0.6),
-                            Color.clear
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .offset(x: shimmerOffset * 20)
-                .mask(RoundedRectangle(cornerRadius: 6))
-                .animation(
-                    Animation.easeInOut(duration: 2).repeatForever(autoreverses: false),
-                    value: shimmerOffset
-                )
-
-            Text("体验用户")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(hex: "424242"))
-                .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: 1)
-        }
-        .shadow(color: Color.gray.opacity(0.5), radius: 3, x: 0, y: 2)
-        .onAppear {
-            shimmerOffset = 1.0
-        }
-    }
-}
-
-struct PremiumUserBadge: View {
-    @State private var glowOpacity: Double = 0.5
-    @State private var rotation: Double = 0
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "FFD700"),
-                            Color(hex: "FFA500"),
-                            Color(hex: "FF8C00")
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.white.opacity(0.6),
-                            Color.clear,
-                            Color.white.opacity(0.3)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "FFD700").opacity(glowOpacity),
-                            Color(hex: "FFA500").opacity(glowOpacity * 0.7),
-                            Color(hex: "FF8C00").opacity(glowOpacity * 0.5)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 2
-                )
-                .animation(
-                    Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true),
-                    value: glowOpacity
-                )
-
-            Text("尊享用户")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "5D4037"))
-                .shadow(color: Color.white.opacity(0.8), radius: 1, x: 0, y: 1)
-        }
-        .shadow(color: Color(hex: "FFA500").opacity(0.5), radius: 4, x: 0, y: 2)
-        .onAppear {
-            glowOpacity = 0.8
-        }
-    }
-}
-
-struct UnknownUserBadge: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "BDBDBD"),
-                            Color(hex: "9E9E9E")
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            Text("未知")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white)
-                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
-        }
-        .shadow(color: Color.gray.opacity(0.4), radius: 2, x: 0, y: 1)
     }
 }
 
@@ -561,6 +623,7 @@ struct FunctionMenuView: View {
             }
             .padding(.horizontal, 8)
         }
+        .padding(.top, 8)
         .sheet(isPresented: $showingManageHoldingsMenuSheet) {
             ManageHoldingsMenuView()
                 .environmentObject(dataManager)
@@ -583,6 +646,7 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 8)
+        .padding(.top, 8)
     }
 }
 
@@ -658,15 +722,18 @@ struct ServiceSettingsView: View {
                 title: "关于",
                 description: "程序版本信息和说明",
                 imageName: "info.circle.fill",
+                backgroundColor: Color.blue.opacity(0.1), // 添加基础背景色
                 contentForegroundColor: .white,
                 action: {
                     showingAboutSheet = true
                 },
-                hasAnimatedBackground: true
+                hasAnimatedBackground: true,
+                hasGradientBackground: true // 启用45°渐变背景
             ) { _ in EmptyView() }
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 8)
+        .padding(.top, 8)
         .sheet(isPresented: $showingAboutSheet) {
             AboutView()
         }
@@ -883,9 +950,8 @@ struct ConfigView: View {
         NavigationView {
             ZStack {
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 0) {
                         UserInfoView()
-                            .padding(.horizontal, 8)
                         FunctionMenuView()
                         SettingsView()
                         ServiceSettingsView()
