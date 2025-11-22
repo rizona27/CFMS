@@ -17,17 +17,20 @@ class AuthService: ObservableObject {
     }
 
     private var inactivityTimer: Timer?
-    private let inactivityTimeout: TimeInterval = 5 * 60
+    private let inactivityTimeout: TimeInterval = 5 * 60 // 5分钟
     private var lastActivityTime: Date = Date()
 
     private let maxLoginAttempts = 3
     private let loginLockoutDuration: TimeInterval = 10 * 60
     private let registerCooldownDuration: TimeInterval = 5 * 60
     
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    
     init() {
         print("🔧 AuthService 初始化")
         checkLoginStatus()
         setupInactivityMonitoring()
+        setupAppStateMonitoring()
     }
 
     func getSubscriptionEndDate() -> String? {
@@ -371,6 +374,22 @@ class AuthService: ObservableObject {
     private func setupInactivityMonitoring() {
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(userDidInteract),
+            name: UIApplication.userDidTakeScreenshotNotification,
+            object: nil
+        )
+    }
+    
+    private func setupAppStateMonitoring() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(appDidBecomeActive),
             name: UIApplication.didBecomeActiveNotification,
             object: nil
@@ -384,13 +403,28 @@ class AuthService: ObservableObject {
         )
     }
     
+    @objc private func userDidInteract() {
+        resetInactivityTimer()
+    }
+    
+    @objc private func appWillResignActive() {
+        // 应用即将进入非活跃状态（最小化、锁屏等）
+        print("🔧 应用即将进入后台，停止不活跃计时器")
+        inactivityTimer?.invalidate()
+        inactivityTimer = nil
+    }
+    
     @objc private func appDidBecomeActive() {
+        // 应用重新激活
         if isLoggedIn {
+            print("🔧 应用重新激活，重新开始不活跃计时器")
             resetInactivityTimer()
         }
     }
     
     @objc private func appDidEnterBackground() {
+        // 应用已进入后台
+        print("🔧 应用已进入后台，停止不活跃计时器")
         inactivityTimer?.invalidate()
         inactivityTimer = nil
     }
@@ -399,8 +433,11 @@ class AuthService: ObservableObject {
         inactivityTimer?.invalidate()
         lastActivityTime = Date()
         
-        inactivityTimer = Timer.scheduledTimer(withTimeInterval: inactivityTimeout, repeats: false) { [weak self] _ in
-            self?.autoLogoutDueToInactivity()
+        // 只在应用处于活跃状态时启动计时器
+        if UIApplication.shared.applicationState == .active {
+            inactivityTimer = Timer.scheduledTimer(withTimeInterval: inactivityTimeout, repeats: false) { [weak self] _ in
+                self?.autoLogoutDueToInactivity()
+            }
         }
     }
     
@@ -439,6 +476,7 @@ class AuthService: ObservableObject {
         print("UserDefaults authToken: \(UserDefaults.standard.string(forKey: "authToken")?.prefix(10) ?? "nil")...")
         print("最后活动时间: \(lastActivityTime)")
         print("订阅结束时间: \(getSubscriptionEndDate() ?? "无")")
+        print("应用状态: \(UIApplication.shared.applicationState.rawValue)")
         print("=========================")
     }
     

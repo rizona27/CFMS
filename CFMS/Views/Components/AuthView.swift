@@ -10,7 +10,6 @@ struct AuthView: View {
     @State private var messageColor: Color = .red
 
     @State private var showPassword = false
-    @State private var showConfirmPassword = false
     
     @EnvironmentObject var authService: AuthService
     @Environment(\.presentationMode) var presentationMode
@@ -243,7 +242,7 @@ struct AuthView: View {
                     gradientColors: [Color(hex: "f093fb"), Color(hex: "f5576c")],
                     content: {
                         HStack {
-                            if showConfirmPassword {
+                            if showPassword {
                                 TextField("请确认密码", text: $confirmPassword)
                                     .textContentType(.newPassword)
                             } else {
@@ -252,10 +251,10 @@ struct AuthView: View {
                             }
 
                             Button(action: {
-                                showConfirmPassword.toggle()
+                                showPassword.toggle()
                             }) {
-                                Image(systemName: showConfirmPassword ? "eye.slash.square.fill" : "eye.square.fill")
-                                    .foregroundColor(showConfirmPassword ? .purple : .green)
+                                Image(systemName: showPassword ? "eye.slash.circle.fill" : "eye.circle.fill")
+                                    .foregroundColor(showPassword ? .orange : .blue)
                                     .font(.system(size: 20))
                             }
                         }
@@ -301,7 +300,6 @@ struct AuthView: View {
                     message = ""
                     confirmPassword = ""
                     showPassword = false
-                    showConfirmPassword = false
                 }
             }) {
                 HStack {

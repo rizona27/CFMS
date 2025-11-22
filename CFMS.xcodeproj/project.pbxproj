@@ -117,10 +117,10 @@
 		A3ACC8392EB0F276009F7783 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A38E67532ECF53F20002C5F8 /* AuthService.swift */,
 				A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */,
 				A3DDB6032EAFAAFC004F1C8B /* FundService.swift */,
 				A3ACC8492EB10BEF009F7783 /* ToastQueueManager.swift */,
-				A38E67532ECF53F20002C5F8 /* AuthService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -161,13 +161,13 @@
 			isa = PBXGroup;
 			children = (
 				A38E67552ECF54220002C5F8 /* AuthView.swift */,
-				A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */,
-				A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */,
-				A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */,
-				A3ACC8432EB10491009F7783 /* GradientButton.swift */,
 				A3ACC8452EB104AF009F7783 /* CardModifier.swift */,
+				A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */,
+				A3ACC8432EB10491009F7783 /* GradientButton.swift */,
+				A3ACC8202EAFAFB8009F7783 /* HoldingRow.swift */,
 				A38E67592ECF54650002C5F8 /* ProfileView.swift */,
 				A38E675B2ECF63030002C5F8 /* RedemptionView.swift */,
+				A3DDB60D2EAFAE49004F1C8B /* ToastView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -177,8 +177,8 @@
 			children = (
 				A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */,
 				A3ACC8272EAFB704009F7783 /* PrivacyHelpers.swift */,
-				A3ACC8412EB1045D009F7783 /* Theme.swift */,
 				A3ACC8472EB10BD3009F7783 /* StringExtensions.swift */,
+				A3ACC8412EB1045D009F7783 /* Theme.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";

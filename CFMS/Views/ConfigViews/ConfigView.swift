@@ -163,7 +163,7 @@ struct AnimatedGradientUsername: View {
         if userType == .free {
             Text(formattedUsername)
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .italic()
+                .italic() 
                 .foregroundColor(.primary)
         } else {
             Text(formattedUsername)
