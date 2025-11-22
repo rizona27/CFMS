@@ -3,6 +3,7 @@ import SwiftUI
 struct RedemptionView: View {
     @EnvironmentObject var authService: AuthService
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.colorScheme) private var colorScheme
     
     @State private var redemptionCode = ""
     @State private var isLoading = false
@@ -19,11 +20,7 @@ struct RedemptionView: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "F8F5F0"),
-                                Color(hex: "F0ECE5"),
-                                Color(hex: "F8F5F0")
-                            ]),
+                            gradient: Gradient(colors: backgroundColors),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -39,16 +36,16 @@ struct RedemptionView: View {
                                 Image(systemName: "gift.circle.fill")
                                     .font(.system(size: 80))
                                     .foregroundStyle(AppTheme.primaryGradient)
-                                    .shadow(color: .purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                                    .shadow(color: .purple.opacity(colorScheme == .dark ? 0.2 : 0.3), radius: 8, x: 0, y: 4)
                                 
                                 VStack(spacing: 8) {
                                     Text("VIP权益兑换")
                                         .font(.system(size: 28, weight: .bold, design: .serif))
-                                        .foregroundColor(Color(hex: "3E2723"))
+                                        .foregroundColor(primaryTextColor)
                                     
                                     Text("输入兑换码解锁高级功能")
                                         .font(.system(size: 16, weight: .light))
-                                        .foregroundColor(Color(hex: "6D4C41").opacity(0.8))
+                                        .foregroundColor(subtitleColor)
                                 }
                             }
                             .opacity(animationOpacity)
@@ -57,7 +54,7 @@ struct RedemptionView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("兑换码")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(primaryTextColor)
                                 
                                 HStack {
                                     Image(systemName: "key.fill")
@@ -67,11 +64,12 @@ struct RedemptionView: View {
                                         .textInputAutocapitalization(.characters)
                                         .disableAutocorrection(true)
                                         .padding(.vertical, 12)
+                                        .foregroundColor(primaryTextColor)
                                 }
                                 .padding(.horizontal, 16)
                                 .background(Color(.systemBackground))
                                 .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+                                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
                             }
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
@@ -117,7 +115,7 @@ struct RedemptionView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("VIP特权")
                                     .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(primaryTextColor)
                                 
                                 ForEach(vipFeatures, id: \.self) { feature in
                                     HStack(alignment: .top, spacing: 12) {
@@ -127,7 +125,7 @@ struct RedemptionView: View {
                                         
                                         Text(feature)
                                             .font(.system(size: 14))
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(secondaryTextColor)
                                         
                                         Spacer()
                                     }
@@ -136,7 +134,7 @@ struct RedemptionView: View {
                             .padding()
                             .background(Color(.systemBackground))
                             .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
                         }
@@ -165,6 +163,34 @@ struct RedemptionView: View {
         .navigationViewStyle(StackNavigationViewStyle())
     }
 
+    private var backgroundColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(hex: "1A1A2E"),
+                Color(hex: "16213E"),
+                Color(hex: "0F3460")
+            ]
+        } else {
+            return [
+                Color(hex: "F8F5F0"),
+                Color(hex: "F0ECE5"),
+                Color(hex: "F8F5F0")
+            ]
+        }
+    }
+
+    private var primaryTextColor: Color {
+        colorScheme == .dark ? .white : Color(hex: "3E2723")
+    }
+
+    private var subtitleColor: Color {
+        colorScheme == .dark ? .white.opacity(0.7) : Color(hex: "6D4C41").opacity(0.8)
+    }
+
+    private var secondaryTextColor: Color {
+        colorScheme == .dark ? .white.opacity(0.7) : .secondary
+    }
+
     private var headerSection: some View {
         VStack(spacing: 0) {
             HStack {
@@ -190,7 +216,11 @@ struct RedemptionView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(.systemGroupedBackground).opacity(0.8))
+            .background(
+                colorScheme == .dark ?
+                Color(.systemBackground).opacity(0.4) :
+                Color(.systemGroupedBackground).opacity(0.8)
+            )
         }
     }
 

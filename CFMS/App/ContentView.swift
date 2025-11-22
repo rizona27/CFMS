@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var authService: AuthService
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var showSplash = true
     @State private var selectedTab = 0
@@ -102,11 +103,7 @@ struct ContentView: View {
             Rectangle()
                 .fill(
                     LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "F8F5F0"),
-                            Color(hex: "F0ECE5"),
-                            Color(hex: "F8F5F0")
-                        ]),
+                        gradient: Gradient(colors: backgroundColors),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -117,11 +114,7 @@ struct ContentView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "E8D5C4").opacity(0.3),
-                                Color(hex: "F0ECE5").opacity(0.15),
-                                Color.clear
-                            ]),
+                            gradient: Gradient(colors: circleGradientColors),
                             center: .center,
                             startRadius: 0,
                             endRadius: 150 + CGFloat(index) * 60
@@ -144,26 +137,26 @@ struct ContentView: View {
                     HStack(spacing: 6) {
                         Text("Less")
                             .font(.system(size: 46, weight: .light, design: .serif))
-                            .foregroundColor(Color(hex: "5D4037"))
-                            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            .foregroundColor(mainTextColor)
+                            .shadow(color: .black.opacity(colorScheme == .dark ? 0.1 : 0.05), radius: 2, x: 0, y: 1)
                         
                         Text("is")
                             .font(.system(size: 32, weight: .light, design: .serif))
-                            .foregroundColor(Color(hex: "5D4037"))
-                            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            .foregroundColor(mainTextColor)
+                            .shadow(color: .black.opacity(colorScheme == .dark ? 0.1 : 0.05), radius: 2, x: 0, y: 1)
                     }
                     
                     Text("More.")
                         .font(.system(size: 60, weight: .semibold, design: .serif))
-                        .foregroundColor(Color(hex: "3E2723"))
-                        .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 2)
+                        .foregroundColor(accentTextColor)
+                        .shadow(color: .black.opacity(colorScheme == .dark ? 0.15 : 0.08), radius: 3, x: 0, y: 2)
                 }
                 .opacity(mainTextOpacity)
                 .offset(y: mainTextOffset)
 
                 Text("Finding Abundance Through Subtraction")
                     .font(.system(size: 16, weight: .light))
-                    .foregroundColor(Color(hex: "6D4C41").opacity(0.8))
+                    .foregroundColor(subtitleColor)
                     .multilineTextAlignment(.center)
                     .padding(.top, 20)
                     .opacity(subtitleOpacity)
@@ -172,11 +165,11 @@ struct ContentView: View {
                 VStack(spacing: 4) {
                     Text("专业 · 专注 · 价值")
                         .font(.system(size: 13, weight: .light))
-                        .foregroundColor(Color(hex: "795548").opacity(0.6))
+                        .foregroundColor(copyrightColor)
                     
                     Text("Copyright © 2025 Rizona.")
                         .font(.system(size: 11, weight: .light))
-                        .foregroundColor(Color(hex: "795548").opacity(0.5))
+                        .foregroundColor(copyrightColor)
                 }
                 .opacity(copyrightOpacity)
                 .padding(.bottom, 50)
@@ -184,13 +177,7 @@ struct ContentView: View {
                     Rectangle()
                         .fill(
                             LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.clear,
-                                    Color.white.opacity(0.4),
-                                    Color.white.opacity(0.6),
-                                    Color.white.opacity(0.4),
-                                    Color.clear
-                                ]),
+                                gradient: Gradient(colors: highlightGradientColors),
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -217,6 +204,74 @@ struct ContentView: View {
         .scaleEffect(splashScale)
         .blur(radius: splashBlur)
         .edgesIgnoringSafeArea(.all)
+    }
+
+    private var backgroundColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(hex: "1A1A2E"),
+                Color(hex: "16213E"),
+                Color(hex: "0F3460")
+            ]
+        } else {
+            return [
+                Color(hex: "F8F5F0"),
+                Color(hex: "F0ECE5"),
+                Color(hex: "F8F5F0")
+            ]
+        }
+    }
+
+    private var circleGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(hex: "2D4263").opacity(0.3),
+                Color(hex: "16213E").opacity(0.2),
+                Color.clear
+            ]
+        } else {
+            return [
+                Color(hex: "E8D5C4").opacity(0.3),
+                Color(hex: "F0ECE5").opacity(0.15),
+                Color.clear
+            ]
+        }
+    }
+
+    private var mainTextColor: Color {
+        colorScheme == .dark ? .white : Color(hex: "5D4037")
+    }
+
+    private var accentTextColor: Color {
+        colorScheme == .dark ? .white : Color(hex: "3E2723")
+    }
+
+    private var subtitleColor: Color {
+        colorScheme == .dark ? .white.opacity(0.7) : Color(hex: "6D4C41").opacity(0.8)
+    }
+
+    private var copyrightColor: Color {
+        colorScheme == .dark ? .white.opacity(0.6) : Color(hex: "795548").opacity(0.6)
+    }
+
+    private var highlightGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color.clear,
+                Color.white.opacity(0.3),
+                Color.white.opacity(0.5),
+                Color.white.opacity(0.3),
+                Color.clear
+            ]
+        } else {
+            return [
+                Color.clear,
+                Color.white.opacity(0.4),
+                Color.white.opacity(0.6),
+                Color.white.opacity(0.4),
+                Color.clear
+            ]
+        }
     }
 
     private func startNaturalAnimation() {
@@ -333,6 +388,6 @@ struct ContentView_Previews: PreviewProvider {
         return ContentView()
             .environmentObject(dataManager)
             .environmentObject(authService)
-            .environmentObject(fundService) 
+            .environmentObject(fundService)
     }
 }
