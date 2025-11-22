@@ -13,7 +13,6 @@ class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var authToken: String?
 
-    // 新增：验证码相关
     @Published var captchaImage: UIImage?
     @Published var captchaId: String?
 
@@ -193,8 +192,7 @@ class AuthService: ObservableObject {
     func setRememberUsername(_ remember: Bool) {
         UserDefaults.standard.set(remember, forKey: "rememberUsername")
     }
-    
-    // 新增：获取验证码图片
+
     func fetchCaptcha() {
         guard let url = URL(string: "\(baseURL)/api/captcha") else { return }
         
@@ -233,14 +231,12 @@ class AuthService: ObservableObject {
             }
         }
 
-        // 修改：验证码校验逻辑 (此处仅做非空校验，真正校验由后端完成)
         if requiresCaptcha() {
             guard let captcha = captcha, !captcha.isEmpty else {
                 completion(false, "请输入验证码")
                 return
             }
-            
-            // 前端不再校验 "1234"，而是必须确保已经获取到了验证码ID
+
             if self.captchaId == nil {
                 completion(false, "验证码加载失败，请点击刷新")
                 return
@@ -260,8 +256,7 @@ class AuthService: ObservableObject {
             "username": username,
             "password": password
         ]
-        
-        // 如果需要验证码，添加到请求体
+
         if let captchaCode = captcha, let captchaId = self.captchaId, !captchaCode.isEmpty {
             body["captcha_code"] = captchaCode
             body["captcha_id"] = captchaId
@@ -277,7 +272,6 @@ class AuthService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    // 网络错误不一定算作认证失败，但为了安全可以记录
                     self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
                     return
@@ -309,8 +303,7 @@ class AuthService: ObservableObject {
                             self.authToken = token
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
-                            
-                            // 登录成功，清除验证码相关状态
+
                             self.resetAuthFailure()
                             self.captchaImage = nil
                             self.captchaId = nil
@@ -321,9 +314,7 @@ class AuthService: ObservableObject {
                             
                             completion(true, json["message"] as? String ?? "登录成功")
                         } else {
-                            // 登录失败，记录次数
                             self.recordAuthFailure()
-                            // 登录失败后，刷新验证码
                             if self.requiresCaptcha() {
                                 self.fetchCaptcha()
                             }

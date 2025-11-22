@@ -557,6 +557,8 @@ struct UserInfoView: View {
     }
 }
 
+import SwiftUI
+
 struct FunctionMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -564,6 +566,7 @@ struct FunctionMenuView: View {
     
     @State private var showingManageHoldingsMenuSheet = false
     @State private var showingAPILogSheet = false
+    @State private var showingCloudSyncSheet = false
     
     var body: some View {
         VStack(spacing: 12) {
@@ -595,29 +598,16 @@ struct FunctionMenuView: View {
             .padding(.horizontal, 8)
 
             if authService.currentUser?.userType != .free {
-                HStack(spacing: 12) {
-                    CustomCardView(
-                        title: "上传云端",
-                        description: "备份数据到云端",
-                        imageName: "icloud.and.arrow.up.fill",
-                        backgroundColor: Color.green.opacity(0.1),
-                        contentForegroundColor: .green,
-                        action: {
-                        }
-                    ) { _ in EmptyView() }
-                    .frame(maxWidth: .infinity)
-
-                    CustomCardView(
-                        title: "下载本地",
-                        description: "导入数据到本地",
-                        imageName: "arrow.down.circle.fill",
-                        backgroundColor: Color.orange.opacity(0.1),
-                        contentForegroundColor: .orange,
-                        action: {
-                        }
-                    ) { _ in EmptyView() }
-                    .frame(maxWidth: .infinity)
-                }
+                CustomCardView(
+                    title: "云端同步",
+                    description: "上传或下载持仓数据到云端",
+                    imageName: "icloud.and.arrow.up.fill",
+                    backgroundColor: Color.purple.opacity(0.1),
+                    contentForegroundColor: .purple,
+                    action: {
+                        showingCloudSyncSheet = true
+                    }
+                ) { _ in EmptyView() }
                 .padding(.horizontal, 8)
             }
         }
@@ -631,6 +621,11 @@ struct FunctionMenuView: View {
         .sheet(isPresented: $showingAPILogSheet) {
             APILogView()
                 .environmentObject(fundService)
+        }
+        .sheet(isPresented: $showingCloudSyncSheet) {
+            CloudSyncView()
+                .environmentObject(dataManager)
+                .environmentObject(authService)
         }
     }
 }

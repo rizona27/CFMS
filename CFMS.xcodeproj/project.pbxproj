@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A361C9312EB6369A00BA6AFC /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */; };
+		A386F5422ED1DEE700F16C12 /* CloudSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */; };
+		A386F5442ED1DF9500F16C12 /* CloudSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */; };
 		A38E67542ECF53F20002C5F8 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E67532ECF53F20002C5F8 /* AuthService.swift */; };
 		A38E67562ECF54220002C5F8 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E67552ECF54220002C5F8 /* AuthView.swift */; };
 		A38E675A2ECF54650002C5F8 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38E67592ECF54650002C5F8 /* ProfileView.swift */; };
@@ -44,6 +46,8 @@
 
 /* Begin PBXFileReference section */
 		A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
+		A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncManager.swift; sourceTree = "<group>"; };
+		A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncView.swift; sourceTree = "<group>"; };
 		A38E67532ECF53F20002C5F8 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		A38E67552ECF54220002C5F8 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		A38E67592ECF54650002C5F8 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -121,6 +125,7 @@
 				A3DDB60B2EAFAE28004F1C8B /* DataManager.swift */,
 				A3DDB6032EAFAAFC004F1C8B /* FundService.swift */,
 				A3ACC8492EB10BEF009F7783 /* ToastQueueManager.swift */,
+				A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -153,6 +158,7 @@
 				A3DDB60F2EAFAE6D004F1C8B /* ConfigView.swift */,
 				A3ACC8262EAFB704009F7783 /* EditHoldingView.swift */,
 				A3ACC8282EAFB705009F7783 /* ManageHoldingsView.swift */,
+				A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */,
 			);
 			path = ConfigViews;
 			sourceTree = "<group>";
@@ -290,6 +296,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A386F5422ED1DEE700F16C12 /* CloudSyncManager.swift in Sources */,
 				A3ACC82D2EAFB706009F7783 /* PrivacyHelpers.swift in Sources */,
 				A38E675C2ECF63030002C5F8 /* RedemptionView.swift in Sources */,
 				A3DDB60A2EAFACD3004F1C8B /* TopPerformersView.swift in Sources */,
@@ -315,6 +322,7 @@
 				A3ACC8422EB1045D009F7783 /* Theme.swift in Sources */,
 				A3DDB6002EAFAAD2004F1C8B /* ColorExtension.swift in Sources */,
 				A3ACC82F2EAFB706009F7783 /* APILogView.swift in Sources */,
+				A386F5442ED1DF9500F16C12 /* CloudSyncView.swift in Sources */,
 				A3DDB6042EAFAAFC004F1C8B /* FundService.swift in Sources */,
 				A3DDB60C2EAFAE28004F1C8B /* DataManager.swift in Sources */,
 				A3ACC8482EB10BD3009F7783 /* StringExtensions.swift in Sources */,
@@ -471,7 +479,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -511,7 +519,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.3.3;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rizona.CFMS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
