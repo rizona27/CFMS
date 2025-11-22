@@ -20,8 +20,8 @@ class AuthService: ObservableObject {
     private let inactivityTimeout: TimeInterval = 5 * 60 // 5分钟
     private var lastActivityTime: Date = Date()
 
-    private let maxLoginAttempts = 3
-    private let loginLockoutDuration: TimeInterval = 10 * 60
+    private let maxAuthAttempts = 3
+    private let authLockoutDuration: TimeInterval = 10 * 60
     private let registerCooldownDuration: TimeInterval = 5 * 60
     
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
@@ -82,6 +82,11 @@ class AuthService: ObservableObject {
     }
     
     func canRegister() -> (canRegister: Bool, remainingTime: TimeInterval?) {
+        let authCheck = canAuth()
+        if !authCheck.canAuth {
+            return (false, authCheck.remainingTime)
+        }
+        
         if let lastRegisterTime = UserDefaults.standard.object(forKey: "lastRegisterTime") as? Date {
             let elapsedTime = Date().timeIntervalSince(lastRegisterTime)
             if elapsedTime < registerCooldownDuration {
@@ -93,36 +98,42 @@ class AuthService: ObservableObject {
     }
     
     func canLogin() -> (canLogin: Bool, remainingTime: TimeInterval?) {
-        let failedAttempts = UserDefaults.standard.integer(forKey: "loginFailedAttempts")
-        if let lockoutTime = UserDefaults.standard.object(forKey: "loginLockoutTime") as? Date {
+        let authResult = canAuth()
+        return (canLogin: authResult.canAuth, remainingTime: authResult.remainingTime)
+    }
+    
+    // 修改：将这个方法改为 internal 而不是 private
+    func canAuth() -> (canAuth: Bool, remainingTime: TimeInterval?) {
+        let failedAttempts = UserDefaults.standard.integer(forKey: "authFailedAttempts")
+        if let lockoutTime = UserDefaults.standard.object(forKey: "authLockoutTime") as? Date {
             let elapsedTime = Date().timeIntervalSince(lockoutTime)
-            if elapsedTime < loginLockoutDuration {
-                let remainingTime = loginLockoutDuration - elapsedTime
+            if elapsedTime < authLockoutDuration {
+                let remainingTime = authLockoutDuration - elapsedTime
                 return (false, remainingTime)
             } else {
-                UserDefaults.standard.set(0, forKey: "loginFailedAttempts")
-                UserDefaults.standard.removeObject(forKey: "loginLockoutTime")
+                UserDefaults.standard.set(0, forKey: "authFailedAttempts")
+                UserDefaults.standard.removeObject(forKey: "authLockoutTime")
             }
         }
         
-        if failedAttempts >= maxLoginAttempts {
-            UserDefaults.standard.set(Date(), forKey: "loginLockoutTime")
-            return (false, loginLockoutDuration)
+        if failedAttempts >= maxAuthAttempts {
+            UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
+            return (false, authLockoutDuration)
         }
         
         return (true, nil)
     }
 
-    private func recordLoginFailure() {
-        var failedAttempts = UserDefaults.standard.integer(forKey: "loginFailedAttempts")
+    private func recordAuthFailure() {
+        var failedAttempts = UserDefaults.standard.integer(forKey: "authFailedAttempts")
         failedAttempts += 1
-        UserDefaults.standard.set(failedAttempts, forKey: "loginFailedAttempts")
+        UserDefaults.standard.set(failedAttempts, forKey: "authFailedAttempts")
         
-        print("🔧 登录失败次数: \(failedAttempts)")
+        print("🔧 认证失败次数: \(failedAttempts)")
         
-        if failedAttempts >= maxLoginAttempts {
-            UserDefaults.standard.set(Date(), forKey: "loginLockoutTime")
-            print("🔧 登录已被锁定，请10分钟后再试")
+        if failedAttempts >= maxAuthAttempts {
+            UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
+            print("🔧 认证已被锁定，请10分钟后再试")
         }
     }
 
@@ -130,9 +141,9 @@ class AuthService: ObservableObject {
         UserDefaults.standard.set(Date(), forKey: "lastRegisterTime")
     }
     
-    private func resetLoginFailure() {
-        UserDefaults.standard.set(0, forKey: "loginFailedAttempts")
-        UserDefaults.standard.removeObject(forKey: "loginLockoutTime")
+    private func resetAuthFailure() {
+        UserDefaults.standard.set(0, forKey: "authFailedAttempts")
+        UserDefaults.standard.removeObject(forKey: "authLockoutTime")
     }
 
     func login(username: String, password: String, completion: @escaping (Bool, String) -> Void) {
@@ -171,13 +182,13 @@ class AuthService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    self.recordLoginFailure()
+                    self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
                     return
                 }
                 
                 guard let data = data else {
-                    self.recordLoginFailure()
+                    self.recordAuthFailure()
                     completion(false, "没有收到数据")
                     return
                 }
@@ -202,7 +213,7 @@ class AuthService: ObservableObject {
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
                             
-                            self.resetLoginFailure()
+                            self.resetAuthFailure()
                             
                             self.objectWillChange.send()
                             
@@ -210,16 +221,16 @@ class AuthService: ObservableObject {
                             
                             completion(true, json["message"] as? String ?? "登录成功")
                         } else {
-                            self.recordLoginFailure()
+                            self.recordAuthFailure()
                             let message = json["message"] as? String ?? json["error"] as? String ?? "登录失败"
                             completion(false, message)
                         }
                     } else {
-                        self.recordLoginFailure()
+                        self.recordAuthFailure()
                         completion(false, "响应格式错误")
                     }
                 } catch {
-                    self.recordLoginFailure()
+                    self.recordAuthFailure()
                     completion(false, "数据解析错误: \(error.localizedDescription)")
                 }
             }
@@ -228,6 +239,15 @@ class AuthService: ObservableObject {
 
     func register(username: String, password: String, confirmPassword: String, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始注册流程，用户名: \(username)")
+        
+        let authCheck = canAuth()
+        if !authCheck.canAuth {
+            if let remainingTime = authCheck.remainingTime {
+                let minutes = Int(ceil(remainingTime / 60))
+                completion(false, "认证尝试次数过多，请\(minutes)分钟后再试")
+                return
+            }
+        }
         
         let registerCheck = canRegister()
         if !registerCheck.canRegister {
@@ -267,11 +287,13 @@ class AuthService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
+                    self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
                     return
                 }
                 
                 guard let data = data else {
+                    self.recordAuthFailure()
                     completion(false, "没有收到数据")
                     return
                 }
@@ -292,6 +314,7 @@ class AuthService: ObservableObject {
                             self.saveLoginStatus(token: token, userData: userData)
                             
                             self.recordRegisterTime()
+                            self.resetAuthFailure()
                             
                             self.isLoggedIn = true
                             self.authToken = token
@@ -304,13 +327,16 @@ class AuthService: ObservableObject {
                             
                             completion(true, json["message"] as? String ?? "注册成功")
                         } else {
+                            self.recordAuthFailure()
                             let message = json["message"] as? String ?? json["error"] as? String ?? "注册失败"
                             completion(false, message)
                         }
                     } else {
+                        self.recordAuthFailure()
                         completion(false, "响应格式错误")
                     }
                 } catch {
+                    self.recordAuthFailure()
                     completion(false, "数据解析错误: \(error.localizedDescription)")
                 }
             }

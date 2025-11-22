@@ -432,6 +432,18 @@ struct AuthView: View {
                 handleAuthResult(success: success, message: msg)
             }
         } else {
+            // 修复：现在 canAuth() 是公开的，可以直接调用
+            let authCheck = authService.canAuth()
+            if !authCheck.canAuth {
+                if let remainingTime = authCheck.remainingTime {
+                    let minutes = Int(ceil(remainingTime / 60))
+                    messageColor = .red
+                    message = "认证尝试次数过多，请\(minutes)分钟后再试"
+                    isLoading = false
+                    return
+                }
+            }
+            
             let registerCheck = authService.canRegister()
             if !registerCheck.canRegister {
                 if let remainingTime = registerCheck.remainingTime {

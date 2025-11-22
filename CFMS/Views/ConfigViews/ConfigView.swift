@@ -109,7 +109,7 @@ struct CustomCardView<Content: View>: View {
                                 )
                             )
                     }
-                    // 关键修改：通过Mask实现“减淡”效果，让右下角逐渐透明，与普通卡片风格统一
+                    // 关键修改：通过Mask实现"减淡"效果，让右下角逐渐透明，与普通卡片风格统一
                     .mask(
                         LinearGradient(
                             gradient: Gradient(colors: [.black, .black.opacity(0.15)]), // 从完全不透明过渡到低透明度
@@ -194,7 +194,8 @@ struct CustomCardView<Content: View>: View {
 
 struct UserTypeRibbon: View {
     let userType: AuthService.UserType
-    @State private var shimmerOffset: CGFloat = -80.0 // 修改初始位置
+    @State private var shimmerOffset: CGFloat = -80.0
+    @State private var hasAnimated = false // 新增状态控制
     
     var ribbonText: String {
         switch userType {
@@ -216,8 +217,9 @@ struct UserTypeRibbon: View {
                     Color(hex: "757575"),
                     Color(hex: "616161")
                 ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                // 修改点2: 将渐变方向从左到右
+                startPoint: .leading,
+                endPoint: .trailing
             )
         case .subscribed:
             return LinearGradient(
@@ -226,8 +228,9 @@ struct UserTypeRibbon: View {
                     Color(hex: "B0B0B0"),
                     Color(hex: "909090")
                 ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                // 修改点2: 将渐变方向从左到右
+                startPoint: .leading,
+                endPoint: .trailing
             )
         case .vip:
             return LinearGradient(
@@ -236,8 +239,9 @@ struct UserTypeRibbon: View {
                     Color(hex: "FFA500"),
                     Color(hex: "FF8C00")
                 ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                // 修改点2: 将渐变方向从左到右
+                startPoint: .leading,
+                endPoint: .trailing
             )
         }
     }
@@ -300,15 +304,24 @@ struct UserTypeRibbon: View {
         }
         .frame(width: 60, height: 60)
         .onAppear {
-            if userType == .subscribed || userType == .vip {
-                withAnimation(
-                    Animation.linear(duration: 2.0)
-                        .repeatForever(autoreverses: false)
-                        .delay(1.0) // 停顿一下再闪
-                ) {
-                    shimmerOffset = 80.0 // 扫过整个区域
+            // 只在第一次出现时执行动画，或者重置状态后
+            if !hasAnimated && (userType == .subscribed || userType == .vip) {
+                hasAnimated = true
+                shimmerOffset = -80.0
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(
+                        Animation.linear(duration: 2.0)
+                    ) {
+                        shimmerOffset = 80.0
+                    }
                 }
             }
+        }
+        .onDisappear {
+            // 当离开页面时重置动画状态，这样下次进入时可以重新执行
+            hasAnimated = false
+            shimmerOffset = -80.0
         }
     }
 }
@@ -598,30 +611,33 @@ struct FunctionMenuView: View {
             }
             .padding(.horizontal, 8)
             
-            HStack(spacing: 12) {
-                CustomCardView(
-                    title: "上传云端",
-                    description: "备份数据到云端",
-                    imageName: "icloud.and.arrow.up.fill",
-                    backgroundColor: Color.green.opacity(0.1),
-                    contentForegroundColor: .green,
-                    action: {
-                    }
-                ) { _ in EmptyView() }
-                .frame(maxWidth: .infinity)
+            // 修改点1: 在基础用户模式下隐藏上传云端和下载本地卡片
+            if authService.currentUser?.userType != .free {
+                HStack(spacing: 12) {
+                    CustomCardView(
+                        title: "上传云端",
+                        description: "备份数据到云端",
+                        imageName: "icloud.and.arrow.up.fill",
+                        backgroundColor: Color.green.opacity(0.1),
+                        contentForegroundColor: .green,
+                        action: {
+                        }
+                    ) { _ in EmptyView() }
+                    .frame(maxWidth: .infinity)
 
-                CustomCardView(
-                    title: "下载本地",
-                    description: "导入数据到本地",
-                    imageName: "arrow.down.circle.fill",
-                    backgroundColor: Color.orange.opacity(0.1),
-                    contentForegroundColor: .orange,
-                    action: {
-                    }
-                ) { _ in EmptyView() }
-                .frame(maxWidth: .infinity)
+                    CustomCardView(
+                        title: "下载本地",
+                        description: "导入数据到本地",
+                        imageName: "arrow.down.circle.fill",
+                        backgroundColor: Color.orange.opacity(0.1),
+                        contentForegroundColor: .orange,
+                        action: {
+                        }
+                    ) { _ in EmptyView() }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 8)
             }
-            .padding(.horizontal, 8)
         }
         .padding(.top, 8)
         .sheet(isPresented: $showingManageHoldingsMenuSheet) {
