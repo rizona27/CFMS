@@ -328,7 +328,7 @@ class CloudSyncManager: ObservableObject {
             return nil
         }
         
-        guard let uuid = UUID(uuidString: idString) else {
+        guard UUID(uuidString: idString) != nil else {
             print("id格式无效: \(idString)")
             return nil
         }
@@ -545,7 +545,7 @@ struct FoundationHolding: Codable {
     
     func toFundHolding() -> FundHolding? {
         guard let idString = id,
-              let uuid = UUID(uuidString: idString),
+              let _ = UUID(uuidString: idString),
               let clientName = clientName,
               let fundCode = fundCode else {
             return nil

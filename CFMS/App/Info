@@ -17,12 +17,12 @@
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
 
-    <!-- 文档类型声明 -->
+    <!-- 增强的文档类型声明 -->
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
             <key>CFBundleTypeName</key>
-            <string>CSV File</string>
+            <string>CSV Document</string>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
             <key>LSHandlerRank</key>
@@ -30,7 +30,71 @@
             <key>LSItemContentTypes</key>
             <array>
                 <string>public.comma-separated-values-text</string>
+                <string>public.text</string>
+                <string>public.plain-text</string>
             </array>
+            <key>CFBundleTypeIconFiles</key>
+            <array/>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>csv</string>
+                <string>txt</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- 导入类型声明 -->
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>public.comma-separated-values-text</string>
+            <key>UTTypeDescription</key>
+            <string>CSV File</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.text</string>
+                <string>public.plain-text</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>csv</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>text/csv</string>
+                    <string>application/csv</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+
+    <!-- 导出类型声明 -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>public.comma-separated-values-text</string>
+            <key>UTTypeDescription</key>
+            <string>CSV File</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.text</string>
+                <string>public.plain-text</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>csv</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>text/csv</string>
+                </array>
+            </dict>
         </dict>
     </array>
 
