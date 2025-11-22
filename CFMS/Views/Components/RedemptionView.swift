@@ -65,11 +65,25 @@ struct RedemptionView: View {
                                         .disableAutocorrection(true)
                                         .padding(.vertical, 12)
                                         .foregroundColor(primaryTextColor)
+                                        .onChange(of: redemptionCode) { newValue in
+                                            let uppercased = newValue.uppercased()
+                                            let filtered = uppercased.filter { $0.isLetter || $0.isNumber }
+                                            if filtered.count <= 8 {
+                                                redemptionCode = filtered
+                                            } else {
+                                                redemptionCode = String(filtered.prefix(8))
+                                            }
+                                        }
                                 }
                                 .padding(.horizontal, 16)
                                 .background(Color(.systemBackground))
                                 .cornerRadius(12)
                                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
+                                
+                                Text("兑换码为8位大写字母和数字")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 4)
                             }
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
@@ -90,12 +104,12 @@ struct RedemptionView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(!redemptionCode.isEmpty ? AppTheme.accentGradient : LinearGradient(colors: [Color.gray, Color.gray.opacity(0.6)], startPoint: .leading, endPoint: .trailing))
+                                .background(!redemptionCode.isEmpty && redemptionCode.count == 8 ? AppTheme.accentGradient : LinearGradient(colors: [Color.gray, Color.gray.opacity(0.6)], startPoint: .leading, endPoint: .trailing))
                                 .foregroundColor(.white)
                                 .cornerRadius(12)
-                                .shadow(color: !redemptionCode.isEmpty ? .green.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
+                                .shadow(color: !redemptionCode.isEmpty && redemptionCode.count == 8 ? .green.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
                             }
-                            .disabled(redemptionCode.isEmpty || isLoading)
+                            .disabled(redemptionCode.isEmpty || redemptionCode.count != 8 || isLoading)
                             .opacity(animationOpacity)
                             .offset(y: animationOffset)
 

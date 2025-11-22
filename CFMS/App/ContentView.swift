@@ -76,7 +76,6 @@ struct ContentView: View {
             AuthView()
                 .environmentObject(authService)
         }
-        // MARK: - 添加文件导入监听
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FileImportedFromShare"))) { notification in
             handleFileImport(notification: notification)
         }
@@ -100,13 +99,11 @@ struct ContentView: View {
             showSplash = true
             animationFinished = true
         }
-        // MARK: - 添加CSV导入完成监听
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CSVImportCompleted"))) { notification in
             handleCSVImportCompleted(notification: notification)
         }
     }
 
-    // MARK: - 文件导入处理
     private func handleFileImport(notification: Notification) {
         print("收到文件导入通知")
         
@@ -117,19 +114,15 @@ struct ContentView: View {
         }
         
         print("准备处理导入的文件: \(fileURL)")
-        
-        // 检查用户是否已登录
+
         guard authService.isLoggedIn else {
             print("用户未登录，无法导入文件")
-            // 可以在这里显示登录提示
             return
         }
-        
-        // 调用 DataManager 处理文件导入
+
         dataManager.importFromCSV(fileURL: fileURL)
     }
-    
-    // MARK: - CSV导入完成处理
+
     private func handleCSVImportCompleted(notification: Notification) {
         print("CSV导入处理完成")
         
@@ -141,21 +134,16 @@ struct ContentView: View {
         }
         
         print("导入结果 - 成功: \(importedCount)条, 失败: \(errorCount)条")
-        
-        // 可以在这里添加用户反馈，比如显示提示信息
+
         if importedCount > 0 {
-            // 显示成功提示
             showImportSuccessAlert(importedCount: importedCount, errorCount: errorCount)
         }
     }
-    
-    // MARK: - 显示导入成功提示
+
     private func showImportSuccessAlert(importedCount: Int, errorCount: Int) {
-        // 在实际应用中，你可以使用 Alert 或者自定义的提示方式
         let message = "成功导入 \(importedCount) 条记录"
         print(message)
-        
-        // 如果你想要显示系统通知，可以添加：
+
         let content = UNMutableNotificationContent()
         content.title = "数据导入完成"
         content.body = message
@@ -163,9 +151,7 @@ struct ContentView: View {
         
         let request = UNNotificationRequest(identifier: "csvImportSuccess", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
-        
-        // 在实际应用中，你可能想要刷新界面显示新数据
-        // 例如：刷新汇总视图等
+
     }
 
     private var splashScreen: some View {
