@@ -30,7 +30,7 @@ struct AuthView: View {
                     headerSection
                     
                     ScrollView {
-                        VStack(spacing: 20) {
+                        VStack(spacing: 16) {
                             formSection
                             
                             if authService.requiresCaptcha() {
@@ -166,26 +166,62 @@ struct AuthView: View {
                 Color(.systemGroupedBackground).opacity(0.6)
             )
 
-            VStack(spacing: 16) {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(AppTheme.primaryGradient)
-                    .shadow(color: .blue.opacity(colorScheme == .dark ? 0.2 : 0.3), radius: 8, x: 0, y: 4)
+            HStack(alignment: .center, spacing: 8) {
+                Text("欢迎来到")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(
+                        colorScheme == .dark ?
+                        Color.white.opacity(0.9) :
+                        Color(hex: "3E2723")
+                    )
+                    .shadow(
+                        color: colorScheme == .dark ?
+                            Color.black.opacity(0.3) :
+                            Color.gray.opacity(0.2),
+                        radius: 2, x: 1, y: 1
+                    )
                 
-                VStack(spacing: 8) {
-                    Text("欢迎登录")
-                        .font(.system(size: 32, weight: .bold, design: .serif))
-                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "3E2723"))
-                    
-                    Text("登录您的账户继续使用")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(
-                            colorScheme == .dark ?
-                            Color.white.opacity(0.7) :
-                            Color(hex: "6D4C41").opacity(0.8)
+                Text("☆")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "FFD700"),
+                                Color(hex: "FFA500"),
+                                Color(hex: "FF8C00")
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                }
+                    )
+                    .shadow(
+                        color: Color(hex: "FFD700").opacity(0.4),
+                        radius: 4, x: 0, y: 0
+                    )
+                    .overlay(
+                        Text("☆")
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .foregroundColor(Color(hex: "FFD700").opacity(0.3))
+                            .blur(radius: 2)
+                            .offset(x: 1, y: 1)
+                    )
+                
+                Text("一基暴富")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(
+                        colorScheme == .dark ?
+                        Color.white.opacity(0.9) :
+                        Color(hex: "3E2723")
+                    )
+                    .shadow(
+                        color: colorScheme == .dark ?
+                            Color.black.opacity(0.3) :
+                            Color.gray.opacity(0.2),
+                        radius: 2, x: 1, y: 1
+                    )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
             .padding(.top, 20)
             .padding(.bottom, 10)
             .opacity(animationOpacity)
@@ -194,76 +230,33 @@ struct AuthView: View {
     }
 
     private var formSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             inputCard(
-                title: "用户名",
                 systemImage: "person.fill",
                 gradientColors: [Color(hex: "4facfe"), Color(hex: "00f2fe")],
-                content: {
-                    TextField("请输入用户名", text: $username)
-                        .textContentType(.username)
-                        .autocapitalization(.none)
-                        .onChange(of: username) { newValue in
-                            validateUsername(newValue)
-                        }
-                }
+                placeholder: "请输入用户名",
+                text: $username,
+                isSecure: false,
+                showPassword: $showPassword
             )
 
             inputCard(
-                title: "密码",
                 systemImage: "lock.fill",
                 gradientColors: [Color(hex: "667eea"), Color(hex: "764ba2")],
-                content: {
-                    HStack {
-                        if showPassword {
-                            TextField("请输入密码", text: $password)
-                                .textContentType(isLogin ? .password : .newPassword)
-                        } else {
-                            SecureField("请输入密码", text: $password)
-                                .textContentType(isLogin ? .password : .newPassword)
-                        }
-
-                        Button(action: {
-                            showPassword.toggle()
-                        }) {
-                            Image(systemName: showPassword ? "eye.slash.circle.fill" : "eye.circle.fill")
-                                .foregroundColor(showPassword ? .orange : .blue)
-                                .font(.system(size: 20))
-                        }
-                    }
-                    .onChange(of: password) { newValue in
-                        validatePassword(newValue)
-                    }
-                }
+                placeholder: "请输入密码",
+                text: $password,
+                isSecure: !showPassword,
+                showPassword: $showPassword
             )
 
             if !isLogin {
                 inputCard(
-                    title: "确认密码",
                     systemImage: "lock.rotation",
                     gradientColors: [Color(hex: "f093fb"), Color(hex: "f5576c")],
-                    content: {
-                        HStack {
-                            if showPassword {
-                                TextField("请确认密码", text: $confirmPassword)
-                                    .textContentType(.newPassword)
-                            } else {
-                                SecureField("请确认密码", text: $confirmPassword)
-                                    .textContentType(.newPassword)
-                            }
-
-                            Button(action: {
-                                showPassword.toggle()
-                            }) {
-                                Image(systemName: showPassword ? "eye.slash.circle.fill" : "eye.circle.fill")
-                                    .foregroundColor(showPassword ? .orange : .blue)
-                                    .font(.system(size: 20))
-                            }
-                        }
-                        .onChange(of: confirmPassword) { newValue in
-                            validateConfirmPassword(newValue)
-                        }
-                    }
+                    placeholder: "请确认密码",
+                    text: $confirmPassword,
+                    isSecure: !showPassword,
+                    showPassword: $showPassword
                 )
             }
         }
@@ -272,45 +265,54 @@ struct AuthView: View {
     }
     
     private var captchaSection: some View {
-        inputCard(
-            title: "验证码",
-            systemImage: "shield.lefthalf.filled",
-            gradientColors: [Color(hex: "ff9a9e"), Color(hex: "fecfef")],
-            content: {
-                HStack {
-                    TextField("请输入验证码", text: $captcha)
-                        .textContentType(.oneTimeCode)
-                    
-                    Button(action: {
-                        // 点击图片刷新验证码
+        HStack(spacing: 12) {
+            Image(systemName: "shield.lefthalf.filled")
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(hex: "ff9a9e"), Color(hex: "fecfef")]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Circle())
+            
+            TextField("请输入验证码", text: $captcha)
+                .textContentType(.oneTimeCode)
+                .font(.system(size: 16))
+            
+            Button(action: {
+                authService.fetchCaptcha()
+                captcha = ""
+            }) {
+                if let image = authService.captchaImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 34)
+                        .cornerRadius(4)
+                } else {
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .cornerRadius(4)
+                        Text("加载中...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(width: 100, height: 34)
+                    .onAppear {
                         authService.fetchCaptcha()
-                        captcha = ""
-                    }) {
-                        if let image = authService.captchaImage {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 34)
-                                .cornerRadius(4)
-                        } else {
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .cornerRadius(4)
-                                Text("加载中...")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(width: 100, height: 34)
-                            .onAppear {
-                                // 如果图片为空，自动加载
-                                authService.fetchCaptcha()
-                            }
-                        }
                     }
                 }
             }
-        )
+        }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
         .opacity(animationOpacity)
         .offset(y: animationOffset)
     }
@@ -399,43 +401,52 @@ struct AuthView: View {
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
 
-    private func inputCard<Content: View>(
-        title: String,
+    private func inputCard(
         systemImage: String,
         gradientColors: [Color],
-        @ViewBuilder content: () -> Content
+        placeholder: String,
+        text: Binding<String>,
+        isSecure: Bool,
+        showPassword: Binding<Bool>
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-                    .frame(width: 28, height: 28)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: gradientColors),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+        HStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: gradientColors),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                    .clipShape(Circle())
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    content()
+                )
+                .clipShape(Circle())
+            
+            if isSecure {
+                HStack {
+                    SecureField(placeholder, text: text)
                         .font(.system(size: 16))
+                    
+                    Button(action: {
+                        showPassword.wrappedValue.toggle()
+                    }) {
+                        Image(systemName: showPassword.wrappedValue ? "eye.slash.circle.fill" : "eye.circle.fill")
+                            .foregroundColor(showPassword.wrappedValue ? .orange : .blue)
+                            .font(.system(size: 20))
+                    }
                 }
-                
-                Spacer()
+            } else {
+                TextField(placeholder, text: text)
+                    .textContentType(.username)
+                    .autocapitalization(.none)
+                    .font(.system(size: 16))
             }
-            .padding(16)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
         }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, x: 0, y: 4)
     }
 
     private var isValidForm: Bool {
@@ -518,8 +529,6 @@ struct AuthView: View {
             }
 
             if authService.requiresCaptcha() {
-                // 前端已经通过绑定 authService.captchaId 获取了ID
-                // 这里的 captcha 变量是 Textfield 绑定的字符串
                 authService.login(username: username, password: password, captcha: captcha) { success, msg in
                     isLoading = false
                     handleAuthResult(success: success, message: msg)
