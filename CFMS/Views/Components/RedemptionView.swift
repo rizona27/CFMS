@@ -194,18 +194,8 @@ struct RedemptionView: View {
     private var headerSection: some View {
         VStack(spacing: 0) {
             HStack {
-                Button {
+                BackButton {
                     presentationMode.wrappedValue.dismiss()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.primaryGradient)
-                        
-                        Image(systemName: "chevron.backward.circle")
-                            .foregroundColor(.white)
-                            .font(.system(size: 20))
-                    }
-                    .frame(width: 32, height: 32)
                 }
                 
                 Spacer()

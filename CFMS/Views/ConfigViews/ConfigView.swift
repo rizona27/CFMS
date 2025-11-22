@@ -248,7 +248,7 @@ struct UserInfoView: View {
                                     showingRedemptionView = true
                                 }) {
                                     HStack {
-                                        Text("升级到尊享")
+                                        Text("升级")
                                             .font(.system(size: 14))
                                             .foregroundColor(.blue)
                                         Image(systemName: "chevron.right")

@@ -111,18 +111,8 @@ struct EditHoldingView: View {
     private var headerContent: some View {
         VStack(spacing: 0) {
             HStack {
-                Button {
+                BackButton {
                     dismiss()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "4facfe"), Color(hex: "00f2fe")]), startPoint: .topLeading, endPoint: .bottomTrailing))
-                        
-                        Image(systemName: "chevron.backward.circle")
-                            .foregroundColor(.white)
-                            .font(.system(size: 20))
-                    }
-                    .frame(width: 32, height: 32)
                 }
                 
                 Spacer()
