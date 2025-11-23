@@ -37,6 +37,9 @@ class AuthService: ObservableObject {
     
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     
+    // 新增：标记是否正在进行 FaceID 登录
+    private var isFaceIDLoginInProgress = false
+    
     init() {
         print("🔧 AuthService 初始化")
         checkLoginStatus()
@@ -165,10 +168,20 @@ class AuthService: ObservableObject {
         }
 
         let reason = "使用\(biometricType)登录您的账户"
+        
+        // 标记 FaceID 登录正在进行
+        isFaceIDLoginInProgress = true
+        
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
             DispatchQueue.main.async {
+                // 重置 FaceID 登录状态
+                self.isFaceIDLoginInProgress = false
+                
                 if success {
                     if let credentials = self.getBiometricCredentials() {
+                        // 重置后台时间检查，避免 FaceID 登录成功后又被登出
+                        self.backgroundEnterTime = nil
+                        
                         self.login(username: credentials.username, password: credentials.password) { loginSuccess, message in
                             completion(loginSuccess, message)
                         }
@@ -463,6 +476,9 @@ class AuthService: ObservableObject {
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
 
+                            // 重置后台时间检查
+                            self.backgroundEnterTime = nil
+                            
                             self.resetAuthFailure()
                             self.captchaImage = nil
                             self.captchaId = nil
@@ -585,6 +601,9 @@ class AuthService: ObservableObject {
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
                             
+                            // 重置后台时间检查
+                            self.backgroundEnterTime = nil
+                            
                             self.objectWillChange.send()
                             
                             completion(true, json["message"] as? String ?? "注册成功")
@@ -705,6 +724,12 @@ class AuthService: ObservableObject {
         if isLoggedIn {
             print("🔧 应用重新激活，检查后台时间")
 
+            // 如果是 FaceID 登录正在进行，跳过后台时间检查
+            if isFaceIDLoginInProgress {
+                print("🔧 FaceID 登录进行中，跳过后台时间检查")
+                return
+            }
+
             if let backgroundTime = backgroundEnterTime {
                 let backgroundDuration = Date().timeIntervalSince(backgroundTime)
                 if backgroundDuration > backgroundTimeout {
@@ -792,6 +817,8 @@ class AuthService: ObservableObject {
         print("生物识别支持: \(canUseBiometric)")
         print("生物识别类型: \(biometricType)")
         print("生物识别启用: \(isBiometricEnabled)")
+        print("FaceID 登录进行中: \(isFaceIDLoginInProgress)")
+        print("后台进入时间: \(backgroundEnterTime?.description ?? "无")")
         print("=========================")
     }
     

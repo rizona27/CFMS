@@ -571,8 +571,14 @@ struct AuthView: View {
         showBiometricOption = authService.isBiometricEnabled && authService.canUseBiometric && isLogin
     }
     
-    // 执行生物识别登录
+    // 执行生物识别登录 - 修复用户名显示逻辑
     private func performBiometricLogin() {
+        // 首先从 Keychain 获取保存的用户名
+        if let credentials = authService.getBiometricCredentials() {
+            // 确保用户名输入框显示正确的用户名
+            username = credentials.username
+        }
+        
         isBiometricLoading = true
         message = ""
         

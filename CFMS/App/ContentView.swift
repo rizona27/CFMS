@@ -102,6 +102,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CSVImportCompleted"))) { notification in
             handleCSVImportCompleted(notification: notification)
         }
+        .toast(message: dataManager.toastMessage, isShowing: $dataManager.showToast)
     }
 
     private func handleFileImport(notification: Notification) {
@@ -117,10 +118,15 @@ struct ContentView: View {
 
         guard authService.isLoggedIn else {
             print("用户未登录，无法导入文件")
+            dataManager.toastMessage = "请先登录账户"
+            dataManager.showToast = true
             return
         }
 
-        dataManager.importFromCSV(fileURL: fileURL)
+        // 使用 DataManager 处理文件导入
+        Task {
+            await dataManager.processImportedFile(url: fileURL)
+        }
     }
 
     private func handleCSVImportCompleted(notification: Notification) {

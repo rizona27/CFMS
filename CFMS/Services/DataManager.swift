@@ -1,6 +1,8 @@
 //定义了一个名为 DataManager 的 ObservableObject 类，它是整个应用程序的核心数据管理层。
 import Foundation
 import Combine
+import SwiftUI
+import UniformTypeIdentifiers
 
 struct ProfitResult: Codable {
     var absolute: Double
@@ -16,6 +18,9 @@ struct FavoriteItem: Identifiable, Codable {
 enum DataManagerError: Error {
     case invalidHoldingData
     case holdingNotFound
+    case fileAccessError
+    case fileEncodingError
+    case csvParseError(String)
 }
 
 enum CSVImportError: Error {
@@ -41,6 +46,24 @@ enum CSVImportError: Error {
     }
 }
 
+// MARK: - CSV Export Document
+struct CSVExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
+    var message: String
+    
+    init(message: String) {
+        self.message = message
+    }
+    
+    init(configuration: ReadConfiguration) throws {
+        throw CocoaError(.fileReadCorruptFile)
+    }
+    
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        return FileWrapper(regularFileWithContents: message.data(using: .utf8)!)
+    }
+}
+
 class DataManager: ObservableObject {
     @Published var holdings: [FundHolding] = []
     @Published var favorites: [FavoriteItem] = []
@@ -56,6 +79,12 @@ class DataManager: ObservableObject {
     @Published var isImportingCSV: Bool = false
     @Published var importProgress: (current: Int, total: Int) = (0, 0)
     @Published var currentImportingFileName: String = ""
+    
+    // CSV 导入导出相关
+    @Published var csvExportDocument: CSVExportDocument?
+    @Published var isExportingCSV: Bool = false
+    @Published var showToast: Bool = false
+    @Published var toastMessage: String = ""
     
     private let holdingsKey = "fundHoldings"
     private let favoritesKey = "Favorites"
@@ -230,6 +259,220 @@ class DataManager: ObservableObject {
         currentRefreshingClientID = ""
     }
 
+    // MARK: - CSV 导入导出方法
+    
+    /// 导出持仓数据到CSV
+    func exportHoldingsToCSV() -> CSVExportDocument? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        var csvString = "客户姓名,基金代码,购买金额,购买份额,购买日期,客户号,备注\n"
+        
+        for holding in holdings {
+            let formattedDate = dateFormatter.string(from: holding.purchaseDate)
+            let amountStr = String(format: "%.2f", holding.purchaseAmount)
+            let sharesStr = String(format: "%.2f", holding.purchaseShares)
+            
+            csvString += "\(holding.clientName),\(holding.fundCode),\(amountStr),\(sharesStr),\(formattedDate),\(holding.clientID),\(holding.remarks)\n"
+        }
+        
+        return CSVExportDocument(message: csvString)
+    }
+    
+    /// 生成导出文件名
+    func generateExportFilename() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM-dd"
+        let dateString = dateFormatter.string(from: Date())
+        return "fundlist_\(dateString).csv"
+    }
+    
+    /// 处理文件导入
+    func processImportedFile(url: URL) async {
+        let canAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if canAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        if !canAccess {
+            await showToastMessage("无法访问文件，请检查权限设置")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            guard let csvString = String(data: data, encoding: .utf8) else {
+                await showToastMessage("文件编码错误，无法读取内容")
+                return
+            }
+            
+            await processCSVContent(csvString: csvString, fileName: url.lastPathComponent)
+            
+        } catch {
+            await showToastMessage("文件读取失败: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 处理CSV内容
+    private func processCSVContent(csvString: String, fileName: String) async {
+        let lines = csvString.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard lines.count > 1 else {
+            await showToastMessage("导入失败：CSV文件为空或只有标题行")
+            return
+        }
+        
+        let headers = lines[0].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        
+        let columnMapping: [String: [String]] = [
+            "客户姓名": ["客户姓名", "姓名"],
+            "基金代码": ["基金代码", "代码"],
+            "购买金额": ["购买金额", "持仓成本（元）", "持仓成本", "成本"],
+            "购买份额": ["购买份额", "当前份额", "份额"],
+            "购买日期": ["购买日期", "最早购买日期", "日期"],
+            "客户号": ["客户号", "核心客户号"],
+            "备注": ["备注"]
+        ]
+
+        var columnIndices = [String: Int]()
+        var missingRequiredHeaders: [String] = []
+
+        for (key, aliases) in columnMapping {
+            var found = false
+            for alias in aliases {
+                if let index = headers.firstIndex(where: { $0.contains(alias) }) {
+                    columnIndices[key] = index
+                    found = true
+                    break
+                }
+            }
+            if !found && ["基金代码", "购买金额", "购买份额", "客户号"].contains(key) {
+                missingRequiredHeaders.append(key)
+            }
+        }
+
+        if !missingRequiredHeaders.isEmpty {
+            let missingColumnsString = missingRequiredHeaders.joined(separator: ", ")
+            await showToastMessage("导入失败：缺少必要的列 (\(missingColumnsString))")
+            return
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        var existingHoldingsKeys: Set<String> = Set(holdings.map { $0.createDeduplicationKey() })
+
+        var importedCount = 0
+        var duplicateCount = 0
+        
+        await MainActor.run {
+            isImportingCSV = true
+            currentImportingFileName = fileName
+            importProgress = (0, lines.count)
+        }
+        
+        for i in 1..<lines.count {
+            let values = lines[i].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            guard values.count >= headers.count else { continue }
+            
+            guard let fundCodeIndex = columnIndices["基金代码"],
+                             let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+            let cleanedFundCode = String(format: "%06d", Int(fundCode) ?? 0)
+            
+            guard let amountIndex = columnIndices["购买金额"],
+                             let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                             let amount = Double(amountStr) else { continue }
+            let cleanedAmount = (amount * 100).rounded() / 100
+
+            guard let sharesIndex = columnIndices["购买份额"],
+                             let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                             let shares = Double(sharesStr) else { continue }
+            let cleanedShares = (shares * 100).rounded() / 100
+
+            var purchaseDate = Date()
+            if let dateIndex = columnIndices["购买日期"],
+               let dateStr = values[safe: dateIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                if let date = dateFormatter.date(from: dateStr) {
+                    purchaseDate = date
+                }
+            }
+
+            guard let clientIDIndex = columnIndices["客户号"],
+                             let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+            let desiredLength = 12
+            let currentLength = clientID.count
+            var cleanedClientID = clientID
+
+            if currentLength < desiredLength {
+                let numberOfZerosToAdd = desiredLength - currentLength
+                let leadingZeros = String(repeating: "0", count: numberOfZerosToAdd)
+                cleanedClientID = leadingZeros + clientID
+            }
+
+            var clientName: String
+            if let clientNameIndex = columnIndices["客户姓名"],
+               let nameFromCSV = values[safe: clientNameIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !nameFromCSV.isEmpty {
+                clientName = nameFromCSV
+            } else {
+                clientName = cleanedClientID
+            }
+
+            let remarks = columnIndices["备注"].flatMap { values[safe: $0]?.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+            
+            let newHolding = FundHolding(
+                clientName: clientName,
+                clientID: cleanedClientID,
+                fundCode: cleanedFundCode,
+                purchaseAmount: cleanedAmount,
+                purchaseShares: cleanedShares,
+                purchaseDate: purchaseDate,
+                remarks: remarks
+            )
+
+            let deduplicationKey = newHolding.createDeduplicationKey()
+            
+            if !existingHoldingsKeys.contains(deduplicationKey) {
+                do {
+                    try addHolding(newHolding)
+                    existingHoldingsKeys.insert(deduplicationKey)
+                    importedCount += 1
+                } catch {
+                    print("导入失败: \(clientName)-\(cleanedFundCode) - \(error.localizedDescription)")
+                }
+            } else {
+                duplicateCount += 1
+            }
+            
+            // 更新进度
+            await MainActor.run {
+                importProgress = (i, lines.count)
+            }
+        }
+        
+        await MainActor.run {
+            isImportingCSV = false
+            importProgress = (0, 0)
+            currentImportingFileName = ""
+        }
+        
+        saveData()
+        
+        let message = "导入成功：\(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录"
+        await showToastMessage(message)
+        
+        NotificationCenter.default.post(name: NSNotification.Name("HoldingsDataUpdated"), object: nil)
+    }
+    
+    /// 显示Toast消息
+    @MainActor
+    private func showToastMessage(_ message: String) {
+        toastMessage = message
+        showToast = true
+    }
+    
+    // MARK: - 旧版导入方法（保持兼容性）
     func importFromCSV(fileURL: URL) {
         print("DataManager: 开始导入CSV文件: \(fileURL)")
 
@@ -443,6 +686,32 @@ class DataManager: ObservableObject {
     deinit {
         refreshButtonTimer?.invalidate()
         refreshCooldownTimer?.invalidate()
+    }
+}
+
+// MARK: - 扩展 UTType 以支持 CSV 文件类型
+extension UTType {
+    static var commaSeparatedText: UTType {
+        UTType(importedAs: "public.comma-separated-values-text")
+    }
+}
+
+extension Array {
+    subscript(safe index: Index) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
+}
+
+extension FundHolding {
+    func createDeduplicationKey() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let purchaseDateString = dateFormatter.string(from: purchaseDate)
+        
+        let amountString = String(format: "%.2f", purchaseAmount)
+        let sharesString = String(format: "%.2f", purchaseShares)
+        
+        return "\(clientName)-\(fundCode)-\(amountString)-\(sharesString)-\(purchaseDateString)-\(clientID)-\(remarks)"
     }
 }
 

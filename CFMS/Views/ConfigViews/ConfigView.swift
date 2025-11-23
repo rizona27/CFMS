@@ -917,12 +917,9 @@ struct ConfigView: View {
     @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) var dismiss
 
-    @State private var showToast = false
-    @State private var toastMessage = ""
-
     private func showToast(message: String) {
-        toastMessage = message
-        showToast = true
+        dataManager.toastMessage = message
+        dataManager.showToast = true
     }
 
     private func onAppear() {
@@ -977,31 +974,11 @@ struct ConfigView: View {
                 .navigationBarHidden(true)
                 .onAppear(perform: onAppear)
                 .onDisappear(perform: onDisappear)
-
-                ToastView(message: toastMessage, isShowing: $showToast)
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .transition(.opacity)
         .animation(.easeInOut(duration: 0.25), value: UUID())
-    }
-}
-
-extension Array {
-    subscript(safe index: Index) -> Element? {
-        return indices.contains(index) ? self[index] : nil
-    }
-}
-
-extension FundHolding {
-    func createDeduplicationKey() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let purchaseDateString = dateFormatter.string(from: purchaseDate)
-        
-        let amountString = String(format: "%.2f", purchaseAmount)
-        let sharesString = String(format: "%.2f", purchaseShares)
-        
-        return "\(clientName)-\(fundCode)-\(amountString)-\(sharesString)-\(purchaseDateString)-\(clientID)-\(remarks)"
+        .toast(message: dataManager.toastMessage, isShowing: $dataManager.showToast)
     }
 }
