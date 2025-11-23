@@ -250,20 +250,45 @@ struct CFMSApp: App {
 
         guard url.startAccessingSecurityScopedResource() else {
             print("CFMSApp: 无法获取文件安全访问权限")
-            showImportErrorAlert(message: "无法访问文件")
+            showImportErrorAlert(message: "无法访问文件，请检查文件权限")
             return
         }
         
         defer {
             url.stopAccessingSecurityScopedResource()
+            print("CFMSApp: 已释放安全访问权限")
         }
         
+        // 检查原始文件的可访问性 - 移除不必要的 do-catch
+        let fileManager = FileManager.default
+        
+        // 检查文件是否存在
+        guard fileManager.fileExists(atPath: url.path) else {
+            print("CFMSApp: 原始文件不存在")
+            showImportErrorAlert(message: "文件不存在")
+            return
+        }
+        
+        // 检查文件可读性
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            print("CFMSApp: 原始文件不可读")
+            showImportErrorAlert(message: "文件不可读，请检查权限")
+            return
+        }
+        
+        // 如果检查通过，处理文件
         processImportedFile(url: url)
     }
 
     private func processImportedFile(url: URL) {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileName = "imported_\(Int(Date().timeIntervalSince1970)).csv"
+        let fileManager = FileManager.default
+        guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("CFMSApp: 无法获取Documents目录")
+            showImportErrorAlert(message: "无法访问应用存储空间")
+            return
+        }
+        
+        let fileName = "imported_\(Int(Date().timeIntervalSince1970)).\(url.pathExtension)"
         let destinationURL = documentsPath.appendingPathComponent(fileName)
         
         print("CFMSApp: 开始处理导入文件")
@@ -271,28 +296,55 @@ struct CFMSApp: App {
         print("CFMSApp: 目标文件: \(destinationURL)")
         
         do {
-            try FileManager.default.createDirectory(at: documentsPath, withIntermediateDirectories: true)
-
-            if FileManager.default.fileExists(atPath: destinationURL.path) {
-                try FileManager.default.removeItem(at: destinationURL)
+            // 确保目标目录存在
+            try fileManager.createDirectory(at: documentsPath, withIntermediateDirectories: true)
+            
+            // 如果目标文件已存在，先删除
+            if fileManager.fileExists(atPath: destinationURL.path) {
+                try fileManager.removeItem(at: destinationURL)
             }
-
-            try FileManager.default.copyItem(at: url, to: destinationURL)
+            
+            // 复制文件
+            try fileManager.copyItem(at: url, to: destinationURL)
+            
+            // 验证复制后的文件
+            guard fileManager.fileExists(atPath: destinationURL.path) else {
+                print("CFMSApp: 复制后文件不存在")
+                showImportErrorAlert(message: "文件复制失败")
+                return
+            }
+            
+            guard fileManager.isReadableFile(atPath: destinationURL.path) else {
+                print("CFMSApp: 复制后文件不可读")
+                showImportErrorAlert(message: "复制文件不可读")
+                return
+            }
+            
+            // 获取复制后文件大小
+            let attributes = try fileManager.attributesOfItem(atPath: destinationURL.path)
+            let fileSize = attributes[.size] as? UInt64 ?? 0
+            print("CFMSApp: 复制后文件大小: \(fileSize) 字节")
+            
+            if fileSize == 0 {
+                print("CFMSApp: 复制后文件为空")
+                showImportErrorAlert(message: "文件内容为空")
+                return
+            }
             
             DispatchQueue.main.async {
-                self.importedFileURL = destinationURL
                 print("CFMSApp: 发送文件导入通知: \(destinationURL)")
-
+                
                 NotificationCenter.default.post(
                     name: NSNotification.Name("FileImportedFromShare"),
                     object: nil,
                     userInfo: ["fileURL": destinationURL]
                 )
-
+                
                 self.showImportSuccessAlert()
             }
             
             print("CFMSApp: 文件导入成功: \(destinationURL)")
+            
         } catch {
             print("CFMSApp: 文件复制错误: \(error)")
             showImportErrorAlert(message: "文件导入失败: \(error.localizedDescription)")

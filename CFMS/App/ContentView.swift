@@ -111,10 +111,13 @@ struct ContentView: View {
         guard let userInfo = notification.userInfo,
               let fileURL = userInfo["fileURL"] as? URL else {
             print("文件导入通知中缺少 fileURL")
+            dataManager.toastMessage = "文件信息不完整"
+            dataManager.showToast = true
             return
         }
         
         print("准备处理导入的文件: \(fileURL)")
+        print("文件路径: \(fileURL.path)")
 
         guard authService.isLoggedIn else {
             print("用户未登录，无法导入文件")

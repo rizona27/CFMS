@@ -287,43 +287,74 @@ class DataManager: ObservableObject {
         return "fundlist_\(dateString).csv"
     }
     
-    /// 处理文件导入
+    /// 处理文件导入 - 修复版
     func processImportedFile(url: URL) async {
-        let canAccess = url.startAccessingSecurityScopedResource()
-        defer {
-            if canAccess {
-                url.stopAccessingSecurityScopedResource()
-            }
+        print("DataManager: 开始处理导入文件: \(url)")
+        print("DataManager: 文件路径: \(url.path)")
+        
+        // 首先检查文件是否存在和可读
+        let fileManager = FileManager.default
+        
+        guard fileManager.fileExists(atPath: url.path) else {
+            print("DataManager: 文件不存在: \(url.path)")
+            await showToastMessage("文件不存在或已被移动")
+            return
         }
         
-        if !canAccess {
-            await showToastMessage("无法访问文件，请检查权限设置")
+        guard fileManager.isReadableFile(atPath: url.path) else {
+            print("DataManager: 文件不可读: \(url.path)")
+            await showToastMessage("文件权限不足，无法读取")
+            return
+        }
+        
+        // 检查文件大小
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            let fileSize = attributes[.size] as? UInt64 ?? 0
+            print("DataManager: 文件大小: \(fileSize) 字节")
+            
+            if fileSize == 0 {
+                print("DataManager: 文件为空")
+                await showToastMessage("文件内容为空")
+                return
+            }
+        } catch {
+            print("DataManager: 无法获取文件属性: \(error)")
+            await showToastMessage("无法读取文件信息")
             return
         }
         
         do {
+            // 直接读取文件内容，不需要安全作用域访问（因为文件已经在应用沙盒内）
             let data = try Data(contentsOf: url)
             guard let csvString = String(data: data, encoding: .utf8) else {
+                print("DataManager: 文件编码错误")
                 await showToastMessage("文件编码错误，无法读取内容")
                 return
             }
             
+            print("DataManager: 成功读取文件内容，大小: \(csvString.count) 字符")
             await processCSVContent(csvString: csvString, fileName: url.lastPathComponent)
             
         } catch {
+            print("DataManager: 文件读取失败: \(error)")
             await showToastMessage("文件读取失败: \(error.localizedDescription)")
         }
     }
     
     /// 处理CSV内容
     private func processCSVContent(csvString: String, fileName: String) async {
+        print("DataManager: 开始处理CSV内容，行数: \(csvString.components(separatedBy: "\n").count)")
+        
         let lines = csvString.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard lines.count > 1 else {
+            print("DataManager: CSV文件为空或只有标题行")
             await showToastMessage("导入失败：CSV文件为空或只有标题行")
             return
         }
         
         let headers = lines[0].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        print("DataManager: CSV标题行: \(headers)")
         
         let columnMapping: [String: [String]] = [
             "客户姓名": ["客户姓名", "姓名"],
@@ -354,6 +385,7 @@ class DataManager: ObservableObject {
 
         if !missingRequiredHeaders.isEmpty {
             let missingColumnsString = missingRequiredHeaders.joined(separator: ", ")
+            print("DataManager: 缺少必要的列: \(missingColumnsString)")
             await showToastMessage("导入失败：缺少必要的列 (\(missingColumnsString))")
             return
         }
@@ -365,6 +397,7 @@ class DataManager: ObservableObject {
 
         var importedCount = 0
         var duplicateCount = 0
+        var errorCount = 0
         
         await MainActor.run {
             isImportingCSV = true
@@ -374,32 +407,68 @@ class DataManager: ObservableObject {
         
         for i in 1..<lines.count {
             let values = lines[i].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-            guard values.count >= headers.count else { continue }
+            guard values.count >= headers.count else {
+                print("DataManager: 跳过第 \(i) 行 - 列数不足")
+                errorCount += 1
+                continue
+            }
             
+            // 获取列索引
             guard let fundCodeIndex = columnIndices["基金代码"],
-                             let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+                  let amountIndex = columnIndices["购买金额"],
+                  let sharesIndex = columnIndices["购买份额"],
+                  let clientIDIndex = columnIndices["客户号"] else {
+                print("DataManager: 跳过第 \(i) 行 - 缺少必要的列索引")
+                errorCount += 1
+                continue
+            }
+            
+            // 基金代码
+            guard let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !fundCode.isEmpty else {
+                print("DataManager: 跳过第 \(i) 行 - 缺少基金代码")
+                errorCount += 1
+                continue
+            }
             let cleanedFundCode = String(format: "%06d", Int(fundCode) ?? 0)
             
-            guard let amountIndex = columnIndices["购买金额"],
-                             let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                             let amount = Double(amountStr) else { continue }
+            // 购买金额
+            guard let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  let amount = Double(amountStr) else {
+                print("DataManager: 跳过第 \(i) 行 - 购买金额格式错误: \(values[safe: amountIndex] ?? "空")")
+                errorCount += 1
+                continue
+            }
             let cleanedAmount = (amount * 100).rounded() / 100
 
-            guard let sharesIndex = columnIndices["购买份额"],
-                             let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                             let shares = Double(sharesStr) else { continue }
+            // 购买份额
+            guard let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  let shares = Double(sharesStr) else {
+                print("DataManager: 跳过第 \(i) 行 - 购买份额格式错误: \(values[safe: sharesIndex] ?? "空")")
+                errorCount += 1
+                continue
+            }
             let cleanedShares = (shares * 100).rounded() / 100
 
+            // 购买日期
             var purchaseDate = Date()
             if let dateIndex = columnIndices["购买日期"],
-               let dateStr = values[safe: dateIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) {
+               let dateStr = values[safe: dateIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !dateStr.isEmpty {
                 if let date = dateFormatter.date(from: dateStr) {
                     purchaseDate = date
+                } else {
+                    print("DataManager: 第 \(i) 行日期格式无法解析: \(dateStr)，使用当前日期")
                 }
             }
 
-            guard let clientIDIndex = columnIndices["客户号"],
-                             let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+            // 客户号
+            guard let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !clientID.isEmpty else {
+                print("DataManager: 跳过第 \(i) 行 - 缺少客户号")
+                errorCount += 1
+                continue
+            }
             let desiredLength = 12
             let currentLength = clientID.count
             var cleanedClientID = clientID
@@ -410,6 +479,7 @@ class DataManager: ObservableObject {
                 cleanedClientID = leadingZeros + clientID
             }
 
+            // 客户姓名
             var clientName: String
             if let clientNameIndex = columnIndices["客户姓名"],
                let nameFromCSV = values[safe: clientNameIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -419,6 +489,7 @@ class DataManager: ObservableObject {
                 clientName = cleanedClientID
             }
 
+            // 备注
             let remarks = columnIndices["备注"].flatMap { values[safe: $0]?.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
             
             let newHolding = FundHolding(
@@ -438,11 +509,14 @@ class DataManager: ObservableObject {
                     try addHolding(newHolding)
                     existingHoldingsKeys.insert(deduplicationKey)
                     importedCount += 1
+                    print("DataManager: 成功导入持仓: \(clientName)-\(cleanedFundCode)")
                 } catch {
-                    print("导入失败: \(clientName)-\(cleanedFundCode) - \(error.localizedDescription)")
+                    print("DataManager: 导入失败: \(clientName)-\(cleanedFundCode) - \(error.localizedDescription)")
+                    errorCount += 1
                 }
             } else {
                 duplicateCount += 1
+                print("DataManager: 跳过重复持仓: \(clientName)-\(cleanedFundCode)")
             }
             
             // 更新进度
@@ -459,8 +533,20 @@ class DataManager: ObservableObject {
         
         saveData()
         
-        let message = "导入成功：\(importedCount) 条记录，跳过 \(duplicateCount) 条重复记录"
+        let message = "导入完成：成功 \(importedCount) 条，跳过 \(duplicateCount) 条重复记录，失败 \(errorCount) 条"
+        print("DataManager: \(message)")
         await showToastMessage(message)
+        
+        // 发送导入完成通知
+        NotificationCenter.default.post(
+            name: NSNotification.Name("CSVImportCompleted"),
+            object: nil,
+            userInfo: [
+                "importedCount": importedCount,
+                "errorCount": errorCount,
+                "duplicateCount": duplicateCount
+            ]
+        )
         
         NotificationCenter.default.post(name: NSNotification.Name("HoldingsDataUpdated"), object: nil)
     }
