@@ -557,8 +557,6 @@ struct UserInfoView: View {
     }
 }
 
-import SwiftUI
-
 struct FunctionMenuView: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var fundService: FundService
@@ -570,7 +568,35 @@ struct FunctionMenuView: View {
     
     var body: some View {
         VStack(spacing: 12) {
+            // 第一行：云端同步和管理持仓
             HStack(spacing: 12) {
+                if authService.currentUser?.userType != .free {
+                    CustomCardView(
+                        title: "云端同步",
+                        description: "上传或下载持仓数据到云端",
+                        imageName: "icloud.and.arrow.up.fill",
+                        backgroundColor: Color.purple.opacity(0.1),
+                        contentForegroundColor: .purple,
+                        action: {
+                            showingCloudSyncSheet = true
+                        }
+                    ) { _ in EmptyView() }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    // 免费用户显示提示卡片
+                    CustomCardView(
+                        title: "云端同步",
+                        description: "订阅用户专属功能",
+                        imageName: "icloud.and.arrow.up.fill",
+                        backgroundColor: Color.gray.opacity(0.1),
+                        contentForegroundColor: .gray,
+                        action: {
+                            // 可以在这里添加升级提示
+                        }
+                    ) { _ in EmptyView() }
+                    .frame(maxWidth: .infinity)
+                }
+
                 CustomCardView(
                     title: "管理持仓",
                     description: "新增、编辑或清空持仓数据",
@@ -582,7 +608,11 @@ struct FunctionMenuView: View {
                     }
                 ) { _ in EmptyView() }
                 .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 8)
 
+            // 第二行：日志查询和数据接口
+            HStack(spacing: 12) {
                 CustomCardView(
                     title: "日志查询",
                     description: "API请求与响应日志",
@@ -594,22 +624,53 @@ struct FunctionMenuView: View {
                     }
                 ) { _ in EmptyView() }
                 .frame(maxWidth: .infinity)
+
+                // 数据接口卡片
+                CustomCardView(
+                    title: "数据接口",
+                    description: "选择基金数据源",
+                    imageName: "network",
+                    backgroundColor: Color.orange.opacity(0.1),
+                    contentForegroundColor: .orange
+                ) { fgColor in
+                    VStack(alignment: .leading, spacing: 8) {
+                        // 这里使用 @AppStorage 来管理选中的 API
+                        Menu {
+                            ForEach(FundAPI.allCases) { api in
+                                Button(action: {
+                                    // 直接更新 UserDefaults
+                                    UserDefaults.standard.set(api.rawValue, forKey: "selectedFundAPI")
+                                    Task {
+                                        await fundService.addLog("数据接口已切换至: \(api.rawValue)", type: .info)
+                                    }
+                                }) {
+                                    Text(api.rawValue)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(getSelectedAPI().rawValue)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 8)
-
-            if authService.currentUser?.userType != .free {
-                CustomCardView(
-                    title: "云端同步",
-                    description: "上传或下载持仓数据到云端",
-                    imageName: "icloud.and.arrow.up.fill",
-                    backgroundColor: Color.purple.opacity(0.1),
-                    contentForegroundColor: .purple,
-                    action: {
-                        showingCloudSyncSheet = true
-                    }
-                ) { _ in EmptyView() }
-                .padding(.horizontal, 8)
-            }
         }
         .padding(.top, 8)
         .sheet(isPresented: $showingManageHoldingsMenuSheet) {
@@ -627,6 +688,15 @@ struct FunctionMenuView: View {
                 .environmentObject(dataManager)
                 .environmentObject(authService)
         }
+    }
+    
+    // 辅助方法：获取当前选中的 API
+    private func getSelectedAPI() -> FundAPI {
+        if let savedAPI = UserDefaults.standard.string(forKey: "selectedFundAPI"),
+           let api = FundAPI.allCases.first(where: { $0.rawValue == savedAPI }) {
+            return api
+        }
+        return .eastmoney // 默认值
     }
 }
 
@@ -707,76 +777,23 @@ struct ServiceSettingsView: View {
     @State private var showingAboutSheet = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            FundAPIView()
-                .frame(maxWidth: .infinity)
-            
-            CustomCardView(
-                title: "关于",
-                description: "程序版本信息和说明",
-                imageName: "info.circle.fill",
-                backgroundColor: Color.blue.opacity(0.1),
-                contentForegroundColor: .white,
-                action: {
-                    showingAboutSheet = true
-                },
-                hasAnimatedBackground: true,
-                hasGradientBackground: true
-            ) { _ in EmptyView() }
-            .frame(maxWidth: .infinity)
-        }
+        // 第四行：单独的关于卡片
+        CustomCardView(
+            title: "关于",
+            description: "程序版本信息和说明",
+            imageName: "info.circle.fill",
+            backgroundColor: Color.blue.opacity(0.1),
+            contentForegroundColor: .white,
+            action: {
+                showingAboutSheet = true
+            },
+            hasAnimatedBackground: true,
+            hasGradientBackground: true
+        ) { _ in EmptyView() }
         .padding(.horizontal, 8)
         .padding(.top, 8)
         .sheet(isPresented: $showingAboutSheet) {
             AboutView()
-        }
-    }
-}
-
-struct FundAPIView: View {
-    @AppStorage("selectedFundAPI") private var selectedFundAPI: FundAPI = .eastmoney
-    @EnvironmentObject var fundService: FundService
-    
-    var body: some View {
-        CustomCardView(
-            title: "数据接口",
-            description: nil,
-            imageName: "network",
-            backgroundColor: Color.blue.opacity(0.1),
-            contentForegroundColor: .blue
-        ) { fgColor in
-            VStack(alignment: .leading, spacing: 8) {
-                Menu {
-                    ForEach(FundAPI.allCases) { api in
-                        Button(action: {
-                            selectedFundAPI = api
-                            Task {
-                                await fundService.addLog("数据接口已切换至: \(api.rawValue)", type: .info)
-                            }
-                        }) {
-                            Text(api.rawValue)
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text(selectedFundAPI.rawValue)
-                            .font(.system(size: 14))
-                            .foregroundColor(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                }
-            }
         }
     }
 }

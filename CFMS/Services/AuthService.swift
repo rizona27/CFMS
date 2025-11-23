@@ -2,6 +2,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import LocalAuthentication
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -41,6 +42,163 @@ class AuthService: ObservableObject {
         checkLoginStatus()
         setupInactivityMonitoring()
         setupAppStateMonitoring()
+    }
+
+    var canUseBiometric: Bool {
+        let context = LAContext()
+        var error: NSError?
+        return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+    }
+
+    var biometricType: String {
+        let context = LAContext()
+        var error: NSError?
+        
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            return "无"
+        }
+        
+        switch context.biometryType {
+        case .faceID:
+            return "Face ID"
+        case .touchID:
+            return "Touch ID"
+        default:
+            return "生物识别"
+        }
+    }
+
+    func saveBiometricCredentials(username: String, password: String) -> Bool {
+        removeBiometricCredentials()
+
+        let usernameQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_username",
+            kSecAttrService as String: "com.cfms.app",
+            kSecValueData as String: username.data(using: .utf8)!,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        
+        let usernameStatus = SecItemAdd(usernameQuery as CFDictionary, nil)
+
+        let passwordQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_password",
+            kSecAttrService as String: "com.cfms.app",
+            kSecValueData as String: password.data(using: .utf8)!,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+        
+        let passwordStatus = SecItemAdd(passwordQuery as CFDictionary, nil)
+        
+        if usernameStatus == errSecSuccess && passwordStatus == errSecSuccess {
+            UserDefaults.standard.set(true, forKey: "biometricEnabled")
+            return true
+        }
+        return false
+    }
+
+    func removeBiometricCredentials() {
+        let usernameQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_username",
+            kSecAttrService as String: "com.cfms.app"
+        ]
+        
+        let passwordQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_password",
+            kSecAttrService as String: "com.cfms.app"
+        ]
+        
+        SecItemDelete(usernameQuery as CFDictionary)
+        SecItemDelete(passwordQuery as CFDictionary)
+        UserDefaults.standard.set(false, forKey: "biometricEnabled")
+    }
+
+    func getBiometricCredentials() -> (username: String, password: String)? {
+        let usernameQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_username",
+            kSecAttrService as String: "com.cfms.app",
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var usernameItem: CFTypeRef?
+        let usernameStatus = SecItemCopyMatching(usernameQuery as CFDictionary, &usernameItem)
+
+        let passwordQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "biometric_password",
+            kSecAttrService as String: "com.cfms.app",
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        
+        var passwordItem: CFTypeRef?
+        let passwordStatus = SecItemCopyMatching(passwordQuery as CFDictionary, &passwordItem)
+        
+        guard usernameStatus == errSecSuccess,
+              passwordStatus == errSecSuccess,
+              let usernameData = usernameItem as? Data,
+              let passwordData = passwordItem as? Data,
+              let username = String(data: usernameData, encoding: .utf8),
+              let password = String(data: passwordData, encoding: .utf8) else {
+            return nil
+        }
+        
+        return (username, password)
+    }
+
+    var isBiometricEnabled: Bool {
+        return UserDefaults.standard.bool(forKey: "biometricEnabled") && getBiometricCredentials() != nil
+    }
+
+    func loginWithBiometric(completion: @escaping (Bool, String) -> Void) {
+        let context = LAContext()
+        var error: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            completion(false, "设备不支持\(biometricType)")
+            return
+        }
+
+        let reason = "使用\(biometricType)登录您的账户"
+        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
+            DispatchQueue.main.async {
+                if success {
+                    if let credentials = self.getBiometricCredentials() {
+                        self.login(username: credentials.username, password: credentials.password) { loginSuccess, message in
+                            completion(loginSuccess, message)
+                        }
+                    } else {
+                        completion(false, "未找到保存的登录信息")
+                    }
+                } else {
+                    if let error = authenticationError as? LAError {
+                        switch error.code {
+                        case .userCancel:
+                            completion(false, "用户取消")
+                        case .userFallback:
+                            completion(false, "用户选择使用密码")
+                        case .authenticationFailed:
+                            completion(false, "\(self.biometricType)验证失败")
+                        case .biometryNotAvailable:
+                            completion(false, "\(self.biometricType)不可用")
+                        case .biometryNotEnrolled:
+                            completion(false, "未设置\(self.biometricType)")
+                        case .biometryLockout:
+                            completion(false, "\(self.biometricType)已被锁定，请使用密码登录")
+                        default:
+                            completion(false, "\(self.biometricType)验证错误")
+                        }
+                    } else {
+                        completion(false, "\(self.biometricType)验证失败")
+                    }
+                }
+            }
+        }
     }
 
     func getSubscriptionEndDate() -> String? {
@@ -631,6 +789,9 @@ class AuthService: ObservableObject {
         print("认证失败次数: \(UserDefaults.standard.integer(forKey: "authFailedAttempts"))")
         print("订阅结束时间: \(getSubscriptionEndDate() ?? "无")")
         print("应用状态: \(UIApplication.shared.applicationState.rawValue)")
+        print("生物识别支持: \(canUseBiometric)")
+        print("生物识别类型: \(biometricType)")
+        print("生物识别启用: \(isBiometricEnabled)")
         print("=========================")
     }
     

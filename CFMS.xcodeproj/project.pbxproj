@@ -23,7 +23,6 @@
 		A3ACC82F2EAFB706009F7783 /* APILogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8292EAFB705009F7783 /* APILogView.swift */; };
 		A3ACC8302EAFB706009F7783 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC82A2EAFB705009F7783 /* AboutView.swift */; };
 		A3ACC8312EAFB706009F7783 /* AddHoldingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */; };
-		A3ACC8352EB0B6A5009F7783 /* Info in Resources */ = {isa = PBXBuildFile; fileRef = A3ACC8342EB0B6A5009F7783 /* Info */; };
 		A3ACC8402EB0F558009F7783 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */; };
 		A3ACC8422EB1045D009F7783 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8412EB1045D009F7783 /* Theme.swift */; };
 		A3ACC8442EB10491009F7783 /* GradientButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ACC8432EB10491009F7783 /* GradientButton.swift */; };
@@ -45,6 +44,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A36171E72ED30E49006D28A3 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncManager.swift; sourceTree = "<group>"; };
 		A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncView.swift; sourceTree = "<group>"; };
@@ -61,7 +61,6 @@
 		A3ACC8292EAFB705009F7783 /* APILogView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = APILogView.swift; sourceTree = "<group>"; };
 		A3ACC82A2EAFB705009F7783 /* AboutView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		A3ACC82B2EAFB706009F7783 /* AddHoldingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddHoldingView.swift; sourceTree = "<group>"; };
-		A3ACC8342EB0B6A5009F7783 /* Info */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info; sourceTree = "<group>"; };
 		A3ACC8412EB1045D009F7783 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A3ACC8432EB10491009F7783 /* GradientButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientButton.swift; sourceTree = "<group>"; };
 		A3ACC8452EB104AF009F7783 /* CardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardModifier.swift; sourceTree = "<group>"; };
@@ -98,12 +97,12 @@
 		A3ACC8362EB0F20C009F7783 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A36171E72ED30E49006D28A3 /* Info.plist */,
 				A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */,
 				A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */,
 				A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */,
 				A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */,
 				A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */,
-				A3ACC8342EB0B6A5009F7783 /* Info */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -285,7 +284,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */,
-				A3ACC8352EB0B6A5009F7783 /* Info in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -464,6 +462,7 @@
 				DEVELOPMENT_TEAM = 8QXX7UMS83;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CFMS/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "一基暴富";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -504,6 +503,7 @@
 				DEVELOPMENT_TEAM = 8QXX7UMS83;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CFMS/App/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "一基暴富";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

@@ -1,5 +1,6 @@
 //登录页模块
 import SwiftUI
+
 struct AuthView: View {
     @State private var username = ""
     @State private var password = ""
@@ -21,6 +22,11 @@ struct AuthView: View {
     @State private var backgroundRotation: Double = 0
     @State private var glowOpacity: Double = 0.3
     
+    @State private var showBiometricOption = false
+    @State private var isBiometricLoading = false
+    @State private var showBiometricAlert = false
+    @State private var biometricAlertMessage = ""
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -32,6 +38,11 @@ struct AuthView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             formSection
+                            
+                            // 生物识别登录按钮
+                            if showBiometricOption && !isLoading {
+                                biometricLoginSection
+                            }
                             
                             if authService.requiresCaptcha() {
                                 captchaSection
@@ -62,10 +73,28 @@ struct AuthView: View {
         .onAppear {
             startAnimations()
             loadRememberedUsername()
+            checkBiometricAvailability()
             // 如果需要验证码，进入页面时预加载
             if authService.requiresCaptcha() {
                 authService.fetchCaptcha()
             }
+        }
+        .alert("启用\(authService.biometricType)登录", isPresented: $showBiometricAlert) {
+            Button("启用") {
+                if authService.saveBiometricCredentials(username: username, password: password) {
+                    print("生物识别登录已启用")
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+            Button("暂不", role: .cancel) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+        } message: {
+            Text(biometricAlertMessage)
         }
     }
 
@@ -260,6 +289,43 @@ struct AuthView: View {
                 )
             }
         }
+        .opacity(animationOpacity)
+        .offset(y: animationOffset)
+    }
+    
+    // 生物识别登录部分
+    private var biometricLoginSection: some View {
+        Button(action: {
+            performBiometricLogin()
+        }) {
+            HStack {
+                if isBiometricLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
+                    Text("\(authService.biometricType)验证中...")
+                        .fontWeight(.semibold)
+                } else {
+                    Image(systemName: authService.biometricType == "Face ID" ? "faceid" : "touchid")
+                        .font(.system(size: 20))
+                    Text("使用\(authService.biometricType)登录")
+                        .fontWeight(.semibold)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .disabled(isBiometricLoading)
         .opacity(animationOpacity)
         .offset(y: animationOffset)
     }
@@ -499,6 +565,22 @@ struct AuthView: View {
             username = authService.getLastUsername()
         }
     }
+    
+    // 检查生物识别可用性
+    private func checkBiometricAvailability() {
+        showBiometricOption = authService.isBiometricEnabled && authService.canUseBiometric && isLogin
+    }
+    
+    // 执行生物识别登录
+    private func performBiometricLogin() {
+        isBiometricLoading = true
+        message = ""
+        
+        authService.loginWithBiometric { success, msg in
+            isBiometricLoading = false
+            handleAuthResult(success: success, message: msg)
+        }
+    }
 
     private func startAnimations() {
         animationOffset = 100
@@ -584,13 +666,25 @@ struct AuthView: View {
         if success {
             messageColor = .green
             self.message = message
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                presentationMode.wrappedValue.dismiss()
+            
+            // 登录成功后，询问用户是否要启用生物识别登录
+            if isLogin && !authService.isBiometricEnabled {
+                showBiometricEnableAlert()
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    presentationMode.wrappedValue.dismiss()
+                }
             }
         } else {
             messageColor = .red
             self.message = message
         }
+    }
+    
+    // 显示启用生物识别弹窗
+    private func showBiometricEnableAlert() {
+        biometricAlertMessage = "是否要启用\(authService.biometricType)登录？下次登录时可以直接使用\(authService.biometricType)。"
+        showBiometricAlert = true
     }
     
     private func hideKeyboard() {

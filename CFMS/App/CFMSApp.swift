@@ -1,6 +1,7 @@
 // CFMSApp是SwiftUI应用程序的入口点，负责初始化核心服务、配置全局设置、处理异常和外部文件导入。
 import SwiftUI
 import UniformTypeIdentifiers
+import LocalAuthentication
 
 @main
 struct CFMSApp: App {
@@ -14,6 +15,8 @@ struct CFMSApp: App {
         configureAppInfo()
         printDocumentTypeSupport()
         debugSupportedDocumentTypes()
+        checkRuntimeDocumentTypes()
+        checkFaceIDAvailability() // 新增：检查 Face ID 可用性
     }
     
     var body: some Scene {
@@ -28,6 +31,7 @@ struct CFMSApp: App {
                 }
                 .onAppear {
                     registerDocumentTypes()
+                    requestNotificationPermission()
                 }
         }
     }
@@ -68,6 +72,14 @@ struct CFMSApp: App {
     private func debugSupportedDocumentTypes() {
         print("=== 支持的文档类型调试信息 ===")
 
+        // 检查所有可能的键
+        if let infoDict = Bundle.main.infoDictionary {
+            print("CFMSApp: Info.plist 中的所有键:")
+            for key in infoDict.keys.sorted() {
+                print("  - \(key)")
+            }
+        }
+
         if let documentTypes = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] {
             print("CFBundleDocumentTypes 数量: \(documentTypes.count)")
             for (index, type) in documentTypes.enumerated() {
@@ -80,9 +92,6 @@ struct CFMSApp: App {
                 }
                 if let contentTypes = type["LSItemContentTypes"] as? [String] {
                     print("  - 内容类型: \(contentTypes)")
-                }
-                if let extensions = type["CFBundleTypeExtensions"] as? [String] {
-                    print("  - 文件扩展名: \(extensions)")
                 }
             }
         } else {
@@ -122,13 +131,103 @@ struct CFMSApp: App {
         print("=============================")
     }
 
+    // 运行时文档类型检查
+    private func checkRuntimeDocumentTypes() {
+        print("=== 运行时文档类型检查 ===")
+        
+        // 检查系统已知的类型
+        if let csvType = UTType("public.comma-separated-values-text") {
+            print("系统支持 CSV 类型: \(csvType.identifier)")
+        }
+        
+        if let textType = UTType("public.plain-text") {
+            print("系统支持纯文本类型: \(textType.identifier)")
+        }
+        
+        // 检查文件扩展名关联
+        if let csvTypeByExt = UTType(filenameExtension: "csv") {
+            print("CSV 扩展名关联类型: \(csvTypeByExt.identifier)")
+        }
+        
+        if let txtTypeByExt = UTType(filenameExtension: "txt") {
+            print("TXT 扩展名关联类型: \(txtTypeByExt.identifier)")
+        }
+        
+        // 检查生物识别权限配置
+        if let faceIDUsage = Bundle.main.infoDictionary?["NSFaceIDUsageDescription"] as? String {
+            print("生物识别权限配置: \(faceIDUsage)")
+        } else {
+            print("警告: 未找到 NSFaceIDUsageDescription 配置")
+        }
+        
+        print("=========================")
+    }
+
+    // 新增：检查 Face ID 可用性
+    private func checkFaceIDAvailability() {
+        print("=== Face ID 可用性检查 ===")
+        
+        let context = LAContext()
+        var error: NSError?
+        
+        // 检查设备是否支持生物识别
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            if context.biometryType == .faceID {
+                print("设备支持 Face ID")
+            } else if context.biometryType == .touchID {
+                print("设备支持 Touch ID")
+            } else {
+                print("设备支持其他生物识别方式")
+            }
+        } else {
+            print("设备不支持生物识别或未设置: \(error?.localizedDescription ?? "未知错误")")
+        }
+        
+        // 再次确认 Info.plist 配置
+        if Bundle.main.infoDictionary?["NSFaceIDUsageDescription"] == nil {
+            print("严重错误: Info.plist 中缺少 NSFaceIDUsageDescription")
+        } else {
+            print("Info.plist 中已配置 NSFaceIDUsageDescription")
+        }
+        
+        print("=========================")
+    }
+
     private func registerDocumentTypes() {
         print("CFMSApp: 注册文档类型...")
         
-
+        // 强制注册文档类型
+        if let bundleIdentifier = Bundle.main.bundleIdentifier {
+            let csvType = UTType(filenameExtension: "csv")!
+            let textType = UTType(filenameExtension: "txt")!
+            
+            print("CFMSApp: 注册文档类型 - CSV: \(csvType), Text: \(textType)")
+            print("CFMSApp: Bundle Identifier: \(bundleIdentifier)")
+        }
+        
+        // 检查实际可处理的类型
+        let supportedTypes = [
+            UTType.commaSeparatedText,
+            UTType.plainText,
+            UTType.text
+        ].compactMap { $0 }
+        
+        print("CFMSApp: 实际可处理的UTTypes: \(supportedTypes.map { $0.identifier })")
+        
         print("CFMSApp: 应用支持打开以下文件类型:")
         print("CFMSApp: - CSV文件 (.csv)")
         print("CFMSApp: - 文本文件 (.txt)")
+    }
+
+    // 请求通知权限
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("CFMSApp: 通知权限请求错误: \(error)")
+            } else {
+                print("CFMSApp: 通知权限 granted: \(granted)")
+            }
+        }
     }
 
     private func handleIncomingFile(url: URL) {
@@ -142,6 +241,7 @@ struct CFMSApp: App {
         
         print("CFMSApp: 检查文件扩展名: \(fileExtension)")
         
+        // 放宽检查：如果配置不生效，直接处理支持的文件扩展名
         guard supportedExtensions.contains(fileExtension) else {
             print("CFMSApp: 不支持的文件类型: \(fileExtension)")
             showImportErrorAlert(message: "不支持的文件类型: \(fileExtension)")
@@ -208,7 +308,11 @@ struct CFMSApp: App {
         content.sound = .default
         
         let request = UNNotificationRequest(identifier: "importSuccess", content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("CFMSApp: 发送成功通知失败: \(error)")
+            }
+        }
     }
     
     private func showImportErrorAlert(message: String) {
@@ -220,6 +324,10 @@ struct CFMSApp: App {
         content.sound = .default
         
         let request = UNNotificationRequest(identifier: "importError", content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("CFMSApp: 发送错误通知失败: \(error)")
+            }
+        }
     }
 }
