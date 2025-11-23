@@ -257,9 +257,10 @@ class AuthService: ObservableObject {
             "password": password
         ]
 
-        if let captchaCode = captcha, let captchaId = self.captchaId, !captchaCode.isEmpty {
-            body["captcha_code"] = captchaCode
-            body["captcha_id"] = captchaId
+        if requiresCaptcha(), let currentCaptchaId = self.captchaId {
+            body["captcha_code"] = captcha ?? ""
+            body["captcha_id"] = currentCaptchaId
+            print("🔧 发送验证码信息: 验证码ID=\(currentCaptchaId), 验证码=\(captcha ?? "")")
         }
         
         do {
@@ -524,7 +525,7 @@ class AuthService: ObservableObject {
             object: nil
         )
         
-        NotificationCenter.default.addObserver(
+        NotificationCenter.default.addobserver(
             self,
             selector: #selector(appDidEnterBackground),
             name: UIApplication.didEnterBackgroundNotification,
