@@ -525,7 +525,7 @@ class AuthService: ObservableObject {
             object: nil
         )
         
-        NotificationCenter.default.addobserver(
+        NotificationCenter.default.addObserver(
             self,
             selector: #selector(appDidEnterBackground),
             name: UIApplication.didEnterBackgroundNotification,
