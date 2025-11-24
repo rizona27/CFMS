@@ -8,8 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A36171EA2ED3E7D8006D28A3 /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = A36171E92ED3E7D8006D28A3 /* ExportOptions.plist */; };
-        A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = A36171F62ED4A02B006D28A3 /* CFMS.entitlements */; }; // <-- 修正：确保Entitlements文件在Resources Build Phase中被引用
-		A36171F52ED49E57006D28A3 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A36171E72ED30E49006D28A3 /* Info.plist */; };
+		A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = A36171F62ED4A02B006D28A3 /* CFMS.entitlements */; };
 		A361C9312EB6369A00BA6AFC /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */; };
 		A386F5422ED1DEE700F16C12 /* CloudSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */; };
 		A386F5442ED1DF9500F16C12 /* CloudSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */; };
@@ -49,7 +48,7 @@
 /* Begin PBXFileReference section */
 		A36171E72ED30E49006D28A3 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A36171E92ED3E7D8006D28A3 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = ExportOptions.plist; sourceTree = "<group>"; };
-		A36171F62ED4A02B006D28A3 /* CFMS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = CFMS.entitlements; sourceTree = "<group>"; }; // <-- 修正：路径改为相对于分组的 CFMS.entitlements
+		A36171F62ED4A02B006D28A3 /* CFMS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = CFMS.entitlements; sourceTree = "<group>"; };
 		A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncManager.swift; sourceTree = "<group>"; };
 		A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncView.swift; sourceTree = "<group>"; };
@@ -289,9 +288,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */,
-                A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */, // <-- 确保 Entitlements 文件包含在这里
+				A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */,
 				A36171EA2ED3E7D8006D28A3 /* ExportOptions.plist in Resources */,
-				A36171F52ED49E57006D28A3 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -462,7 +460,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements; // <-- 修正：确保路径是正确的 CFMS/App/CFMS.entitlements
+				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -503,7 +501,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements; // <-- 修正：确保路径是正确的 CFMS/App/CFMS.entitlements
+				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
