@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A36171EA2ED3E7D8006D28A3 /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = A36171E92ED3E7D8006D28A3 /* ExportOptions.plist */; };
+        A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = A36171F62ED4A02B006D28A3 /* CFMS.entitlements */; }; // <-- 修正：确保Entitlements文件在Resources Build Phase中被引用
+		A36171F52ED49E57006D28A3 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A36171E72ED30E49006D28A3 /* Info.plist */; };
 		A361C9312EB6369A00BA6AFC /* CustomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */; };
 		A386F5422ED1DEE700F16C12 /* CloudSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */; };
 		A386F5442ED1DF9500F16C12 /* CloudSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */; };
@@ -47,6 +49,7 @@
 /* Begin PBXFileReference section */
 		A36171E72ED30E49006D28A3 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A36171E92ED3E7D8006D28A3 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = ExportOptions.plist; sourceTree = "<group>"; };
+		A36171F62ED4A02B006D28A3 /* CFMS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = CFMS.entitlements; sourceTree = "<group>"; }; // <-- 修正：路径改为相对于分组的 CFMS.entitlements
 		A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTabBar.swift; sourceTree = "<group>"; };
 		A386F5412ED1DEE700F16C12 /* CloudSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncManager.swift; sourceTree = "<group>"; };
 		A386F5432ED1DF9500F16C12 /* CloudSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncView.swift; sourceTree = "<group>"; };
@@ -72,7 +75,6 @@
 		A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFMSApp.swift; sourceTree = "<group>"; };
 		A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CFMS.entitlements; sourceTree = "<group>"; };
 		A3DDB5FB2EAFAA98004F1C8B /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A3DDB5FF2EAFAAD2004F1C8B /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
 		A3DDB6012EAFAAE8004F1C8B /* DataValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataValidation.swift; sourceTree = "<group>"; };
@@ -99,10 +101,10 @@
 		A3ACC8362EB0F20C009F7783 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A36171F62ED4A02B006D28A3 /* CFMS.entitlements */,
 				A36171E72ED30E49006D28A3 /* Info.plist */,
 				A3DDB5D22EAFAA17004F1C8B /* Assets.xcassets */,
 				A3DDB5CC2EAFAA11004F1C8B /* CFMSApp.swift */,
-				A3DDB5D42EAFAA17004F1C8B /* CFMS.entitlements */,
 				A3DDB5CE2EAFAA11004F1C8B /* ContentView.swift */,
 				A361C9302EB6369A00BA6AFC /* CustomTabBar.swift */,
 			);
@@ -190,7 +192,7 @@
 			path = Utilities;
 			sourceTree = "<group>";
 		};
-		A3ACC83F2EB0F3B0009F7783 /* Supporting */ = {
+		A3ACC83F2EB0F3B009F7783 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
 				A3ACC82A2EAFB705009F7783 /* AboutView.swift */,
@@ -221,7 +223,7 @@
 				A3ACC8362EB0F20C009F7783 /* App */,
 				A3ACC8382EB0F23E009F7783 /* Models */,
 				A3ACC8392EB0F276009F7783 /* Services */,
-				A3ACC83F2EB0F3B0009F7783 /* Supporting */,
+				A3ACC83F2EB0F3B009F7783 /* Supporting */,
 				A3ACC83E2EB0F379009F7783 /* Utilities */,
 				A3ACC83A2EB0F2BC009F7783 /* Views */,
 			);
@@ -287,7 +289,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3DDB5D32EAFAA17004F1C8B /* Assets.xcassets in Resources */,
+                A36171F02ED4A02C006D28A3 /* CFMS.entitlements in Resources */, // <-- 确保 Entitlements 文件包含在这里
 				A36171EA2ED3E7D8006D28A3 /* ExportOptions.plist in Resources */,
+				A36171F52ED49E57006D28A3 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,7 +462,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements; // <-- 修正：确保路径是正确的 CFMS/App/CFMS.entitlements
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -499,7 +503,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements;
+				CODE_SIGN_ENTITLEMENTS = CFMS/App/CFMS.entitlements; // <-- 修正：确保路径是正确的 CFMS/App/CFMS.entitlements
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
