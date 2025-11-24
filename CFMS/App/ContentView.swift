@@ -106,21 +106,21 @@ struct ContentView: View {
     }
 
     private func handleFileImport(notification: Notification) {
-        print("收到文件导入通知")
+        print("ContentView: 收到文件导入通知")
         
         guard let userInfo = notification.userInfo,
               let fileURL = userInfo["fileURL"] as? URL else {
-            print("文件导入通知中缺少 fileURL")
+            print("ContentView: 文件导入通知中缺少 fileURL")
             dataManager.toastMessage = "文件信息不完整"
             dataManager.showToast = true
             return
         }
         
-        print("准备处理导入的文件: \(fileURL)")
-        print("文件路径: \(fileURL.path)")
+        print("ContentView: 准备处理导入的文件: \(fileURL)")
+        print("ContentView: 文件路径: \(fileURL.path)")
 
         guard authService.isLoggedIn else {
-            print("用户未登录，无法导入文件")
+            print("ContentView: 用户未登录，无法导入文件")
             dataManager.toastMessage = "请先登录账户"
             dataManager.showToast = true
             return
@@ -133,16 +133,16 @@ struct ContentView: View {
     }
 
     private func handleCSVImportCompleted(notification: Notification) {
-        print("CSV导入处理完成")
+        print("ContentView: CSV导入处理完成")
         
         guard let userInfo = notification.userInfo,
               let importedCount = userInfo["importedCount"] as? Int,
               let errorCount = userInfo["errorCount"] as? Int else {
-            print("CSV导入完成通知中缺少数据")
+            print("ContentView: CSV导入完成通知中缺少数据")
             return
         }
         
-        print("导入结果 - 成功: \(importedCount)条, 失败: \(errorCount)条")
+        print("ContentView: 导入结果 - 成功: \(importedCount)条, 失败: \(errorCount)条")
 
         if importedCount > 0 {
             showImportSuccessAlert(importedCount: importedCount, errorCount: errorCount)
@@ -151,7 +151,7 @@ struct ContentView: View {
 
     private func showImportSuccessAlert(importedCount: Int, errorCount: Int) {
         let message = "成功导入 \(importedCount) 条记录"
-        print(message)
+        print("ContentView: \(message)")
 
         let content = UNMutableNotificationContent()
         content.title = "数据导入完成"
@@ -401,7 +401,7 @@ struct ContentView: View {
     }
 
     private func refreshAppState() {
-        print("App became active, refreshing state...")
+        print("ContentView: App became active, refreshing state...")
         if !authService.isLoggedIn && animationFinished {
             shouldShowAuthView = true
         }

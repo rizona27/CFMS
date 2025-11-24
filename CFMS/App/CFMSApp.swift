@@ -14,9 +14,9 @@ struct CFMSApp: App {
         setupExceptionHandling()
         configureAppInfo()
         printDocumentTypeSupport()
-        debugSupportedDocumentTypes()
         checkRuntimeDocumentTypes()
-        checkFaceIDAvailability() // 新增：检查 Face ID 可用性
+        checkFaceIDAvailability()
+        checkFileImportPermissions()
     }
     
     var body: some Scene {
@@ -51,6 +51,46 @@ struct CFMSApp: App {
         ])
     }
 
+    private func checkFileImportPermissions() {
+        print("=== 文件导入权限检查 ===")
+        
+        // 检查文档类型支持
+        let supportedTypes = [
+            UTType.commaSeparatedText,
+            UTType.plainText,
+            UTType.text
+        ]
+        
+        for type in supportedTypes {
+            print("支持的类型: \(type.identifier)")
+        }
+        
+        // 检查文件共享权限
+        let fileSharingEnabled = Bundle.main.infoDictionary?["UIFileSharingEnabled"] as? Bool ?? false
+        print("文件共享启用: \(fileSharingEnabled)")
+        
+        // 检查文档类型声明
+        if let documentTypes = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] {
+            print("已配置的文档类型数量: \(documentTypes.count)")
+            for (index, type) in documentTypes.enumerated() {
+                print("文档类型 \(index + 1):")
+                if let typeName = type["CFBundleTypeName"] as? String {
+                    print("  - 类型名称: \(typeName)")
+                }
+                if let role = type["CFBundleTypeRole"] as? String {
+                    print("  - 角色: \(role)")
+                }
+                if let contentTypes = type["LSItemContentTypes"] as? [String] {
+                    print("  - 内容类型: \(contentTypes)")
+                }
+            }
+        } else {
+            print("警告: 未配置CFBundleDocumentTypes")
+        }
+        
+        print("=========================")
+    }
+
     private func printDocumentTypeSupport() {
         print("CFMSApp: 检查文档类型支持...")
 
@@ -67,68 +107,6 @@ struct CFMSApp: App {
         if let plainTextType = UTType("public.plain-text") {
             print("CFMSApp: 纯文本类型标识符: \(plainTextType.identifier)")
         }
-    }
-
-    private func debugSupportedDocumentTypes() {
-        print("=== 支持的文档类型调试信息 ===")
-
-        // 检查所有可能的键
-        if let infoDict = Bundle.main.infoDictionary {
-            print("CFMSApp: Info.plist 中的所有键:")
-            for key in infoDict.keys.sorted() {
-                print("  - \(key)")
-            }
-        }
-
-        if let documentTypes = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] {
-            print("CFBundleDocumentTypes 数量: \(documentTypes.count)")
-            for (index, type) in documentTypes.enumerated() {
-                print("文档类型 \(index + 1):")
-                if let typeName = type["CFBundleTypeName"] as? String {
-                    print("  - 类型名称: \(typeName)")
-                }
-                if let role = type["CFBundleTypeRole"] as? String {
-                    print("  - 角色: \(role)")
-                }
-                if let contentTypes = type["LSItemContentTypes"] as? [String] {
-                    print("  - 内容类型: \(contentTypes)")
-                }
-            }
-        } else {
-            print("CFMSApp: 未找到 CFBundleDocumentTypes 配置")
-        }
-
-        if let importedTypes = Bundle.main.infoDictionary?["UTImportedTypeDeclarations"] as? [[String: Any]] {
-            print("UTImportedTypeDeclarations 数量: \(importedTypes.count)")
-            for (index, type) in importedTypes.enumerated() {
-                print("导入类型 \(index + 1):")
-                if let identifier = type["UTTypeIdentifier"] as? String {
-                    print("  - 类型标识符: \(identifier)")
-                }
-                if let description = type["UTTypeDescription"] as? String {
-                    print("  - 描述: \(description)")
-                }
-            }
-        } else {
-            print("CFMSApp: 未找到 UTImportedTypeDeclarations 配置")
-        }
-
-        if let exportedTypes = Bundle.main.infoDictionary?["UTExportedTypeDeclarations"] as? [[String: Any]] {
-            print("UTExportedTypeDeclarations 数量: \(exportedTypes.count)")
-            for (index, type) in exportedTypes.enumerated() {
-                print("导出类型 \(index + 1):")
-                if let identifier = type["UTTypeIdentifier"] as? String {
-                    print("  - 类型标识符: \(identifier)")
-                }
-                if let description = type["UTTypeDescription"] as? String {
-                    print("  - 描述: \(description)")
-                }
-            }
-        } else {
-            print("CFMSApp: 未找到 UTExportedTypeDeclarations 配置")
-        }
-        
-        print("=============================")
     }
 
     // 运行时文档类型检查
@@ -236,6 +214,15 @@ struct CFMSApp: App {
         print("CFMSApp: 文件扩展名: \(url.pathExtension)")
         print("CFMSApp: 文件名称: \(url.lastPathComponent)")
 
+        // 新增：应用沙盒权限检查
+        print("CFMSApp: 应用沙盒权限检查...")
+        let isSandboxed = Bundle.main.appStoreReceiptURL?.path.contains("CoreSimulator") == false
+        print("CFMSApp: 应用沙盒状态: \(isSandboxed ? "沙盒环境" : "开发环境")")
+        
+        // 检查文件访问权限
+        let canAccess = FileManager.default.isReadableFile(atPath: url.path)
+        print("CFMSApp: 文件可访问: \(canAccess)")
+
         let supportedExtensions = ["csv", "txt"]
         let fileExtension = url.pathExtension.lowercased()
         
@@ -259,7 +246,7 @@ struct CFMSApp: App {
             print("CFMSApp: 已释放安全访问权限")
         }
         
-        // 检查原始文件的可访问性 - 移除不必要的 do-catch
+        // 检查原始文件的可访问性
         let fileManager = FileManager.default
         
         // 检查文件是否存在
