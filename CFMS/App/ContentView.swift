@@ -126,7 +126,6 @@ struct ContentView: View {
             return
         }
 
-        // 使用 DataManager 处理文件导入
         Task {
             await dataManager.processImportedFile(url: fileURL)
         }
@@ -238,29 +237,6 @@ struct ContentView: View {
                 }
                 .opacity(copyrightOpacity)
                 .padding(.bottom, 50)
-                .overlay(
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: highlightGradientColors),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 80)
-                        .offset(x: highlightPosition * 200)
-                        .opacity(highlightOpacity)
-                        .blendMode(.plusLighter)
-                        .mask(
-                            VStack(spacing: 4) {
-                                Text("专业 · 专注 · 价值")
-                                    .font(.system(size: 13, weight: .light))
-                                
-                                Text("© 2025 Rizona Developed")
-                                    .font(.system(size: 11, weight: .light))
-                            }
-                        )
-                )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.horizontal, 40)
@@ -319,26 +295,6 @@ struct ContentView: View {
         colorScheme == .dark ? .white.opacity(0.6) : Color(hex: "795548").opacity(0.6)
     }
 
-    private var highlightGradientColors: [Color] {
-        if colorScheme == .dark {
-            return [
-                Color.clear,
-                Color.white.opacity(0.3),
-                Color.white.opacity(0.5),
-                Color.white.opacity(0.3),
-                Color.clear
-            ]
-        } else {
-            return [
-                Color.clear,
-                Color.white.opacity(0.4),
-                Color.white.opacity(0.6),
-                Color.white.opacity(0.4),
-                Color.clear
-            ]
-        }
-    }
-
     private func startNaturalAnimation() {
         splashOpacity = 1.0; mainTextOpacity = 0.0; subtitleOpacity = 0.0; copyrightOpacity = 0.0
         mainTextOffset = 10.0; subtitleOffset = 8.0; highlightPosition = -1.0; highlightOpacity = 0.0
@@ -374,14 +330,6 @@ struct ContentView: View {
                 copyrightOpacity = 1.0
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.easeIn(duration: 0.1)) { highlightOpacity = 1.0 }
-                withAnimation(.easeInOut(duration: 0.8)) { highlightPosition = 1.0 }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                    withAnimation(.easeOut(duration: 0.3)) { highlightOpacity = 0.0 }
-                }
-            }
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {

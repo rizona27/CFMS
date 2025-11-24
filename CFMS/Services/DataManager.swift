@@ -46,7 +46,6 @@ enum CSVImportError: Error {
     }
 }
 
-// MARK: - CSV Export Document
 struct CSVExportDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
     var message: String
@@ -79,8 +78,7 @@ class DataManager: ObservableObject {
     @Published var isImportingCSV: Bool = false
     @Published var importProgress: (current: Int, total: Int) = (0, 0)
     @Published var currentImportingFileName: String = ""
-    
-    // CSV 导入导出相关
+
     @Published var csvExportDocument: CSVExportDocument?
     @Published var isExportingCSV: Bool = false
     @Published var showToast: Bool = false
@@ -259,9 +257,6 @@ class DataManager: ObservableObject {
         currentRefreshingClientID = ""
     }
 
-    // MARK: - CSV 导入导出方法
-    
-    /// 导出持仓数据到CSV
     func exportHoldingsToCSV() -> CSVExportDocument? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -278,21 +273,18 @@ class DataManager: ObservableObject {
         
         return CSVExportDocument(message: csvString)
     }
-    
-    /// 生成导出文件名
+
     func generateExportFilename() -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM-dd"
         let dateString = dateFormatter.string(from: Date())
         return "fundlist_\(dateString).csv"
     }
-    
-    /// 处理文件导入 - 修复版
+
     func processImportedFile(url: URL) async {
         print("DataManager: 开始处理导入文件: \(url)")
         print("DataManager: 文件路径: \(url.path)")
-        
-        // 首先检查文件是否存在和可读
+
         let fileManager = FileManager.default
         
         guard fileManager.fileExists(atPath: url.path) else {
@@ -306,8 +298,7 @@ class DataManager: ObservableObject {
             await showToastMessage("文件权限不足，无法读取")
             return
         }
-        
-        // 检查文件大小
+
         do {
             let attributes = try fileManager.attributesOfItem(atPath: url.path)
             let fileSize = attributes[.size] as? UInt64 ?? 0
@@ -325,7 +316,6 @@ class DataManager: ObservableObject {
         }
         
         do {
-            // 直接读取文件内容，不需要安全作用域访问（因为文件已经在应用沙盒内）
             let data = try Data(contentsOf: url)
             guard let csvString = String(data: data, encoding: .utf8) else {
                 print("DataManager: 文件编码错误")
@@ -341,8 +331,7 @@ class DataManager: ObservableObject {
             await showToastMessage("文件读取失败: \(error.localizedDescription)")
         }
     }
-    
-    /// 处理CSV内容
+
     private func processCSVContent(csvString: String, fileName: String) async {
         print("DataManager: 开始处理CSV内容，行数: \(csvString.components(separatedBy: "\n").count)")
         
@@ -412,8 +401,7 @@ class DataManager: ObservableObject {
                 errorCount += 1
                 continue
             }
-            
-            // 获取列索引
+
             guard let fundCodeIndex = columnIndices["基金代码"],
                   let amountIndex = columnIndices["购买金额"],
                   let sharesIndex = columnIndices["购买份额"],
@@ -422,8 +410,7 @@ class DataManager: ObservableObject {
                 errorCount += 1
                 continue
             }
-            
-            // 基金代码
+
             guard let fundCode = values[safe: fundCodeIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !fundCode.isEmpty else {
                 print("DataManager: 跳过第 \(i) 行 - 缺少基金代码")
@@ -431,8 +418,7 @@ class DataManager: ObservableObject {
                 continue
             }
             let cleanedFundCode = String(format: "%06d", Int(fundCode) ?? 0)
-            
-            // 购买金额
+
             guard let amountStr = values[safe: amountIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
                   let amount = Double(amountStr) else {
                 print("DataManager: 跳过第 \(i) 行 - 购买金额格式错误: \(values[safe: amountIndex] ?? "空")")
@@ -441,7 +427,6 @@ class DataManager: ObservableObject {
             }
             let cleanedAmount = (amount * 100).rounded() / 100
 
-            // 购买份额
             guard let sharesStr = values[safe: sharesIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
                   let shares = Double(sharesStr) else {
                 print("DataManager: 跳过第 \(i) 行 - 购买份额格式错误: \(values[safe: sharesIndex] ?? "空")")
@@ -450,7 +435,6 @@ class DataManager: ObservableObject {
             }
             let cleanedShares = (shares * 100).rounded() / 100
 
-            // 购买日期
             var purchaseDate = Date()
             if let dateIndex = columnIndices["购买日期"],
                let dateStr = values[safe: dateIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -462,7 +446,6 @@ class DataManager: ObservableObject {
                 }
             }
 
-            // 客户号
             guard let clientID = values[safe: clientIDIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !clientID.isEmpty else {
                 print("DataManager: 跳过第 \(i) 行 - 缺少客户号")
@@ -479,7 +462,6 @@ class DataManager: ObservableObject {
                 cleanedClientID = leadingZeros + clientID
             }
 
-            // 客户姓名
             var clientName: String
             if let clientNameIndex = columnIndices["客户姓名"],
                let nameFromCSV = values[safe: clientNameIndex]?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -489,7 +471,6 @@ class DataManager: ObservableObject {
                 clientName = cleanedClientID
             }
 
-            // 备注
             let remarks = columnIndices["备注"].flatMap { values[safe: $0]?.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
             
             let newHolding = FundHolding(
@@ -518,8 +499,7 @@ class DataManager: ObservableObject {
                 duplicateCount += 1
                 print("DataManager: 跳过重复持仓: \(clientName)-\(cleanedFundCode)")
             }
-            
-            // 更新进度
+
             await MainActor.run {
                 importProgress = (i, lines.count)
             }
@@ -536,8 +516,7 @@ class DataManager: ObservableObject {
         let message = "导入完成：成功 \(importedCount) 条，跳过 \(duplicateCount) 条重复记录，失败 \(errorCount) 条"
         print("DataManager: \(message)")
         await showToastMessage(message)
-        
-        // 发送导入完成通知
+
         NotificationCenter.default.post(
             name: NSNotification.Name("CSVImportCompleted"),
             object: nil,
@@ -550,15 +529,13 @@ class DataManager: ObservableObject {
         
         NotificationCenter.default.post(name: NSNotification.Name("HoldingsDataUpdated"), object: nil)
     }
-    
-    /// 显示Toast消息
+
     @MainActor
     private func showToastMessage(_ message: String) {
         toastMessage = message
         showToast = true
     }
-    
-    // MARK: - 旧版导入方法（保持兼容性）
+
     func importFromCSV(fileURL: URL) {
         print("DataManager: 开始导入CSV文件: \(fileURL)")
 
@@ -775,7 +752,6 @@ class DataManager: ObservableObject {
     }
 }
 
-// MARK: - 扩展 UTType 以支持 CSV 文件类型
 extension UTType {
     static var commaSeparatedText: UTType {
         UTType(importedAs: "public.comma-separated-values-text")

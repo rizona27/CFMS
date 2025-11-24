@@ -38,8 +38,7 @@ struct AuthView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             formSection
-                            
-                            // 生物识别登录按钮
+
                             if showBiometricOption && !isLoading {
                                 biometricLoginSection
                             }
@@ -74,7 +73,6 @@ struct AuthView: View {
             startAnimations()
             loadRememberedUsername()
             checkBiometricAvailability()
-            // 如果需要验证码，进入页面时预加载
             if authService.requiresCaptcha() {
                 authService.fetchCaptcha()
             }
@@ -292,8 +290,7 @@ struct AuthView: View {
         .opacity(animationOpacity)
         .offset(y: animationOffset)
     }
-    
-    // 生物识别登录部分
+
     private var biometricLoginSection: some View {
         Button(action: {
             performBiometricLogin()
@@ -565,17 +562,13 @@ struct AuthView: View {
             username = authService.getLastUsername()
         }
     }
-    
-    // 检查生物识别可用性
+
     private func checkBiometricAvailability() {
         showBiometricOption = authService.isBiometricEnabled && authService.canUseBiometric && isLogin
     }
-    
-    // 执行生物识别登录 - 修复用户名显示逻辑
+
     private func performBiometricLogin() {
-        // 首先从 Keychain 获取保存的用户名
         if let credentials = authService.getBiometricCredentials() {
-            // 确保用户名输入框显示正确的用户名
             username = credentials.username
         }
         
@@ -672,8 +665,7 @@ struct AuthView: View {
         if success {
             messageColor = .green
             self.message = message
-            
-            // 登录成功后，询问用户是否要启用生物识别登录
+
             if isLogin && !authService.isBiometricEnabled {
                 showBiometricEnableAlert()
             } else {
@@ -687,7 +679,6 @@ struct AuthView: View {
         }
     }
     
-    // 显示启用生物识别弹窗
     private func showBiometricEnableAlert() {
         biometricAlertMessage = "是否要启用\(authService.biometricType)登录？下次登录时可以直接使用\(authService.biometricType)。"
         showBiometricAlert = true

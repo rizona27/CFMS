@@ -36,8 +36,7 @@ class AuthService: ObservableObject {
     private let maxRegistrationsPerDevice = 2
     
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
-    
-    // 新增：标记是否正在进行 FaceID 登录
+
     private var isFaceIDLoginInProgress = false
     
     init() {
@@ -168,18 +167,15 @@ class AuthService: ObservableObject {
         }
 
         let reason = "使用\(biometricType)登录您的账户"
-        
-        // 标记 FaceID 登录正在进行
+
         isFaceIDLoginInProgress = true
         
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
             DispatchQueue.main.async {
-                // 重置 FaceID 登录状态
                 self.isFaceIDLoginInProgress = false
                 
                 if success {
                     if let credentials = self.getBiometricCredentials() {
-                        // 重置后台时间检查，避免 FaceID 登录成功后又被登出
                         self.backgroundEnterTime = nil
                         
                         self.login(username: credentials.username, password: credentials.password) { loginSuccess, message in
@@ -476,7 +472,6 @@ class AuthService: ObservableObject {
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
 
-                            // 重置后台时间检查
                             self.backgroundEnterTime = nil
                             
                             self.resetAuthFailure()
@@ -600,8 +595,7 @@ class AuthService: ObservableObject {
                             self.authToken = token
                             self.currentUser = User(from: userData)
                             self.resetInactivityTimer()
-                            
-                            // 重置后台时间检查
+
                             self.backgroundEnterTime = nil
                             
                             self.objectWillChange.send()
@@ -645,6 +639,24 @@ class AuthService: ObservableObject {
             name: NSNotification.Name("UserDidLogout"),
             object: nil
         )
+    }
+
+    func forceLogout() {
+        print("🔧 执行强制登出")
+        
+        UserDefaults.standard.removeObject(forKey: "authToken")
+        UserDefaults.standard.removeObject(forKey: "userData")
+        
+        self.isLoggedIn = false
+        self.authToken = nil
+        self.currentUser = nil
+        
+        inactivityTimer?.invalidate()
+        inactivityTimer = nil
+        
+        self.objectWillChange.send()
+        
+        print("🔧 AuthService 强制登出完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil")")
     }
 
     private func saveLoginStatus(token: String, userData: [String: Any]) {
@@ -724,7 +736,6 @@ class AuthService: ObservableObject {
         if isLoggedIn {
             print("🔧 应用重新激活，检查后台时间")
 
-            // 如果是 FaceID 登录正在进行，跳过后台时间检查
             if isFaceIDLoginInProgress {
                 print("🔧 FaceID 登录进行中，跳过后台时间检查")
                 return

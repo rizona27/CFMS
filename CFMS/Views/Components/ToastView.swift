@@ -45,7 +45,6 @@ struct ToastView: View {
     }
 }
 
-// 为方便使用，提供一个便捷的视图修饰符
 extension View {
     func toast(message: String, isShowing: Binding<Bool>) -> some View {
         self.overlay(

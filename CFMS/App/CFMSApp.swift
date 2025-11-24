@@ -32,6 +32,7 @@ struct CFMSApp: App {
                 .onAppear {
                     registerDocumentTypes()
                     requestNotificationPermission()
+                    setupAppLifecycleObservers()
                 }
         }
     }
@@ -205,6 +206,19 @@ struct CFMSApp: App {
             } else {
                 print("CFMSApp: 通知权限 granted: \(granted)")
             }
+        }
+    }
+
+    // 设置应用生命周期观察者
+    private func setupAppLifecycleObservers() {
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
+            print("CFMSApp: 应用进入后台")
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { _ in
+            print("CFMSApp: 应用即将终止")
+            // 应用被杀死时强制登出
+            authService.forceLogout()
         }
     }
 

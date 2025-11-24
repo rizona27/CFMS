@@ -28,7 +28,6 @@ struct CloudSyncView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    // 云端同步卡片
                     VStack(spacing: 16) {
                         CustomCardView(
                             title: "上传到云端",
@@ -79,7 +78,8 @@ struct CloudSyncView: View {
                         .frame(maxWidth: .infinity)
                     }
 
-                    // 文件导入导出卡片
+                    // 文件导入导出卡片 - 暂时隐藏
+                    /*
                     VStack(spacing: 16) {
                         CustomCardView(
                             title: "导入CSV文件",
@@ -125,6 +125,7 @@ struct CloudSyncView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
+                    */
                     
                     Spacer()
                 }
@@ -231,8 +232,7 @@ struct CloudSyncView: View {
         }
         .onAppear {
             cloudSyncManager.checkDownloadPermissions(authService: authService)
-            
-            // 注册文件导入监听
+
             NotificationCenter.default.addObserver(forName: NSNotification.Name("FileImportedFromShare"), object: nil, queue: .main) { notification in
                 if let fileURL = notification.userInfo?["fileURL"] as? URL {
                     pendingImportURL = fileURL
@@ -245,8 +245,7 @@ struct CloudSyncView: View {
         }
         .toast(message: dataManager.toastMessage, isShowing: $dataManager.showToast)
     }
-    
-    // 处理文件导入
+
     private func handleFileImport(result: Result<[URL], Error>) async {
         do {
             let urls = try result.get()
@@ -256,8 +255,7 @@ struct CloudSyncView: View {
             await fundService.addLog("导入失败: \(error.localizedDescription)", type: .error)
         }
     }
-    
-    // 处理文件导出结果
+
     private func handleFileExport(result: Result<URL, Error>) async {
         switch result {
         case .success(let url):
@@ -266,8 +264,7 @@ struct CloudSyncView: View {
             await fundService.addLog("导出失败: \(error.localizedDescription)", type: .error)
         }
     }
-    
-    // 导出持仓数据到CSV
+
     private func exportHoldingsToCSV() {
         if let document = dataManager.exportHoldingsToCSV() {
             dataManager.csvExportDocument = document

@@ -4,7 +4,7 @@ import Combine
 
 enum FundAPI: String, CaseIterable, Identifiable {
     case eastmoney = "天天基金"
-    case fund10jqka = "同花顺"
+    case ths = "同花顺"
     case tencent = "腾讯财经"
     case fund123 = "蚂蚁基金"
 
@@ -48,10 +48,21 @@ class FundService: ObservableObject {
                let api = FundAPI(rawValue: rawValue) {
                 return api
             }
+            
             return .eastmoney
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: "selectedFundAPI")
+        }
+    }
+
+    func setUserType(_ userType: AuthService.UserType?) {
+        if UserDefaults.standard.string(forKey: "selectedFundAPI") == nil {
+            if userType != .free {
+                selectedFundAPI = .ths
+            } else {
+                selectedFundAPI = .eastmoney
+            }
         }
     }
 
@@ -132,8 +143,8 @@ class FundService: ObservableObject {
                 fetchedHolding = await fetchFromTencent(code: code)
             case .fund123:
                 fetchedHolding = await fetchFromFund123(code: code)
-            case .fund10jqka:
-                fetchedHolding = await fetchFromFund10jqka(code: code)
+            case .ths:
+                fetchedHolding = await fetchFromTHS(code: code)
             }
             
             var finalHolding = FundHolding(
@@ -175,8 +186,8 @@ class FundService: ObservableObject {
                         backupHolding = await fetchFromTencent(code: code)
                     case .fund123:
                         backupHolding = await fetchFromFund123(code: code)
-                    case .fund10jqka:
-                        backupHolding = await fetchFromFund10jqka(code: code)
+                    case .ths:
+                        backupHolding = await fetchFromTHS(code: code)
                     }
                     
                     if let validBackup = backupHolding, validBackup.isValid {
@@ -544,7 +555,7 @@ class FundService: ObservableObject {
         }
     }
 
-    private func fetchFromFund10jqka(code: String) async -> FundHolding {
+    private func fetchFromTHS(code: String) async -> FundHolding {
         await addLog("基金代码 \(code): 尝试从同花顺API获取数据", type: .network)
         
         let urlString = "https://fund.10jqka.com.cn/data/client/myfund/\(code)"
