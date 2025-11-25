@@ -38,12 +38,19 @@ class AuthService: ObservableObject {
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     private var isFaceIDLoginInProgress = false
-    
-    init() {
+
+    private weak var fundService: FundService?
+
+    init(fundService: FundService? = nil) {
+        self.fundService = fundService
         print("🔧 AuthService 初始化")
         checkLoginStatus()
         setupInactivityMonitoring()
         setupAppStateMonitoring()
+        
+        Task {
+            await fundService?.addLog("认证服务初始化完成", type: .info)
+        }
     }
 
     var canUseBiometric: Bool {
@@ -95,7 +102,13 @@ class AuthService: ObservableObject {
         
         if usernameStatus == errSecSuccess && passwordStatus == errSecSuccess {
             UserDefaults.standard.set(true, forKey: "biometricEnabled")
+            Task {
+                await fundService?.addLog("生物识别凭证保存成功", type: .info)
+            }
             return true
+        }
+        Task {
+            await fundService?.addLog("生物识别凭证保存失败", type: .error)
         }
         return false
     }
@@ -116,6 +129,10 @@ class AuthService: ObservableObject {
         SecItemDelete(usernameQuery as CFDictionary)
         SecItemDelete(passwordQuery as CFDictionary)
         UserDefaults.standard.set(false, forKey: "biometricEnabled")
+        
+        Task {
+            await fundService?.addLog("生物识别凭证已移除", type: .info)
+        }
     }
 
     func getBiometricCredentials() -> (username: String, password: String)? {
@@ -163,6 +180,9 @@ class AuthService: ObservableObject {
 
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             completion(false, "设备不支持\(biometricType)")
+            Task {
+                await fundService?.addLog("生物识别登录失败: 设备不支持\(biometricType)", type: .error)
+            }
             return
         }
 
@@ -178,32 +198,63 @@ class AuthService: ObservableObject {
                     if let credentials = self.getBiometricCredentials() {
                         self.backgroundEnterTime = nil
                         
+                        Task {
+                            await self.fundService?.addLog("生物识别验证成功，开始登录", type: .info)
+                        }
+                        
                         self.login(username: credentials.username, password: credentials.password) { loginSuccess, message in
                             completion(loginSuccess, message)
                         }
                     } else {
                         completion(false, "未找到保存的登录信息")
+                        Task {
+                            await self.fundService?.addLog("生物识别登录失败: 未找到保存的登录信息", type: .error)
+                        }
                     }
                 } else {
                     if let error = authenticationError as? LAError {
                         switch error.code {
                         case .userCancel:
                             completion(false, "用户取消")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录: 用户取消", type: .info)
+                            }
                         case .userFallback:
                             completion(false, "用户选择使用密码")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录: 用户选择使用密码", type: .info)
+                            }
                         case .authenticationFailed:
                             completion(false, "\(self.biometricType)验证失败")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录失败: \(self.biometricType)验证失败", type: .error)
+                            }
                         case .biometryNotAvailable:
                             completion(false, "\(self.biometricType)不可用")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录失败: \(self.biometricType)不可用", type: .error)
+                            }
                         case .biometryNotEnrolled:
                             completion(false, "未设置\(self.biometricType)")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录失败: 未设置\(self.biometricType)", type: .error)
+                            }
                         case .biometryLockout:
                             completion(false, "\(self.biometricType)已被锁定，请使用密码登录")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录失败: \(self.biometricType)已被锁定", type: .error)
+                            }
                         default:
                             completion(false, "\(self.biometricType)验证错误")
+                            Task {
+                                await self.fundService?.addLog("生物识别登录失败: \(self.biometricType)验证错误", type: .error)
+                            }
                         }
                     } else {
                         completion(false, "\(self.biometricType)验证失败")
+                        Task {
+                            await self.fundService?.addLog("生物识别登录失败: \(self.biometricType)验证失败", type: .error)
+                        }
                     }
                 }
             }
@@ -331,6 +382,9 @@ class AuthService: ObservableObject {
         if failedAttempts >= maxAuthAttemptsBeforeCaptcha {
             UserDefaults.standard.set(Date(), forKey: "authLockoutTime")
             print("🔧 认证已被锁定，请10分钟后再试")
+            Task {
+                await fundService?.addLog("认证已被锁定，请10分钟后再试", type: .warning)
+            }
         }
     }
 
@@ -377,10 +431,16 @@ class AuthService: ObservableObject {
                             self.captchaImage = image
                             self.captchaId = captchaId
                             print("🔧 验证码获取成功，ID: \(captchaId)")
+                            Task {
+                                await self.fundService?.addLog("验证码获取成功", type: .info)
+                            }
                         }
                     }
                 } catch {
                     print("🔧 验证码解析失败: \(error)")
+                    Task {
+                        await self.fundService?.addLog("验证码解析失败: \(error)", type: .error)
+                    }
                 }
             }
         }.resume()
@@ -389,11 +449,18 @@ class AuthService: ObservableObject {
     func login(username: String, password: String, captcha: String? = nil, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始登录流程，用户名: \(username)")
 
+        Task {
+            await fundService?.addLog("用户尝试登录: \(username)", type: .info)
+        }
+
         let loginCheck = canLogin()
         if !loginCheck.canLogin {
             if let remainingTime = loginCheck.remainingTime {
                 let minutes = Int(ceil(remainingTime / 60))
                 completion(false, "登录尝试次数过多，请\(minutes)分钟后再试")
+                Task {
+                    await fundService?.addLog("登录被拒绝: 尝试次数过多，需要等待 \(minutes) 分钟", type: .warning)
+                }
                 return
             }
         }
@@ -401,17 +468,26 @@ class AuthService: ObservableObject {
         if requiresCaptcha() {
             guard let captcha = captcha, !captcha.isEmpty else {
                 completion(false, "请输入验证码")
+                Task {
+                    await fundService?.addLog("登录失败: 需要验证码但未提供", type: .warning)
+                }
                 return
             }
 
             if self.captchaId == nil {
                 completion(false, "验证码加载失败，请点击刷新")
+                Task {
+                    await fundService?.addLog("登录失败: 验证码加载失败", type: .error)
+                }
                 return
             }
         }
         
         guard let url = URL(string: "\(baseURL)/api/login") else {
             completion(false, "无效的URL")
+            Task {
+                await fundService?.addLog("登录失败: 无效的URL", type: .error)
+            }
             return
         }
         
@@ -434,6 +510,9 @@ class AuthService: ObservableObject {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
         } catch {
             completion(false, "请求数据错误")
+            Task {
+                await fundService?.addLog("登录失败: 请求数据错误", type: .error)
+            }
             return
         }
         
@@ -442,12 +521,18 @@ class AuthService: ObservableObject {
                 if let error = error {
                     self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
+                    Task {
+                        await self.fundService?.addLog("登录失败: 网络错误 - \(error.localizedDescription)", type: .error)
+                    }
                     return
                 }
                 
                 guard let data = data else {
                     self.recordAuthFailure()
                     completion(false, "没有收到数据")
+                    Task {
+                        await self.fundService?.addLog("登录失败: 没有收到数据", type: .error)
+                    }
                     return
                 }
                 
@@ -482,6 +567,10 @@ class AuthService: ObservableObject {
                             
                             print("🔧 AuthService 状态更新完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil")")
                             
+                            Task {
+                                await self.fundService?.addLog("用户登录成功: \(username)", type: .success)
+                            }
+                            
                             completion(true, json["message"] as? String ?? "登录成功")
                         } else {
                             self.recordAuthFailure()
@@ -489,14 +578,25 @@ class AuthService: ObservableObject {
                                 self.fetchCaptcha()
                             }
                             let message = json["message"] as? String ?? json["error"] as? String ?? "登录失败"
+                            
+                            Task {
+                                await self.fundService?.addLog("用户登录失败: \(message)", type: .error)
+                            }
+                            
                             completion(false, message)
                         }
                     } else {
                         self.recordAuthFailure()
+                        Task {
+                            await self.fundService?.addLog("登录响应格式错误", type: .error)
+                        }
                         completion(false, "响应格式错误")
                     }
                 } catch {
                     self.recordAuthFailure()
+                    Task {
+                        await self.fundService?.addLog("登录数据解析错误: \(error.localizedDescription)", type: .error)
+                    }
                     completion(false, "数据解析错误: \(error.localizedDescription)")
                 }
             }
@@ -506,15 +606,22 @@ class AuthService: ObservableObject {
     func register(username: String, password: String, confirmPassword: String, completion: @escaping (Bool, String) -> Void) {
         print("🔧 开始注册流程，用户名: \(username)")
         
+        Task {
+            await fundService?.addLog("用户尝试注册: \(username)", type: .info)
+        }
+
         let authCheck = canAuth()
         if !authCheck.canAuth {
             if let remainingTime = authCheck.remainingTime {
                 let minutes = Int(ceil(remainingTime / 60))
                 completion(false, "认证尝试次数过多，请\(minutes)分钟后再试")
+                Task {
+                    await fundService?.addLog("注册被拒绝: 认证尝试次数过多，需要等待 \(minutes) 分钟", type: .warning)
+                }
                 return
             }
         }
-        
+
         let registerCheck = canRegister()
         if !registerCheck.canRegister {
             if let remainingTime = registerCheck.remainingTime {
@@ -528,17 +635,26 @@ class AuthService: ObservableObject {
                 return
             } else {
                 completion(false, "当前设备注册账户数量已达上限")
+                Task {
+                    await fundService?.addLog("注册被拒绝: 当前设备注册账户数量已达上限", type: .warning)
+                }
                 return
             }
         }
         
         guard password == confirmPassword else {
             completion(false, "密码不一致")
+            Task {
+                await fundService?.addLog("注册失败: 密码不一致", type: .error)
+            }
             return
         }
         
         guard let url = URL(string: "\(baseURL)/api/register") else {
             completion(false, "无效的URL")
+            Task {
+                await fundService?.addLog("注册失败: 无效的URL", type: .error)
+            }
             return
         }
         
@@ -555,6 +671,9 @@ class AuthService: ObservableObject {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
         } catch {
             completion(false, "请求数据错误")
+            Task {
+                await fundService?.addLog("注册失败: 请求数据错误", type: .error)
+            }
             return
         }
         
@@ -563,12 +682,18 @@ class AuthService: ObservableObject {
                 if let error = error {
                     self.recordAuthFailure()
                     completion(false, "网络错误: \(error.localizedDescription)")
+                    Task {
+                        await self.fundService?.addLog("注册失败: 网络错误 - \(error.localizedDescription)", type: .error)
+                    }
                     return
                 }
                 
                 guard let data = data else {
                     self.recordAuthFailure()
                     completion(false, "没有收到数据")
+                    Task {
+                        await self.fundService?.addLog("注册失败: 没有收到数据", type: .error)
+                    }
                     return
                 }
                 
@@ -600,18 +725,33 @@ class AuthService: ObservableObject {
                             
                             self.objectWillChange.send()
                             
+                            Task {
+                                await self.fundService?.addLog("用户注册成功: \(username)", type: .success)
+                            }
+                            
                             completion(true, json["message"] as? String ?? "注册成功")
                         } else {
                             self.recordAuthFailure()
                             let message = json["message"] as? String ?? json["error"] as? String ?? "注册失败"
+                            
+                            Task {
+                                await self.fundService?.addLog("用户注册失败: \(message)", type: .error)
+                            }
+                            
                             completion(false, message)
                         }
                     } else {
                         self.recordAuthFailure()
+                        Task {
+                            await self.fundService?.addLog("注册响应格式错误", type: .error)
+                        }
                         completion(false, "响应格式错误")
                     }
                 } catch {
                     self.recordAuthFailure()
+                    Task {
+                        await self.fundService?.addLog("注册数据解析错误: \(error.localizedDescription)", type: .error)
+                    }
                     completion(false, "数据解析错误: \(error.localizedDescription)")
                 }
             }
@@ -621,6 +761,10 @@ class AuthService: ObservableObject {
     func logout() {
         print("🔧 执行退出登录")
         
+        Task {
+            await fundService?.addLog("用户退出登录", type: .info)
+        }
+
         UserDefaults.standard.removeObject(forKey: "authToken")
         UserDefaults.standard.removeObject(forKey: "userData")
         
@@ -644,6 +788,10 @@ class AuthService: ObservableObject {
     func forceLogout() {
         print("🔧 执行强制登出")
         
+        Task {
+            await fundService?.addLog("用户被强制登出", type: .warning)
+        }
+
         UserDefaults.standard.removeObject(forKey: "authToken")
         UserDefaults.standard.removeObject(forKey: "userData")
         
@@ -684,9 +832,16 @@ class AuthService: ObservableObject {
             
             self.resetInactivityTimer()
             
+            Task {
+                await fundService?.addLog("从本地存储恢复登录状态，用户: \(self.currentUser?.username ?? "未知")", type: .info)
+            }
+            
             print("🔧 登录状态恢复完成 - 已登录: \(self.isLoggedIn), 用户: \(self.currentUser?.username ?? "nil"), 类型: \(self.currentUser?.userType.rawValue ?? "unknown"), 订阅结束: \(self.currentUser?.subscriptionEnd?.description ?? "nil")")
         } else {
             print("🔧 没有找到保存的登录信息")
+            Task {
+                await fundService?.addLog("未找到本地登录状态", type: .info)
+            }
         }
     }
 
@@ -777,6 +932,9 @@ class AuthService: ObservableObject {
         guard isLoggedIn else { return }
         
         print("由于长时间无操作，自动退出登录")
+        Task {
+            await fundService?.addLog("由于长时间无操作，自动退出登录", type: .warning)
+        }
         logout()
         
         NotificationCenter.default.post(
@@ -789,6 +947,9 @@ class AuthService: ObservableObject {
         guard isLoggedIn else { return }
         
         print("由于后台时间过长，需要重新登录")
+        Task {
+            await fundService?.addLog("由于后台时间过长，需要重新登录", type: .warning)
+        }
         logout()
         
         NotificationCenter.default.post(
@@ -809,6 +970,9 @@ class AuthService: ObservableObject {
         self.objectWillChange.send()
         
         print("🔧 调试：登录状态已重置")
+        Task {
+            await fundService?.addLog("调试: 登录状态已重置", type: .info)
+        }
     }
     
     func printDebugInfo() {

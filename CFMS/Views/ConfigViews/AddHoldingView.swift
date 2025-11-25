@@ -529,6 +529,9 @@ struct AddHoldingView: View {
 
     private func saveHolding() async {
         guard isFormValid else {
+            Task {
+                await fundService.addLog("AddHoldingView: 表单验证失败，无法保存持仓", type: .warning)
+            }
             return
         }
 
@@ -538,12 +541,18 @@ struct AddHoldingView: View {
             let existingClientNames = Set(dataManager.holdings.map { $0.clientName })
             if !existingClientNames.contains(trimmedClientName) && existingClientNames.count >= 5 {
                 await showToastMessage("基础用户最多添加5个不同的客户\n请升级后继续使用")
+                Task {
+                    await fundService.addLog("AddHoldingView: 基础用户限制 - 超过5个客户限制", type: .warning)
+                }
                 return
             }
 
             let clientHoldings = dataManager.holdings.filter { $0.clientName == trimmedClientName }
             if clientHoldings.count >= 2 {
                 await showToastMessage("基础用户每个客户最多添加2个产品\n请升级后继续使用")
+                Task {
+                    await fundService.addLog("AddHoldingView: 基础用户限制 - 超过每个客户2个产品限制", type: .warning)
+                }
                 return
             }
         }
@@ -566,7 +575,7 @@ struct AddHoldingView: View {
 
         do {
             try dataManager.addHolding(newHolding)
-            await fundService.addLog("新增持仓: \(newHolding.fundCode) for \(newHolding.clientName)。", type: .info)
+            await fundService.addLog("AddHoldingView: 新增持仓成功 - 客户: \(newHolding.clientName), 基金: \(newHolding.fundCode), 金额: \(newHolding.purchaseAmount), 份额: \(newHolding.purchaseShares)", type: .success)
 
             await MainActor.run {
                 Task { @MainActor in
@@ -581,18 +590,18 @@ struct AddHoldingView: View {
                         
                         do {
                             try dataManager.updateHolding(holdingToUpdate)
-                            await fundService.addLog("基金 \(holdingToUpdate.fundCode) 信息已刷新。", type: .info)
+                            await fundService.addLog("AddHoldingView: 基金 \(holdingToUpdate.fundCode) 信息刷新成功 - 名称: \(fetchedInfo.fundName), 净值: \(fetchedInfo.currentNav)", type: .success)
                         } catch {
-                            await fundService.addLog("更新持仓失败: \(error.localizedDescription)", type: .error)
+                            await fundService.addLog("AddHoldingView: 更新持仓失败 - \(error.localizedDescription)", type: .error)
                         }
                     } else {
-                        await fundService.addLog("警告: 未找到刚刚添加的持仓以刷新信息。", type: .error)
+                        await fundService.addLog("AddHoldingView: 警告 - 未找到刚刚添加的持仓以刷新信息", type: .error)
                     }
                 }
                 dismiss()
             }
         } catch {
-            await fundService.addLog("添加持仓失败: \(error.localizedDescription)", type: .error)
+            await fundService.addLog("AddHoldingView: 添加持仓失败 - \(error.localizedDescription)", type: .error)
         }
     }
 

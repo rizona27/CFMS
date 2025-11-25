@@ -251,17 +251,26 @@ struct CloudSyncView: View {
             let urls = try result.get()
             guard let url = urls.first else { return }
             await dataManager.processImportedFile(url: url)
+            Task {
+                await fundService.addLog("CloudSyncView: 文件导入成功 - \(url.lastPathComponent)", type: .success)
+            }
         } catch {
-            await fundService.addLog("导入失败: \(error.localizedDescription)", type: .error)
+            Task {
+                await fundService.addLog("CloudSyncView: 文件导入失败 - \(error.localizedDescription)", type: .error)
+            }
         }
     }
 
     private func handleFileExport(result: Result<URL, Error>) async {
         switch result {
         case .success(let url):
-            await fundService.addLog("导出成功: \(url.lastPathComponent)", type: .success)
+            Task {
+                await fundService.addLog("CloudSyncView: 文件导出成功 - \(url.lastPathComponent)", type: .success)
+            }
         case .failure(let error):
-            await fundService.addLog("导出失败: \(error.localizedDescription)", type: .error)
+            Task {
+                await fundService.addLog("CloudSyncView: 文件导出失败 - \(error.localizedDescription)", type: .error)
+            }
         }
     }
 
@@ -269,6 +278,13 @@ struct CloudSyncView: View {
         if let document = dataManager.exportHoldingsToCSV() {
             dataManager.csvExportDocument = document
             isExporting = true
+            Task {
+                await fundService.addLog("CloudSyncView: 开始导出CSV文件，包含 \(dataManager.holdings.count) 条持仓", type: .info)
+            }
+        } else {
+            Task {
+                await fundService.addLog("CloudSyncView: CSV文件导出失败，无法创建文档", type: .error)
+            }
         }
     }
 }

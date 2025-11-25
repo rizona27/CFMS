@@ -19,22 +19,41 @@ class CloudSyncManager: ObservableObject {
     private let baseURL = "https://cfms.crnas.uk:8315"
     private var cancellables = Set<AnyCancellable>()
 
+    private weak var fundService: FundService?
+
+    init(fundService: FundService? = nil) {
+        self.fundService = fundService
+    }
+
     func checkDownloadPermissions(authService: AuthService) {
         if authService.isLoggedIn {
             hasDownloadPermission = true
+            Task {
+                await fundService?.addLog("检查下载权限: 用户已登录，允许下载", type: .info)
+            }
         } else {
             hasDownloadPermission = false
+            Task {
+                await fundService?.addLog("检查下载权限: 用户未登录，禁止下载", type: .warning)
+            }
         }
     }
 
     func uploadHoldingsToCloud(authService: AuthService, dataManager: DataManager) {
         guard let token = authService.authToken, let username = authService.currentUser?.username else {
             setAlertMessage("请先登录")
+            Task {
+                await fundService?.addLog("上传持仓数据失败: 用户未登录", type: .error)
+            }
             return
         }
         
         isUploading = true
         syncMessage = "正在上传持仓数据..."
+        
+        Task {
+            await fundService?.addLog("开始上传持仓数据到云端，用户: \(username)", type: .network)
+        }
         
         let holdings = dataManager.holdings
         let requestData: [String: Any] = [
@@ -67,6 +86,9 @@ class CloudSyncManager: ObservableObject {
         guard let url = URL(string: "\(baseURL)/api/holdings/upload") else {
             setAlertMessage("服务器地址错误")
             isUploading = false
+            Task {
+                await fundService?.addLog("上传失败: 服务器地址无效", type: .error)
+            }
             return
         }
         
@@ -77,9 +99,16 @@ class CloudSyncManager: ObservableObject {
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestData)
+            Task {
+                let count = holdings.count
+                await fundService?.addLog("准备上传数据，持仓数量: \(count)", type: .network)
+            }
         } catch {
             setAlertMessage("数据编码失败: \(error.localizedDescription)")
             isUploading = false
+            Task {
+                await fundService?.addLog("数据编码失败: \(error.localizedDescription)", type: .error)
+            }
             return
         }
         
@@ -107,12 +136,23 @@ class CloudSyncManager: ObservableObject {
                 self.syncMessage = ""
                 if case .failure(let error) = completion {
                     self.setAlertMessage("上传失败: \(error.localizedDescription)")
+                    Task {
+                        await self.fundService?.addLog("上传失败: \(error.localizedDescription)", type: .error)
+                    }
                 }
             } receiveValue: { response in
                 if response.success {
-                    self.setAlertMessage("上传成功！共上传 \(response.uploadedCount ?? 0) 条持仓记录")
+                    let uploadedCount = response.uploadedCount ?? 0
+                    self.setAlertMessage("上传成功！共上传 \(uploadedCount) 条持仓记录")
+                    Task {
+                        await self.fundService?.addLog("上传成功！上传了 \(uploadedCount) 条持仓记录", type: .success)
+                    }
                 } else {
-                    self.setAlertMessage("上传失败: \(response.error ?? "未知错误")")
+                    let errorMessage = response.error ?? "未知错误"
+                    self.setAlertMessage("上传失败: \(errorMessage)")
+                    Task {
+                        await self.fundService?.addLog("上传失败: \(errorMessage)", type: .error)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -121,11 +161,18 @@ class CloudSyncManager: ObservableObject {
     func downloadHoldingsFromCloud(authService: AuthService, dataManager: DataManager) {
         guard let token = authService.authToken, let username = authService.currentUser?.username else {
             setAlertMessage("请先登录")
+            Task {
+                await fundService?.addLog("下载持仓数据失败: 用户未登录", type: .error)
+            }
             return
         }
         
         isDownloading = true
         syncMessage = "正在下载持仓数据..."
+        
+        Task {
+            await fundService?.addLog("开始从云端下载持仓数据，用户: \(username)", type: .network)
+        }
         
         print("开始下载持仓数据，用户名: \(username)")
         
@@ -133,6 +180,9 @@ class CloudSyncManager: ObservableObject {
             setAlertMessage("服务器地址错误")
             isDownloading = false
             syncMessage = ""
+            Task {
+                await fundService?.addLog("下载失败: 服务器地址无效", type: .error)
+            }
             return
         }
         
@@ -145,10 +195,16 @@ class CloudSyncManager: ObservableObject {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
             print("请求体准备完成: \(requestBody)")
+            Task {
+                await fundService?.addLog("下载请求准备完成", type: .network)
+            }
         } catch {
             setAlertMessage("请求数据编码失败")
             isDownloading = false
             syncMessage = ""
+            Task {
+                await fundService?.addLog("下载请求数据编码失败", type: .error)
+            }
             return
         }
         
@@ -189,9 +245,15 @@ class CloudSyncManager: ObservableObject {
                 if case .failure(let error) = completion {
                     print("下载完成但失败: \(error)")
                     self.setAlertMessage("下载失败: \(error.localizedDescription)")
+                    Task {
+                        await self.fundService?.addLog("下载失败: \(error.localizedDescription)", type: .error)
+                    }
                 }
             } receiveValue: { data in
                 print("开始解析响应数据")
+                Task {
+                    await self.fundService?.addLog("开始解析下载的持仓数据", type: .network)
+                }
                 self.parseDownloadedData(data, dataManager: dataManager)
             }
             .store(in: &cancellables)
@@ -217,19 +279,33 @@ class CloudSyncManager: ObservableObject {
                             let downloadedHoldings = self.parseHoldingsFromArray(holdingsArray)
                             dataManager.holdings = downloadedHoldings
                             dataManager.saveData()
-                            self.setAlertMessage("下载成功！共下载 \(downloadedHoldings.count) 条持仓记录")
+
+                            let count = downloadedHoldings.count
+                            self.setAlertMessage("下载成功！共下载 \(count) 条持仓记录")
+                            Task {
+                                await self.fundService?.addLog("下载成功！下载了 \(count) 条持仓记录", type: .success)
+                            }
                             return
                         } else {
                             print("未找到holdings数组或格式不正确")
+                            Task {
+                                await self.fundService?.addLog("下载数据格式错误: 未找到holdings数组", type: .error)
+                            }
                         }
                     } else {
                         let errorMsg = json["error"] as? String ?? "未知错误"
                         print("服务器返回success: false, 错误: \(errorMsg)")
                         self.setAlertMessage("下载失败: \(errorMsg)")
+                        Task {
+                            await self.fundService?.addLog("下载失败: \(errorMsg)", type: .error)
+                        }
                         return
                     }
                 } else {
                     print("JSON中没有success字段")
+                    Task {
+                        await self.fundService?.addLog("下载响应格式错误: 缺少success字段", type: .error)
+                    }
                 }
             }
 
@@ -289,15 +365,27 @@ class CloudSyncManager: ObservableObject {
             if response.success, let downloadedHoldings = response.holdings {
                 dataManager.holdings = downloadedHoldings
                 dataManager.saveData()
-                self.setAlertMessage("下载成功！共下载 \(downloadedHoldings.count) 条持仓记录")
+
+                let count = downloadedHoldings.count
+                self.setAlertMessage("下载成功！共下载 \(count) 条持仓记录")
+                Task {
+                    await self.fundService?.addLog("下载成功！下载了 \(count) 条持仓记录", type: .success)
+                }
             } else {
-                self.setAlertMessage("下载失败: \(response.error ?? "未知错误")")
+                let errorMessage = response.error ?? "未知错误"
+                self.setAlertMessage("下载失败: \(errorMessage)")
+                Task {
+                    await self.fundService?.addLog("下载失败: \(errorMessage)", type: .error)
+                }
             }
         } catch {
             print("JSON解析错误: \(error)")
             print("错误类型: \(type(of: error))")
             print("错误详情: \(error.localizedDescription)")
 
+            Task {
+                await self.fundService?.addLog("JSON解析错误: \(error.localizedDescription)", type: .error)
+            }
             self.manualParseDownloadData(data, dataManager: dataManager)
         }
     }
@@ -409,19 +497,33 @@ class CloudSyncManager: ObservableObject {
                         
                         dataManager.holdings = downloadedHoldings
                         dataManager.saveData()
-                        self.setAlertMessage("下载成功！共下载 \(downloadedHoldings.count) 条持仓记录")
+
+                        let count = downloadedHoldings.count
+                        self.setAlertMessage("下载成功！共下载 \(count) 条持仓记录")
+                        Task {
+                            await self.fundService?.addLog("手动解析下载成功！下载了 \(count) 条持仓记录", type: .success)
+                        }
                     } else {
                         print("手动解析 - 没有holdings字段或格式错误")
                         self.setAlertMessage("下载失败: 数据格式错误 - 缺少holdings字段")
+                        Task {
+                            await self.fundService?.addLog("手动解析失败: 缺少holdings字段", type: .error)
+                        }
                     }
                 } else {
                     let errorMsg = json["error"] as? String ?? "未知错误"
                     print("手动解析 - success为false, 错误: \(errorMsg)")
                     self.setAlertMessage("下载失败: \(errorMsg)")
+                    Task {
+                        await self.fundService?.addLog("手动解析失败: \(errorMsg)", type: .error)
+                    }
                 }
             } else {
                 print("手动解析 - 无法解析为JSON对象")
                 self.setAlertMessage("下载失败: 数据格式错误")
+                Task {
+                    await self.fundService?.addLog("手动解析失败: 无法解析为JSON对象", type: .error)
+                }
             }
         } catch {
             print("手动解析错误: \(error)")
@@ -429,6 +531,9 @@ class CloudSyncManager: ObservableObject {
                 print("原始响应数据: \(rawString)")
             }
             self.setAlertMessage("数据解析失败: \(error.localizedDescription)")
+            Task {
+                await self.fundService?.addLog("手动解析错误: \(error.localizedDescription)", type: .error)
+            }
         }
     }
 

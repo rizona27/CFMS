@@ -5,6 +5,7 @@ import UIKit
 struct HoldingRow: View {
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var fundService: FundService
     let holding: FundHolding
     let hideClientInfo: Bool
     let onCopyClientID: ((String) -> Void)?
@@ -53,6 +54,9 @@ struct HoldingRow: View {
                     .onLongPressGesture {
                         UIPasteboard.general.string = holding.fundCode
                         onCopyClientID?("基金代码已复制: \(holding.fundCode)")
+                        Task {
+                            await fundService.addLog("复制了基金代码: \(holding.fundCode)", type: .info)
+                        }
                     }
                 
                 if holding.isPinned {
@@ -166,6 +170,9 @@ struct HoldingRow: View {
                     if let currentUser = authService.currentUser {
                         if currentUser.userType == .free {
                             onCopyClientID?("不支持基础用户使用此功能")
+                            Task {
+                                await fundService.addLog("基础用户尝试复制客户号被拒绝", type: .warning)
+                            }
                             return
                         }
                     }
@@ -173,6 +180,9 @@ struct HoldingRow: View {
                     if !holding.clientID.isEmpty {
                         UIPasteboard.general.string = holding.clientID
                         onCopyClientID?("客户号已复制到剪贴板")
+                        Task {
+                            await fundService.addLog("复制了客户号: \(holding.clientID)", type: .info)
+                        }
                     }
                 }) {
                     Text("复制客户号")
@@ -186,8 +196,14 @@ struct HoldingRow: View {
                     if let currentUser = authService.currentUser {
                         if currentUser.userType == .free {
                             onCopyClientID?("不支持基础用户使用此功能")
+                            Task {
+                                await fundService.addLog("基础用户尝试生成报告被拒绝", type: .warning)
+                            }
                             return
                         }
+                    }
+                    Task {
+                        await fundService.addLog("为基金 \(holding.fundName)(\(holding.fundCode)) 生成报告", type: .info)
                     }
                     onGenerateReport?(holding)
                 }
@@ -206,6 +222,9 @@ struct HoldingRow: View {
         .swipeActions(edge: .leading) {
             Button {
                 dataManager.togglePinStatus(forHoldingId: holding.id)
+                Task {
+                    await fundService.addLog("\(holding.isPinned ? "取消置顶" : "置顶")了基金 \(holding.fundName)", type: .info)
+                }
             } label: {
                 Label(holding.isPinned ? "取消置顶" : "置顶", systemImage: holding.isPinned ? "pin.slash.fill" : "pin.fill")
             }

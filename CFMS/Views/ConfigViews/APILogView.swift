@@ -174,10 +174,17 @@ struct APILogView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         fundService.logMessages.removeAll()
+                        Task {
+                            await fundService.addLog("清空了所有日志", type: .info)
+                        }
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(LinearGradient(gradient: Gradient(colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]), startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [Color(hex: "f093fb"), Color(hex: "f5576c")]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
                             
                             Image(systemName: "trash.circle")
                                 .foregroundColor(.white)
@@ -189,6 +196,9 @@ struct APILogView: View {
             }
             .onAppear {
                 restoreSelectedLogTypes()
+                Task {
+                    await fundService.addLog("打开了日志查看页面", type: .info)
+                }
             }
         }
     }
@@ -196,8 +206,14 @@ struct APILogView: View {
     private func toggleAllSelection() {
         if isAllSelected {
             selectedLogTypes.removeAll()
+            Task {
+                await fundService.addLog("取消了全选日志类型", type: .info)
+            }
         } else {
             selectedLogTypes = Set(allLogTypes)
+            Task {
+                await fundService.addLog("全选了所有日志类型", type: .info)
+            }
         }
     }
     
@@ -223,14 +239,23 @@ struct APILogView: View {
         if let encoded = try? JSONEncoder().encode(selectedTypesArray) {
             storedSelectedLogTypes = String(data: encoded, encoding: .utf8) ?? ""
         }
+        Task {
+            await fundService.addLog("保存了选中的日志类型: \(selectedTypesArray)", type: .info)
+        }
     }
 
     private func restoreSelectedLogTypes() {
         if let data = storedSelectedLogTypes.data(using: .utf8),
            let decoded = try? JSONDecoder().decode([String].self, from: data) {
             selectedLogTypes = Set(decoded.compactMap { LogType(rawValue: $0) })
+            Task {
+                await fundService.addLog("恢复了选中的日志类型: \(decoded)", type: .info)
+            }
         } else {
             selectedLogTypes = Set(allLogTypes)
+            Task {
+                await fundService.addLog("使用默认全选日志类型", type: .info)
+            }
         }
     }
 }

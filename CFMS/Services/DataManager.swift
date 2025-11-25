@@ -1,4 +1,4 @@
-//定义了一个名为 DataManager 的 ObservableObject 类，它是整个应用程序的核心数据管理层。
+// DataManager.swift
 import Foundation
 import Combine
 import SwiftUI
@@ -90,8 +90,11 @@ class DataManager: ObservableObject {
     
     private var refreshButtonTimer: Timer?
     private var refreshCooldownTimer: Timer?
-    
-    init() {
+
+    private weak var fundService: FundService?
+
+    init(fundService: FundService? = nil) {
+        self.fundService = fundService
         loadData()
     }
 
@@ -103,11 +106,22 @@ class DataManager: ObservableObject {
                 decoder.dateDecodingStrategy = .iso8601
                 decodedHoldings = try decoder.decode([FundHolding].self, from: data)
                 print("DataManager: 持仓数据加载成功。总持仓数: \(decodedHoldings.count)")
+
+                let count = decodedHoldings.count
+                Task {
+                    await fundService?.addLog("本地持仓数据加载成功，共 \(count) 条记录", type: .info)
+                }
             } catch {
                 print("DataManager: 持仓数据加载失败或解码错误: \(error.localizedDescription)")
+                Task {
+                    await fundService?.addLog("持仓数据加载失败: \(error.localizedDescription)", type: .error)
+                }
             }
         } else {
             print("DataManager: 没有找到 UserDefaults 中的持仓数据。")
+            Task {
+                await fundService?.addLog("未找到本地持仓数据", type: .info)
+            }
         }
 
         self.isPrivacyMode = UserDefaults.standard.bool(forKey: privacyModeKey)
@@ -128,13 +142,23 @@ class DataManager: ObservableObject {
             UserDefaults.standard.set(self.isPrivacyMode, forKey: privacyModeKey)
             
             print("DataManager: 所有数据保存成功。")
+            Task {
+                let count = self.holdings.count
+                await fundService?.addLog("数据保存成功，持仓数量: \(count)", type: .info)
+            }
         } catch {
             print("DataManager: 数据保存失败或编码错误: \(error.localizedDescription)")
+            Task {
+                await fundService?.addLog("数据保存失败: \(error.localizedDescription)", type: .error)
+            }
         }
     }
 
     func addHolding(_ holding: FundHolding) throws {
         guard holding.isValidHolding else {
+            Task {
+                await fundService?.addLog("添加持仓失败: 持仓数据无效", type: .error)
+            }
             throw DataManagerError.invalidHoldingData
         }
         
@@ -143,10 +167,16 @@ class DataManager: ObservableObject {
         self.holdings = tempHoldings
         self.saveData()
         print("DataManager: 添加新持仓: \(holding.fundCode) - \(holding.clientName)")
+        Task {
+            await fundService?.addLog("添加新持仓: \(holding.clientName) - \(holding.fundCode)", type: .info)
+        }
     }
     
     func updateHolding(_ updatedHolding: FundHolding) throws {
         guard updatedHolding.isValidHolding else {
+            Task {
+                await fundService?.addLog("更新持仓失败: 持仓数据无效", type: .error)
+            }
             throw DataManagerError.invalidHoldingData
         }
         
@@ -156,27 +186,50 @@ class DataManager: ObservableObject {
             self.holdings = tempHoldings
             self.saveData()
             print("DataManager: 更新持仓: \(updatedHolding.fundCode) - \(updatedHolding.clientName)")
+            Task {
+                await fundService?.addLog("更新持仓: \(updatedHolding.clientName) - \(updatedHolding.fundCode)", type: .info)
+            }
         } else {
+            Task {
+                await fundService?.addLog("更新持仓失败: 未找到持仓记录", type: .error)
+            }
             throw DataManagerError.holdingNotFound
         }
     }
     
     func deleteHolding(at offsets: IndexSet) {
+        let deletedHoldings = offsets.map { holdings[$0] }
         var tempHoldings = self.holdings
         tempHoldings.remove(atOffsets: offsets)
         self.holdings = tempHoldings
         self.saveData()
         print("DataManager: 删除持仓。")
+        
+        Task {
+            for holding in deletedHoldings {
+                await fundService?.addLog("删除持仓: \(holding.clientName) - \(holding.fundCode)", type: .warning)
+            }
+        }
     }
 
     func togglePinStatus(forHoldingId id: UUID) {
         if let index = holdings.firstIndex(where: { $0.id == id }) {
             var tempHoldings = self.holdings
+
+            let clientName = tempHoldings[index].clientName
+            let fundCode = tempHoldings[index].fundCode
+            
             tempHoldings[index].isPinned.toggle()
             if tempHoldings[index].isPinned {
                 tempHoldings[index].pinnedTimestamp = Date()
+                Task {
+                    await fundService?.addLog("置顶持仓: \(clientName) - \(fundCode)", type: .info)
+                }
             } else {
                 tempHoldings[index].pinnedTimestamp = nil
+                Task {
+                    await fundService?.addLog("取消置顶持仓: \(clientName) - \(fundCode)", type: .info)
+                }
             }
             self.holdings = tempHoldings
             self.saveData()
@@ -215,6 +268,10 @@ class DataManager: ObservableObject {
         self.isPrivacyMode.toggle()
         self.saveData()
         print("DataManager: 隐私模式切换为 \(self.isPrivacyMode)。")
+        Task {
+            let mode = self.isPrivacyMode ? "开启" : "关闭"
+            await fundService?.addLog("隐私模式切换为: \(mode)", type: .info)
+        }
     }
 
     func obscuredName(for name: String) -> String {
@@ -242,6 +299,10 @@ class DataManager: ObservableObject {
         refreshCooldownTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
             self.disableDateTap = false
         }
+        
+        Task {
+            await fundService?.addLog("触发了手动刷新按钮", type: .info)
+        }
     }
     
     func startRefresh() {
@@ -249,12 +310,21 @@ class DataManager: ObservableObject {
         refreshProgress = (0, holdings.count)
         currentRefreshingClientName = ""
         currentRefreshingClientID = ""
+        
+        Task {
+            let count = holdings.count
+            await fundService?.addLog("开始刷新持仓数据，共 \(count) 条记录", type: .info)
+        }
     }
     
     func completeRefresh() {
         isRefreshing = false
         currentRefreshingClientName = ""
         currentRefreshingClientID = ""
+        
+        Task {
+            await fundService?.addLog("持仓数据刷新完成", type: .success)
+        }
     }
 
     func exportHoldingsToCSV() -> CSVExportDocument? {
@@ -271,6 +341,11 @@ class DataManager: ObservableObject {
             csvString += "\(holding.clientName),\(holding.fundCode),\(amountStr),\(sharesStr),\(formattedDate),\(holding.clientID),\(holding.remarks)\n"
         }
         
+        Task {
+            let count = holdings.count
+            await fundService?.addLog("导出CSV文件，包含 \(count) 条持仓记录", type: .info)
+        }
+        
         return CSVExportDocument(message: csvString)
     }
 
@@ -285,17 +360,27 @@ class DataManager: ObservableObject {
         print("DataManager: 开始处理导入文件: \(url)")
         print("DataManager: 文件路径: \(url.path)")
 
+        Task {
+            await fundService?.addLog("开始导入CSV文件: \(url.lastPathComponent)", type: .info)
+        }
+
         let fileManager = FileManager.default
         
         guard fileManager.fileExists(atPath: url.path) else {
             print("DataManager: 文件不存在: \(url.path)")
             await showToastMessage("文件不存在或已被移动")
+            Task {
+                await fundService?.addLog("导入失败: 文件不存在", type: .error)
+            }
             return
         }
         
         guard fileManager.isReadableFile(atPath: url.path) else {
             print("DataManager: 文件不可读: \(url.path)")
             await showToastMessage("文件权限不足，无法读取")
+            Task {
+                await fundService?.addLog("导入失败: 文件不可读", type: .error)
+            }
             return
         }
 
@@ -307,11 +392,17 @@ class DataManager: ObservableObject {
             if fileSize == 0 {
                 print("DataManager: 文件为空")
                 await showToastMessage("文件内容为空")
+                Task {
+                    await fundService?.addLog("导入失败: 文件为空", type: .error)
+                }
                 return
             }
         } catch {
             print("DataManager: 无法获取文件属性: \(error)")
             await showToastMessage("无法读取文件信息")
+            Task {
+                await fundService?.addLog("导入失败: 无法读取文件信息", type: .error)
+            }
             return
         }
         
@@ -320,6 +411,9 @@ class DataManager: ObservableObject {
             guard let csvString = String(data: data, encoding: .utf8) else {
                 print("DataManager: 文件编码错误")
                 await showToastMessage("文件编码错误，无法读取内容")
+                Task {
+                    await fundService?.addLog("导入失败: 文件编码错误", type: .error)
+                }
                 return
             }
             
@@ -329,16 +423,26 @@ class DataManager: ObservableObject {
         } catch {
             print("DataManager: 文件读取失败: \(error)")
             await showToastMessage("文件读取失败: \(error.localizedDescription)")
+            Task {
+                await fundService?.addLog("导入失败: 文件读取失败 - \(error.localizedDescription)", type: .error)
+            }
         }
     }
 
     private func processCSVContent(csvString: String, fileName: String) async {
         print("DataManager: 开始处理CSV内容，行数: \(csvString.components(separatedBy: "\n").count)")
         
+        Task {
+            await fundService?.addLog("开始解析CSV文件内容", type: .info)
+        }
+
         let lines = csvString.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard lines.count > 1 else {
             print("DataManager: CSV文件为空或只有标题行")
             await showToastMessage("导入失败：CSV文件为空或只有标题行")
+            Task {
+                await fundService?.addLog("导入失败: CSV文件为空或只有标题行", type: .error)
+            }
             return
         }
         
@@ -376,6 +480,9 @@ class DataManager: ObservableObject {
             let missingColumnsString = missingRequiredHeaders.joined(separator: ", ")
             print("DataManager: 缺少必要的列: \(missingColumnsString)")
             await showToastMessage("导入失败：缺少必要的列 (\(missingColumnsString))")
+            Task {
+                await fundService?.addLog("导入失败: 缺少必要的列 (\(missingColumnsString))", type: .error)
+            }
             return
         }
         
@@ -516,6 +623,22 @@ class DataManager: ObservableObject {
         let message = "导入完成：成功 \(importedCount) 条，跳过 \(duplicateCount) 条重复记录，失败 \(errorCount) 条"
         print("DataManager: \(message)")
         await showToastMessage(message)
+
+        let successCount = importedCount
+        let failCount = errorCount
+        let dupCount = duplicateCount
+        
+        Task {
+            if successCount > 0 {
+                await fundService?.addLog("CSV导入成功: \(successCount) 条记录导入成功", type: .success)
+            }
+            if failCount > 0 {
+                await fundService?.addLog("CSV导入有错误: \(failCount) 条记录导入失败", type: .warning)
+            }
+            if dupCount > 0 {
+                await fundService?.addLog("CSV导入跳过重复: \(dupCount) 条重复记录", type: .info)
+            }
+        }
 
         NotificationCenter.default.post(
             name: NSNotification.Name("CSVImportCompleted"),

@@ -77,22 +77,24 @@ struct AuthView: View {
                 authService.fetchCaptcha()
             }
         }
-        .alert("启用\(authService.biometricType)登录", isPresented: $showBiometricAlert) {
-            Button("启用") {
-                if authService.saveBiometricCredentials(username: username, password: password) {
-                    print("生物识别登录已启用")
+        .alert(isPresented: $showBiometricAlert) {
+            Alert(
+                title: Text("启用\(authService.biometricType)登录"),
+                message: Text(biometricAlertMessage),
+                primaryButton: .default(Text("启用")) {
+                    if authService.saveBiometricCredentials(username: username, password: password) {
+                        print("生物识别登录已启用")
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                },
+                secondaryButton: .cancel(Text("暂不")) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            }
-            Button("暂不", role: .cancel) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            }
-        } message: {
-            Text(biometricAlertMessage)
+            )
         }
     }
 

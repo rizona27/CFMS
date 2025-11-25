@@ -273,15 +273,18 @@ struct ManageHoldingsView: View {
                         refreshedHolding.isValid = fetchedInfo.isValid
                         do {
                             try dataManager.updateHolding(refreshedHolding)
+                            Task {
+                                await fundService.addLog("ManageHoldingsView: 持仓修改成功 - 客户: \(refreshedHolding.clientName), 基金: \(refreshedHolding.fundCode)", type: .success)
+                            }
                         } catch {
                             Task {
-                                await fundService.addLog("更新持仓失败: \(error.localizedDescription)", type: .error)
+                                await fundService.addLog("ManageHoldingsView: 更新持仓失败 - \(error.localizedDescription)", type: .error)
                             }
                         }
                     }
                 } catch {
                     Task {
-                        await fundService.addLog("更新持仓失败: \(error.localizedDescription)", type: .error)
+                        await fundService.addLog("ManageHoldingsView: 更新持仓失败 - \(error.localizedDescription)", type: .error)
                     }
                 }
             }
@@ -489,7 +492,7 @@ struct ManageHoldingsView: View {
         }
         
         dataManager.saveData()
-        await fundService.addLog("ManageHoldingsView: 客户 '\(oldClientName)' 已批量修改为 '\(newClientName)'。", type: .info)
+        await fundService.addLog("ManageHoldingsView: 客户 '\(oldClientName)' 已批量修改为 '\(newClientName)'，涉及 \(oldClientGroup.holdings.count) 个持仓", type: .info)
         
         await MainActor.run {
             newClientName = ""
@@ -509,12 +512,17 @@ struct ManageHoldingsView: View {
             $0.clientName == clientName && $0.clientID == clientID
         }.count
         
+        let deletedFundCodes = dataManager.holdings
+            .filter { $0.clientName == clientName && $0.clientID == clientID }
+            .map { $0.fundCode }
+            .joined(separator: ", ")
+        
         dataManager.holdings.removeAll {
             $0.clientName == clientName && $0.clientID == clientID
         }
         
         dataManager.saveData()
-        await fundService.addLog("ManageHoldingsView: 已批量删除客户 '\(client.getFullDisplayName(isPrivacyModeEnabled: false))' 名下的 \(holdingsToDeleteCount) 个持仓。", type: .info)
+        await fundService.addLog("ManageHoldingsView: 已批量删除客户 '\(client.getFullDisplayName(isPrivacyModeEnabled: false))' 名下的 \(holdingsToDeleteCount) 个持仓。删除的基金代码: \(deletedFundCodes)", type: .warning)
         
         await MainActor.run {
             clientToDelete = nil
@@ -527,7 +535,7 @@ struct ManageHoldingsView: View {
         dataManager.holdings.removeAll { $0.id == holding.id }
         dataManager.saveData()
         
-        await fundService.addLog("ManageHoldingsView: 已删除客户 '\(holding.clientName)' 的基金持仓 \(holding.fundCode)。", type: .info)
+        await fundService.addLog("ManageHoldingsView: 已删除客户 '\(holding.clientName)' 的基金持仓 \(holding.fundCode) - \(holding.fundName)，金额: \(holding.purchaseAmount)", type: .warning)
         
         await MainActor.run {
             refreshID = UUID()

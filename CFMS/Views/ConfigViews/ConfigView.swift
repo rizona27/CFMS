@@ -638,7 +638,7 @@ struct FunctionMenuView: View {
                                     Button(action: {
                                         UserDefaults.standard.set(api.rawValue, forKey: "selectedFundAPI")
                                         Task {
-                                            await fundService.addLog("数据接口已切换至: \(api.rawValue)", type: .info)
+                                            await fundService.addLog("ConfigView: 数据接口已切换至: \(api.rawValue)", type: .info)
                                         }
                                     }) {
                                         Text(api.rawValue)
@@ -916,7 +916,7 @@ struct ManageHoldingsMenuView: View {
                     dataManager.holdings.removeAll()
                     dataManager.saveData()
                     Task {
-                        await fundService.addLog("ManageHoldingsMenuView: 所有持仓数据已清除。", type: .info)
+                        await fundService.addLog("ConfigView: 所有持仓数据已清除，共删除 \(dataManager.holdings.count) 条持仓记录", type: .warning)
                     }
                 }
                 Button("取消", role: .cancel) { }

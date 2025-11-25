@@ -453,6 +453,10 @@ struct EditHoldingView: View {
         updatedHolding.purchaseShares = shares
         updatedHolding.purchaseDate = purchaseDate
         updatedHolding.remarks = remarks.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        Task {
+            await fundService.addLog("EditHoldingView: 修改持仓信息 - 客户: \(updatedHolding.clientName), 基金: \(updatedHolding.fundCode), 金额: \(updatedHolding.purchaseAmount)", type: .info)
+        }
         
         onSave(updatedHolding)
         print("EditHoldingView: 修改已保存。")
@@ -468,9 +472,13 @@ struct EditHoldingView: View {
                     dataManager.holdings[index].navDate = fetchedInfo.navDate
                     dataManager.holdings[index].isValid = fetchedInfo.isValid
                     dataManager.saveData()
-                    print("EditHoldingView: 基金 \(updatedHolding.fundCode) 信息已刷新并保存。")
+                    Task {
+                        await fundService.addLog("EditHoldingView: 基金 \(updatedHolding.fundCode) 信息已刷新 - 净值: \(fetchedInfo.currentNav), 日期: \(fetchedInfo.navDate)", type: .success)
+                    }
                 } else {
-                    print("EditHoldingView: 警告 - 未找到持仓 \(updatedHolding.fundCode) 以刷新信息。")
+                    Task {
+                        await fundService.addLog("EditHoldingView: 警告 - 未找到持仓 \(updatedHolding.fundCode) 以刷新信息", type: .error)
+                    }
                 }
             }
         }

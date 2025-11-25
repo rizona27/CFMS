@@ -931,7 +931,7 @@ struct SummaryView: View {
         }
         
         Task {
-            await fundService.addLog("SummaryView: 开始刷新所有基金信息...", type: .info)
+            await fundService.addLog("SummaryView: 开始刷新所有基金信息，共 \(dataManager.holdings.count) 条持仓", type: .info)
         }
 
         let totalCount = dataManager.holdings.count
@@ -940,10 +940,15 @@ struct SummaryView: View {
             await MainActor.run {
                 completeRefresh()
             }
+            Task {
+                await fundService.addLog("SummaryView: 没有持仓数据需要刷新", type: .warning)
+            }
             return
         }
         
         var updatedHoldings: [UUID: FundHolding] = [:]
+        var successCount = 0
+        var failCount = 0
         
         await withTaskGroup(of: (UUID, FundHolding?).self) { group in
             var iterator = dataManager.holdings.makeIterator()
@@ -973,6 +978,9 @@ struct SummaryView: View {
             for (index, holding) in dataManager.holdings.enumerated() {
                 if let updatedHolding = updatedHoldings[holding.id] {
                     dataManager.holdings[index] = updatedHolding
+                    successCount += 1
+                } else {
+                    failCount += 1
                 }
             }
             
@@ -984,7 +992,7 @@ struct SummaryView: View {
 
             NotificationCenter.default.post(name: Notification.Name("HoldingsDataUpdated"), object: nil)
             Task {
-                await fundService.addLog("SummaryView: 所有基金信息刷新完成。", type: .info)
+                await fundService.addLog("SummaryView: 基金信息刷新完成。成功: \(successCount), 失败: \(failCount)", type: .info)
             }
         }
     }

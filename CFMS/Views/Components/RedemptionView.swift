@@ -2,6 +2,7 @@
 import SwiftUI
 struct RedemptionView: View {
     @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var fundService: FundService
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.colorScheme) private var colorScheme
     
@@ -172,6 +173,9 @@ struct RedemptionView: View {
             .navigationBarHidden(true)
             .onAppear {
                 startAnimations()
+                Task {
+                    await fundService.addLog("打开了权益兑换页面", type: .info)
+                }
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
@@ -257,9 +261,15 @@ struct RedemptionView: View {
             messageColor = .red
             message = "兑换码不能为空"
             isLoading = false
+            Task {
+                await fundService.addLog("兑换码为空，兑换失败", type: .error)
+            }
             return
         }
 
+        Task {
+            await fundService.addLog("开始验证兑换码: \(redemptionCode)", type: .network)
+        }
         validateRedemptionCode()
     }
 
@@ -268,6 +278,9 @@ struct RedemptionView: View {
             messageColor = .red
             message = "服务器连接失败"
             isLoading = false
+            Task {
+                await fundService.addLog("兑换码验证URL无效", type: .error)
+            }
             return
         }
         
@@ -289,7 +302,14 @@ struct RedemptionView: View {
             messageColor = .red
             message = "请求数据错误"
             isLoading = false
+            Task {
+                await fundService.addLog("兑换码验证请求数据错误: \(error.localizedDescription)", type: .error)
+            }
             return
+        }
+        
+        Task {
+            await fundService.addLog("发送兑换码验证请求到服务器", type: .network)
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -298,6 +318,9 @@ struct RedemptionView: View {
                     self.messageColor = .red
                     self.message = "网络错误: \(error.localizedDescription)"
                     self.isLoading = false
+                    Task {
+                        await self.fundService.addLog("兑换码验证网络错误: \(error.localizedDescription)", type: .error)
+                    }
                     return
                 }
                 
@@ -305,28 +328,43 @@ struct RedemptionView: View {
                     self.messageColor = .red
                     self.message = "没有收到服务器响应"
                     self.isLoading = false
+                    Task {
+                        await self.fundService.addLog("兑换码验证无响应数据", type: .error)
+                    }
                     return
                 }
                 
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                         if let success = json["success"] as? Bool, success {
+                            Task {
+                                await self.fundService.addLog("兑换码验证成功", type: .success)
+                            }
                             self.redeemCodeAPI()
                         } else {
                             let errorMessage = json["error"] as? String ?? "兑换码无效"
                             self.messageColor = .red
                             self.message = errorMessage
                             self.isLoading = false
+                            Task {
+                                await self.fundService.addLog("兑换码验证失败: \(errorMessage)", type: .error)
+                            }
                         }
                     } else {
                         self.messageColor = .red
                         self.message = "响应格式错误"
                         self.isLoading = false
+                        Task {
+                            await self.fundService.addLog("兑换码验证响应格式错误", type: .error)
+                        }
                     }
                 } catch {
                     self.messageColor = .red
                     self.message = "数据解析错误"
                     self.isLoading = false
+                    Task {
+                        await self.fundService.addLog("兑换码验证数据解析错误: \(error.localizedDescription)", type: .error)
+                    }
                 }
             }
         }.resume()
@@ -337,6 +375,9 @@ struct RedemptionView: View {
             messageColor = .red
             message = "服务器连接失败"
             isLoading = false
+            Task {
+                await fundService.addLog("兑换API URL无效", type: .error)
+            }
             return
         }
         
@@ -358,7 +399,14 @@ struct RedemptionView: View {
             messageColor = .red
             message = "请求数据错误"
             isLoading = false
+            Task {
+                await fundService.addLog("兑换请求数据错误: \(error.localizedDescription)", type: .error)
+            }
             return
+        }
+        
+        Task {
+            await fundService.addLog("发送兑换请求到服务器", type: .network)
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -368,12 +416,18 @@ struct RedemptionView: View {
                 if let error = error {
                     self.messageColor = .red
                     self.message = "网络错误: \(error.localizedDescription)"
+                    Task {
+                        await self.fundService.addLog("兑换网络错误: \(error.localizedDescription)", type: .error)
+                    }
                     return
                 }
                 
                 guard let data = data else {
                     self.messageColor = .red
                     self.message = "没有收到服务器响应"
+                    Task {
+                        await self.fundService.addLog("兑换无响应数据", type: .error)
+                    }
                     return
                 }
                 
@@ -387,27 +441,41 @@ struct RedemptionView: View {
                                 self.updateUserInfo(userInfo)
                             }
 
+                            Task {
+                                await self.fundService.addLog("权益兑换成功: \(self.message)", type: .success)
+                            }
                             self.showSuccessAnimation = true
                             
                         } else {
                             let errorMessage = json["error"] as? String ?? "兑换失败"
                             self.messageColor = .red
                             self.message = errorMessage
+                            Task {
+                                await self.fundService.addLog("兑换失败: \(errorMessage)", type: .error)
+                            }
                         }
                     } else {
                         self.messageColor = .red
                         self.message = "响应格式错误"
+                        Task {
+                            await self.fundService.addLog("兑换响应格式错误", type: .error)
+                        }
                     }
                 } catch {
                     self.messageColor = .red
                     self.message = "数据解析错误: \(error.localizedDescription)"
+                    Task {
+                        await self.fundService.addLog("兑换数据解析错误: \(error.localizedDescription)", type: .error)
+                    }
                 }
             }
         }.resume()
     }
 
     private func updateUserInfo(_ userInfo: [String: Any]) {
-        print("🔧 开始更新用户信息: \(userInfo)")
+        Task {
+            await fundService.addLog("开始更新用户信息: \(userInfo)", type: .info)
+        }
 
         if let currentUser = authService.currentUser {
             if let userTypeString = userInfo["user_type"] as? String,
@@ -416,7 +484,9 @@ struct RedemptionView: View {
                 let subscriptionStart = parseDate(from: userInfo["subscription_start"] as? String)
                 let subscriptionEnd = parseDate(from: userInfo["subscription_end"] as? String)
                 
-                print("🔧 更新用户信息 - 类型: \(userType), 开始: \(subscriptionStart?.description ?? "nil"), 结束: \(subscriptionEnd?.description ?? "nil")")
+                Task {
+                    await fundService.addLog("更新用户信息 - 类型: \(userType), 开始: \(subscriptionStart?.description ?? "nil"), 结束: \(subscriptionEnd?.description ?? "nil")", type: .info)
+                }
 
                 let updatedUser = User(
                     id: currentUser.id,
@@ -448,7 +518,9 @@ struct RedemptionView: View {
 
                 if let userJsonData = try? JSONSerialization.data(withJSONObject: completeUserData) {
                     UserDefaults.standard.set(userJsonData, forKey: "userData")
-                    print("🔧 用户信息已保存到UserDefaults")
+                    Task {
+                        await fundService.addLog("用户信息已保存到UserDefaults", type: .info)
+                    }
                 }
 
                 NotificationCenter.default.post(
@@ -457,6 +529,9 @@ struct RedemptionView: View {
                 )
                 
                 authService.objectWillChange.send()
+                Task {
+                    await fundService.addLog("用户信息更新完成，类型变更为: \(userType)", type: .success)
+                }
             }
         }
     }
@@ -488,7 +563,9 @@ struct RedemptionView: View {
             }
         }
         
-        print("🔧 无法解析日期字符串: \(string)")
+        Task {
+            await fundService.addLog("无法解析日期字符串: \(string)", type: .warning)
+        }
         return nil
     }
 }
