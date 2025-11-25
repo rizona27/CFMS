@@ -54,8 +54,7 @@ struct CFMSApp: App {
 
     private func checkFileImportPermissions() {
         print("=== 文件导入权限检查 ===")
-        
-        // 检查文档类型支持
+
         let supportedTypes = [
             UTType.commaSeparatedText,
             UTType.plainText,
@@ -65,12 +64,10 @@ struct CFMSApp: App {
         for type in supportedTypes {
             print("支持的类型: \(type.identifier)")
         }
-        
-        // 检查文件共享权限
+
         let fileSharingEnabled = Bundle.main.infoDictionary?["UIFileSharingEnabled"] as? Bool ?? false
         print("文件共享启用: \(fileSharingEnabled)")
-        
-        // 检查文档类型声明
+
         if let documentTypes = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] {
             print("已配置的文档类型数量: \(documentTypes.count)")
             for (index, type) in documentTypes.enumerated() {
@@ -110,11 +107,9 @@ struct CFMSApp: App {
         }
     }
 
-    // 运行时文档类型检查
     private func checkRuntimeDocumentTypes() {
         print("=== 运行时文档类型检查 ===")
-        
-        // 检查系统已知的类型
+
         if let csvType = UTType("public.comma-separated-values-text") {
             print("系统支持 CSV 类型: \(csvType.identifier)")
         }
@@ -122,8 +117,7 @@ struct CFMSApp: App {
         if let textType = UTType("public.plain-text") {
             print("系统支持纯文本类型: \(textType.identifier)")
         }
-        
-        // 检查文件扩展名关联
+
         if let csvTypeByExt = UTType(filenameExtension: "csv") {
             print("CSV 扩展名关联类型: \(csvTypeByExt.identifier)")
         }
@@ -131,8 +125,7 @@ struct CFMSApp: App {
         if let txtTypeByExt = UTType(filenameExtension: "txt") {
             print("TXT 扩展名关联类型: \(txtTypeByExt.identifier)")
         }
-        
-        // 检查生物识别权限配置
+
         if let faceIDUsage = Bundle.main.infoDictionary?["NSFaceIDUsageDescription"] as? String {
             print("生物识别权限配置: \(faceIDUsage)")
         } else {
@@ -142,14 +135,12 @@ struct CFMSApp: App {
         print("=========================")
     }
 
-    // 新增：检查 Face ID 可用性
     private func checkFaceIDAvailability() {
         print("=== Face ID 可用性检查 ===")
         
         let context = LAContext()
         var error: NSError?
-        
-        // 检查设备是否支持生物识别
+
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             if context.biometryType == .faceID {
                 print("设备支持 Face ID")
@@ -161,8 +152,7 @@ struct CFMSApp: App {
         } else {
             print("设备不支持生物识别或未设置: \(error?.localizedDescription ?? "未知错误")")
         }
-        
-        // 再次确认 Info.plist 配置
+
         if Bundle.main.infoDictionary?["NSFaceIDUsageDescription"] == nil {
             print("严重错误: Info.plist 中缺少 NSFaceIDUsageDescription")
         } else {
@@ -174,8 +164,7 @@ struct CFMSApp: App {
 
     private func registerDocumentTypes() {
         print("CFMSApp: 注册文档类型...")
-        
-        // 强制注册文档类型
+
         if let bundleIdentifier = Bundle.main.bundleIdentifier {
             let csvType = UTType(filenameExtension: "csv")!
             let textType = UTType(filenameExtension: "txt")!
@@ -183,8 +172,7 @@ struct CFMSApp: App {
             print("CFMSApp: 注册文档类型 - CSV: \(csvType), Text: \(textType)")
             print("CFMSApp: Bundle Identifier: \(bundleIdentifier)")
         }
-        
-        // 检查实际可处理的类型
+
         let supportedTypes = [
             UTType.commaSeparatedText,
             UTType.plainText,
@@ -198,7 +186,6 @@ struct CFMSApp: App {
         print("CFMSApp: - 文本文件 (.txt)")
     }
 
-    // 请求通知权限
     private func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
@@ -209,7 +196,6 @@ struct CFMSApp: App {
         }
     }
 
-    // 设置应用生命周期观察者
     private func setupAppLifecycleObservers() {
         NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
             print("CFMSApp: 应用进入后台")
@@ -217,7 +203,6 @@ struct CFMSApp: App {
         
         NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { _ in
             print("CFMSApp: 应用即将终止")
-            // 应用被杀死时强制登出
             authService.forceLogout()
         }
     }
@@ -228,12 +213,10 @@ struct CFMSApp: App {
         print("CFMSApp: 文件扩展名: \(url.pathExtension)")
         print("CFMSApp: 文件名称: \(url.lastPathComponent)")
 
-        // 新增：应用沙盒权限检查
         print("CFMSApp: 应用沙盒权限检查...")
         let isSandboxed = Bundle.main.appStoreReceiptURL?.path.contains("CoreSimulator") == false
         print("CFMSApp: 应用沙盒状态: \(isSandboxed ? "沙盒环境" : "开发环境")")
-        
-        // 检查文件访问权限
+
         let canAccess = FileManager.default.isReadableFile(atPath: url.path)
         print("CFMSApp: 文件可访问: \(canAccess)")
 
@@ -241,8 +224,7 @@ struct CFMSApp: App {
         let fileExtension = url.pathExtension.lowercased()
         
         print("CFMSApp: 检查文件扩展名: \(fileExtension)")
-        
-        // 放宽检查：如果配置不生效，直接处理支持的文件扩展名
+
         guard supportedExtensions.contains(fileExtension) else {
             print("CFMSApp: 不支持的文件类型: \(fileExtension)")
             showImportErrorAlert(message: "不支持的文件类型: \(fileExtension)")
@@ -259,25 +241,21 @@ struct CFMSApp: App {
             url.stopAccessingSecurityScopedResource()
             print("CFMSApp: 已释放安全访问权限")
         }
-        
-        // 检查原始文件的可访问性
+
         let fileManager = FileManager.default
-        
-        // 检查文件是否存在
+
         guard fileManager.fileExists(atPath: url.path) else {
             print("CFMSApp: 原始文件不存在")
             showImportErrorAlert(message: "文件不存在")
             return
         }
-        
-        // 检查文件可读性
+
         guard fileManager.isReadableFile(atPath: url.path) else {
             print("CFMSApp: 原始文件不可读")
             showImportErrorAlert(message: "文件不可读，请检查权限")
             return
         }
-        
-        // 如果检查通过，处理文件
+
         processImportedFile(url: url)
     }
 
@@ -297,18 +275,14 @@ struct CFMSApp: App {
         print("CFMSApp: 目标文件: \(destinationURL)")
         
         do {
-            // 确保目标目录存在
             try fileManager.createDirectory(at: documentsPath, withIntermediateDirectories: true)
             
-            // 如果目标文件已存在，先删除
             if fileManager.fileExists(atPath: destinationURL.path) {
                 try fileManager.removeItem(at: destinationURL)
             }
-            
-            // 复制文件
+
             try fileManager.copyItem(at: url, to: destinationURL)
-            
-            // 验证复制后的文件
+
             guard fileManager.fileExists(atPath: destinationURL.path) else {
                 print("CFMSApp: 复制后文件不存在")
                 showImportErrorAlert(message: "文件复制失败")
@@ -320,8 +294,7 @@ struct CFMSApp: App {
                 showImportErrorAlert(message: "复制文件不可读")
                 return
             }
-            
-            // 获取复制后文件大小
+
             let attributes = try fileManager.attributesOfItem(atPath: destinationURL.path)
             let fileSize = attributes[.size] as? UInt64 ?? 0
             print("CFMSApp: 复制后文件大小: \(fileSize) 字节")
